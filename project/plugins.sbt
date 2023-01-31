@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 ABSA Group Limited
+ * Copyright 2023 ABSA Group Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,8 +12,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-//addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "2.1.0")
 
 addSbtPlugin("com.earldouglas" % "xsbt-web-plugin" % "4.2.4")
 addSbtPlugin("de.heikoseeberger" % "sbt-header" % "5.9.0")
