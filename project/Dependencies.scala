@@ -23,7 +23,7 @@ object Dependencies {
     val typesafeConfig = "1.4.2"
     val javaCompat = "0.9.0"
 
-    val springBoot = "2.6.1" // todo update eventually
+    val springBoot = "2.7.8"
 
     val scalatest = "3.2.15"
   }
