@@ -52,7 +52,7 @@ object Dependencies {
 
 
   lazy val scalaTest = "org.scalatest" %% "scalatest" % Versions.scalatest % Test
-
+  lazy val springBootTest = "org.springframework.boot" % "spring-boot-starter-test" % Versions.springBoot
 
   def serviceDependencies: Seq[ModuleID] = Seq(
     jacksonModuleScala,
@@ -64,7 +64,8 @@ object Dependencies {
     springBootConfiguration,
     springBootTomcat,
 
-    scalaTest
+    scalaTest,
+    springBootTest
   )
 
 }

@@ -14,29 +14,24 @@
  * limitations under the License.
  */
 
-package za.co.absa.logingw.rest.controllers
+package za.co.absa.logingw.rest.service
 
-import java.util.concurrent.CompletableFuture
-
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.http.HttpStatus
-import org.springframework.web.bind.annotation._
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.test.context.TestContextManager
 
-import scala.concurrent.Future
+@SpringBootTest
+class TestServiceTest extends AnyFlatSpec with Matchers {
 
-/**
- * This is an initial endpoint to prove the setup works. Intended to be removed/changed.
- */
-@RestController
-@RequestMapping(Array("/api/test"))
-class TestController @Autowired()() {
+  @Autowired
+  private var testService: TestService = _
 
-  import za.co.absa.logingw.utils.implicits._
+  // Makes the above autowired work
+  new TestContextManager(this.getClass).prepareTestInstance(this)
 
-  @GetMapping(path = Array(""))
-  @ResponseStatus(HttpStatus.OK)
-  def getTestResult(): CompletableFuture[String] = {
-    Future.successful("Test controller OK")
+  "TestService" should "give expected test message" in {
+    testService.getTestMessage shouldEqual "Test service is OK"
   }
-
 }
