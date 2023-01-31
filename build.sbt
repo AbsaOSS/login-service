@@ -28,9 +28,6 @@ lazy val parent = (project in file("."))
   .settings(
     name := "login-gateway",
     javacOptions ++= Seq("-source", "1.8", "-target", "1.8", "-Xlint"),
-    // no default main defined class
-    // assembly / test := (Test / test).value,
-    // mergeStrategy,
     publish / skip := true
   )
 
@@ -39,16 +36,7 @@ lazy val service = project // no need to define file, because path is same as va
   .settings(
     name := "login-gateway-service",
     libraryDependencies ++= serviceDependencies,
-    // assembly / test := (Test / test).value,
     webappWebInfClasses := true,
     inheritJarManifest := true,
-    // mergeStrategy
   ).enablePlugins(TomcatPlugin)
   .enablePlugins(AutomateHeaderPlugin)
-
-//val mergeStrategy: Def.SettingsDefinition = assembly / assemblyMergeStrategy  := {
-//  case PathList("META-INF", _) => MergeStrategy.discard
-//  case "application.conf"      => MergeStrategy.concat
-//  case "reference.conf"        => MergeStrategy.concat
-//  case _                       => MergeStrategy.first
-//}
