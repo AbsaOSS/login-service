@@ -19,15 +19,18 @@ package za.co.absa.logingw.rest.controller
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.{HttpStatus, MediaType}
 import org.springframework.security.core.Authentication
-import org.springframework.web.bind.annotation.{PostMapping, RequestMapping, ResponseStatus, RestController}
+import org.springframework.web.bind.annotation.{GetMapping, PostMapping, RequestMapping, ResponseStatus, RestController}
 import za.co.absa.logingw.model.User
 import za.co.absa.logingw.rest.service.JWTService
 
+import java.util.Base64
 import java.util.concurrent.CompletableFuture
 import scala.concurrent.Future
 
 
 case class TokenWrapper(token: String) extends AnyVal
+
+case class PublicKeyWrapper(key: String) extends AnyVal
 
 @RestController
 @RequestMapping(Array("/token"))
@@ -44,6 +47,18 @@ class TokenController @Autowired() (jwtService: JWTService) {
     val principal = authentication.getPrincipal.asInstanceOf[User]
     val jwt = jwtService.generateToken(principal)
     Future.successful(TokenWrapper(jwt))
+  }
+
+  @GetMapping(
+    path = Array("/public-key"),
+    produces = Array(MediaType.APPLICATION_JSON_VALUE)
+  )
+  @ResponseStatus(HttpStatus.OK)
+  def getPublicKey(): CompletableFuture[PublicKeyWrapper] = {
+    val publicKey = jwtService.publicKey
+    val publicKeyBase64 = Base64.getEncoder.encodeToString(publicKey.getEncoded)
+
+    Future.successful(PublicKeyWrapper(publicKeyBase64))
   }
 
 }
