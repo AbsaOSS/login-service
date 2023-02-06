@@ -45,4 +45,7 @@ class SecurityConfig {
     http.build()
   }
 
+  @Bean
+  def authenticationProvider: AuthenticationProvider = new DummyAuthenticationProvider
+
 }
