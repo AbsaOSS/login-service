@@ -33,6 +33,8 @@ class SecurityConfig {
     http
       .csrf()
         .disable()
+      .cors()
+        .and()
       .authorizeRequests()
         .antMatchers("/token/public-key").permitAll()
         .anyRequest().authenticated()
