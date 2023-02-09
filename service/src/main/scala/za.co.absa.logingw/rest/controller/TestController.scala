@@ -16,6 +16,10 @@
 
 package za.co.absa.logingw.rest.controller
 
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.responses.{ApiResponse, ApiResponses}
+import io.swagger.v3.oas.annotations.tags.{Tag, Tags}
+
 import java.util.concurrent.CompletableFuture
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.{HttpStatus, MediaType}
@@ -33,6 +37,16 @@ class TestController @Autowired()(testService: TestService) {
 
   import za.co.absa.logingw.utils.implicits._
 
+  @Tags(Array("test"))
+  @Operation(
+    summary = "Gives test response from TestService",
+    description =
+      """
+       This only serves as a demonstration of successfully setup SpringBoot for RESTful accesss.
+      """)
+  @ApiResponses(Array(
+    new ApiResponse(responseCode = "200", description = "The controller is called normally and testing output is returned")
+  ))
   @GetMapping(path = Array(""), produces = Array(MediaType.TEXT_PLAIN_VALUE))
   @ResponseStatus(HttpStatus.OK)
   def getTestResult(): CompletableFuture[String] = {
