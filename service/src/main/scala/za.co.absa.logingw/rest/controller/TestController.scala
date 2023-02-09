@@ -37,7 +37,7 @@ class TestController @Autowired()(testService: TestService) {
 
   import za.co.absa.logingw.utils.implicits._
 
-  @Tags(Array("test"))
+  @Tags(Array(new Tag(name = "test")))
   @Operation(
     summary = "Gives test response from TestService",
     description =
