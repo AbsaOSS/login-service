@@ -24,6 +24,7 @@ object Dependencies {
     val javaCompat = "0.9.0"
 
     val springBoot = "2.7.8"
+    val spring = "5.7.6"
 
     val jjwt = "0.11.5"
 
@@ -56,7 +57,8 @@ object Dependencies {
 
 
   lazy val scalaTest = "org.scalatest" %% "scalatest" % Versions.scalatest % Test
-  lazy val springBootTest = "org.springframework.boot" % "spring-boot-starter-test" % Versions.springBoot
+  lazy val springBootTest = "org.springframework.boot" % "spring-boot-starter-test" % Versions.springBoot % Test
+  lazy val springBootSecurityTest = "org.springframework.security" % "spring-security-test" % Versions.spring % Test
 
   def serviceDependencies: Seq[ModuleID] = Seq(
     jacksonModuleScala,
@@ -74,7 +76,8 @@ object Dependencies {
     jjwtJackson,
 
     scalaTest,
-    springBootTest
+    springBootTest,
+    springBootSecurityTest
   )
 
 }
