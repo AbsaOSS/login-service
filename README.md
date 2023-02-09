@@ -23,3 +23,6 @@ service / Tomcat / start
 ## API documentation:
 Swagger doc site is available at `http://localhost:8080/swagger-ui.html`
 (substitute `http://localhost:8080` with any possible host you have deployed your package to.)
+### Need the OpenAPI 3 yaml file?
+It is available for download while running the service at `http://localhost:8080/v3/api-docs.yaml` - 
+gets generated from code (specifically from Spring annotations) 
