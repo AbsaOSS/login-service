@@ -19,12 +19,24 @@ package za.co.absa.logingw.rest
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.databind.{ObjectMapper, SerializationFeature}
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
+import io.swagger.v3.oas.annotations.info.{Info, License}
+import io.swagger.v3.oas.annotations.{ExternalDocumentation, OpenAPIDefinition}
 import org.springframework.boot.SpringApplication
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.builder.SpringApplicationBuilder
 import org.springframework.boot.web.servlet.support.SpringBootServletInitializer
 import org.springframework.context.annotation._
 
+@OpenAPIDefinition(
+  externalDocs = new ExternalDocumentation(description = "GitHub",
+    url = "https://github.com/AbsaOSS/login-gateway"
+  ),
+  info = new Info(
+    title = "Login Gateway API",
+    version = "0.1",
+    license = new License(name = "Apache 2.0", url = "https://www.apache.org/licenses/LICENSE-2.0.html")
+  )
+)
 @SpringBootApplication
 @Configuration
 class GatewayService extends SpringBootServletInitializer {
