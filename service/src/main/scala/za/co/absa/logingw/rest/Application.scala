@@ -39,10 +39,10 @@ import org.springframework.context.annotation._
 )
 @SpringBootApplication
 @Configuration
-class GatewayService extends SpringBootServletInitializer {
+class Application extends SpringBootServletInitializer {
 
   override def configure(application: SpringApplicationBuilder): SpringApplicationBuilder =
-    application.sources(classOf[GatewayService])
+    application.sources(classOf[Application])
 
   @Bean
   def objectMapper(): ObjectMapper = {
@@ -53,6 +53,6 @@ class GatewayService extends SpringBootServletInitializer {
   }
 }
 
-object GatewayService extends App {
-  SpringApplication.run(classOf[GatewayService], args: _ *)
+object Application extends App {
+  SpringApplication.run(classOf[Application], args: _ *)
 }

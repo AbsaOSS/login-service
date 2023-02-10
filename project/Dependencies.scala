@@ -24,6 +24,9 @@ object Dependencies {
     val javaCompat = "0.9.0"
 
     val springBoot = "2.7.8"
+    val spring = "5.7.6"
+
+    val jjwt = "0.11.5"
 
     val scalatest = "3.2.15"
   }
@@ -36,6 +39,11 @@ object Dependencies {
   lazy val springBootWeb =            "org.springframework.boot" % "spring-boot-starter-web" % Versions.springBoot
   lazy val springBootConfiguration =  "org.springframework.boot" % "spring-boot-configuration-processor" % Versions.springBoot
   lazy val springBootTomcat =         "org.springframework.boot" % "spring-boot-starter-tomcat" % Versions.springBoot % Provided
+  lazy val springBootSecurity =       "org.springframework.boot" % "spring-boot-starter-security" % Versions.springBoot
+
+  lazy val jjwtApi = "io.jsonwebtoken" % "jjwt-api" % Versions.jjwt
+  lazy val jjwtImpl = "io.jsonwebtoken" % "jjwt-impl" % Versions.jjwt % Runtime
+  lazy val jjwtJackson = "io.jsonwebtoken" % "jjwt-jackson" % Versions.jjwt % Runtime
 
   lazy val servletApi = "javax.servlet" % "javax.servlet-api" % "3.0.1" % Provided
 
@@ -46,16 +54,14 @@ object Dependencies {
   // TODO bring actuator (health) endpoints in? - Issue #6
   //lazy val springBootStarterActuator = "org.springframework.boot" % "spring-boot-starter-actuator" % Versions.springBoot
 
-  // TODO JWT - Issue #7
-  // io.jsonwebtoken % {jjwt-api, jjwt-impl, jjwt-jackson }
-
   // TODO LDAP/Kerberos integration: - Issue #8
   // org.springframework.boot % {spring-boot-starter-security, spring-security-ldap, }
   // org.springframework.security.kerberos % {spring-security-kerberos-web, spring-security-kerberos-client}
 
 
   lazy val scalaTest = "org.scalatest" %% "scalatest" % Versions.scalatest % Test
-  lazy val springBootTest = "org.springframework.boot" % "spring-boot-starter-test" % Versions.springBoot
+  lazy val springBootTest = "org.springframework.boot" % "spring-boot-starter-test" % Versions.springBoot % Test
+  lazy val springBootSecurityTest = "org.springframework.security" % "spring-security-test" % Versions.spring % Test
 
   def serviceDependencies: Seq[ModuleID] = Seq(
     jacksonModuleScala,
@@ -66,11 +72,17 @@ object Dependencies {
     springBootWeb,
     springBootConfiguration,
     springBootTomcat,
+    springBootSecurity,
+
+    jjwtApi,
+    jjwtImpl,
+    jjwtJackson,
 
     springDoc,
 
     scalaTest,
-    springBootTest
+    springBootTest,
+    springBootSecurityTest
   )
 
 }
