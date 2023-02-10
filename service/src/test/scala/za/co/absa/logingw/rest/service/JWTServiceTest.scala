@@ -83,7 +83,7 @@ class JWTServiceTest extends AnyFlatSpec {
     assert(actualGroups === userWithoutGroups.groups)
   }
 
-  it should "turn groups into empty `groups` claim for user with groups" in {
+  it should "turn groups into non-empty `groups` claim for user with groups" in {
     import scala.collection.JavaConverters._
 
     val jwt = jwtService.generateToken(userWithGroups)
