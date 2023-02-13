@@ -16,7 +16,10 @@
 
 package za.co.absa.logingw.rest.controller
 
+import com.fasterxml.jackson.annotation.JsonProperty
 import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.media.{ArraySchema, Content, ExampleObject, Schema}
+import io.swagger.v3.oas.annotations.media.Schema.RequiredMode
 import io.swagger.v3.oas.annotations.responses.{ApiResponse, ApiResponses}
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import io.swagger.v3.oas.annotations.tags.{Tag, Tags}
@@ -32,9 +35,17 @@ import java.util.concurrent.CompletableFuture
 import scala.concurrent.Future
 
 
-case class TokenWrapper(token: String) extends AnyVal
+case class TokenWrapper(
+  @JsonProperty("token")
+  @Schema(example = "abcd123.efgh456.ijkl789", requiredMode = RequiredMode.REQUIRED)
+  token: String
+) extends AnyVal
 
-case class PublicKeyWrapper(key: String) extends AnyVal
+case class PublicKeyWrapper(
+  @JsonProperty("key")
+  @Schema(example = "ABCDEFGH1234...", requiredMode = RequiredMode.REQUIRED)
+  key: String
+) extends AnyVal
 
 @RestController
 @RequestMapping(Array("/token"))
@@ -45,11 +56,17 @@ class TokenController @Autowired()(jwtService: JWTService) {
   @Tags(Array(new Tag(name = "token")))
   @Operation(
     summary = "Generates a JWT",
-    description = """Generates a JWT signed by the private key, verifiable by the public key available at /token/public-key. Correct BasicAuth credentials required.""")
-  @ApiResponses(Array(
-    new ApiResponse(responseCode = "200", description = "JWT is retrieved in the response body"),
-    new ApiResponse(responseCode = "401", description = "Auth error")
-  ))
+    description = """Generates a JWT signed by the private key, verifiable by the public key available at /token/public-key. Correct BasicAuth credentials required.""",
+    responses = Array(
+      new ApiResponse(responseCode = "200", description = "JWT is retrieved in the response body",
+        content = Array(new Content(
+          schema = new Schema(implementation = classOf[TokenWrapper]),
+          examples = Array(new ExampleObject(value = "{\n  \"token\": \"abcd123.efgh456.ijkl789\"\n}")))
+        )
+      ),
+      new ApiResponse(responseCode = "401", description = "Auth error")
+    )
+  )
   @PostMapping(
     path = Array("/generate"),
     produces = Array(MediaType.APPLICATION_JSON_VALUE)
