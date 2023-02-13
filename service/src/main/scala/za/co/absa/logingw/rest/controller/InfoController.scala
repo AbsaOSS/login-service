@@ -38,9 +38,7 @@ class InfoController @Autowired()(infoService: InfoService) {
   @Operation(
     summary = "Gives basic information about the service",
     description =
-      """
-       Gives basic information about the whole RESTful service.
-      """)
+      """Gives basic information about the whole RESTful service.""")
   @ApiResponses(Array(
     new ApiResponse(responseCode = "200", description = "The controller is called normally and info output is returned")
   ))
