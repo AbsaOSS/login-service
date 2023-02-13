@@ -26,12 +26,12 @@ import org.springframework.test.context.TestContextManager
 class TestServiceTest extends AnyFlatSpec with Matchers {
 
   @Autowired
-  private var testService: TestService = _
+  private var testService: InfoService = _
 
   // Makes the above autowired work
   new TestContextManager(this.getClass).prepareTestInstance(this)
 
   "TestService" should "give expected test message" in {
-    testService.getTestMessage shouldEqual "Test service is OK"
+    testService.getInfoMessage shouldEqual "Basic info message to be here."
   }
 }

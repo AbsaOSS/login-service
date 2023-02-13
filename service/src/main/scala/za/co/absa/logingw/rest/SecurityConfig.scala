@@ -36,7 +36,12 @@ class SecurityConfig {
       .cors()
         .and()
       .authorizeRequests()
-        .antMatchers("/token/public-key").permitAll()
+      .antMatchers(
+        "/v3/api-docs*", // /v3/api-docs + /v3/api-docs.yaml
+        "/swagger-ui/**", "/swagger-ui.html", // "/swagger-ui.html" redirects to "/swagger-ui/index.html
+        "/swagger-resources/**", "/v3/api-docs/**", // swagger needs these
+        "/info",
+        "/token/public-key").permitAll()
         .anyRequest().authenticated()
         .and()
       .sessionManagement()
