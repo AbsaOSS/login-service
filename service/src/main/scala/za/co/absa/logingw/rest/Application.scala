@@ -19,7 +19,9 @@ package za.co.absa.logingw.rest
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.databind.{ObjectMapper, SerializationFeature}
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
+import io.swagger.v3.oas.annotations.enums.SecuritySchemeType
 import io.swagger.v3.oas.annotations.info.{Info, License}
+import io.swagger.v3.oas.annotations.security.SecurityScheme
 import io.swagger.v3.oas.annotations.{ExternalDocumentation, OpenAPIDefinition}
 import org.springframework.boot.SpringApplication
 import org.springframework.boot.autoconfigure.SpringBootApplication
@@ -36,6 +38,11 @@ import org.springframework.context.annotation._
     version = "0.1",
     license = new License(name = "Apache 2.0", url = "https://www.apache.org/licenses/LICENSE-2.0.html")
   )
+)
+@SecurityScheme(
+  name = "basicAuth",
+  `type` = SecuritySchemeType.HTTP,
+  scheme = "basic"
 )
 @SpringBootApplication
 @Configuration

@@ -18,6 +18,7 @@ package za.co.absa.logingw.rest.controller
 
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.responses.{ApiResponse, ApiResponses}
+import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import io.swagger.v3.oas.annotations.tags.{Tag, Tags}
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.{HttpStatus, MediaType}
@@ -55,6 +56,7 @@ class TokenController @Autowired()(jwtService: JWTService) {
     produces = Array(MediaType.APPLICATION_JSON_VALUE)
   )
   @ResponseStatus(HttpStatus.OK)
+  @SecurityRequirement(name = "basicAuth")
   def generateToken(authentication: Authentication): CompletableFuture[TokenWrapper] = {
     val principal = authentication.getPrincipal.asInstanceOf[User]
     val jwt = jwtService.generateToken(principal)
