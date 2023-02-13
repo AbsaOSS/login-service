@@ -42,7 +42,6 @@ class TokenController @Autowired()(jwtService: JWTService) {
 
   import za.co.absa.logingw.utils.implicits._
 
-  // TODO describe + push authentication
   @Tags(Array(new Tag(name = "token")))
   @Operation(
     summary = "Generates a JWT",
