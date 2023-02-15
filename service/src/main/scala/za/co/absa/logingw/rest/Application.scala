@@ -35,7 +35,7 @@ import org.springframework.context.annotation._
   ),
   info = new Info(
     title = "Login Gateway API",
-    version = "0.1",
+    version = "0.1", // TODO load from config/package -- possibly part of Issue #5
     license = new License(name = "Apache 2.0", url = "https://www.apache.org/licenses/LICENSE-2.0.html")
   )
 )
