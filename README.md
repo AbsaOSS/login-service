@@ -1,9 +1,12 @@
 # login-gateway
 AbsaOSS Common Login gateway using JWT Public key signatures
 
+## Basic usecase schematics
+![login-gw-basic-usecase2](https://user-images.githubusercontent.com/4457378/219037599-5674b63b-403c-4c02-8a54-a6e12dc01d47.png)
+
+
 ## Necessary preconditions
   - TODO configuration description
-  - TODO Public/private key pair
 
 ## Source idea
 The implementation is heavily inspired by [Enceladus](https://github.com/AbsaOSS/enceladus) that already contained 
