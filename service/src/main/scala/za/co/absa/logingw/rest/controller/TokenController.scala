@@ -66,7 +66,7 @@ class TokenController @Autowired()(jwtService: JWTService) {
       ),
       new ApiResponse(responseCode = "401", description = "Auth error",
         content = Array(new Content(
-          schema = new Schema(implementation = classOf[String]), examples = Array(new ExampleObject(value = "401 Authentication error")))
+          schema = new Schema(implementation = classOf[String]), examples = Array(new ExampleObject(value = "Error: response status is 401")))
         ))
     )
   )
