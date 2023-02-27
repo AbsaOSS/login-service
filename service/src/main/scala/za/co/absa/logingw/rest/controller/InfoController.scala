@@ -16,27 +16,36 @@
 
 package za.co.absa.logingw.rest.controller
 
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.responses.{ApiResponse, ApiResponses}
+import io.swagger.v3.oas.annotations.tags.{Tag, Tags}
+
 import java.util.concurrent.CompletableFuture
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.{HttpStatus, MediaType}
 import org.springframework.web.bind.annotation._
-import za.co.absa.logingw.rest.service.TestService
+import za.co.absa.logingw.rest.service.InfoService
 
 import scala.concurrent.Future
 
-/**
- * This is an initial endpoint to prove the setup works. Intended to be removed/changed.
- */
 @RestController
-@RequestMapping(Array("/api/test"))
-class TestController @Autowired()(testService: TestService) {
+@RequestMapping(Array("/info"))
+class InfoController @Autowired()(infoService: InfoService) {
 
   import za.co.absa.logingw.utils.implicits._
 
+  @Tags(Array(new Tag(name = "info")))
+  @Operation(
+    summary = "Gives basic information about the service",
+    description =
+      """Gives basic information about the whole RESTful service.""")
+  @ApiResponses(Array(
+    new ApiResponse(responseCode = "200", description = "The controller is called normally and info output is returned")
+  ))
   @GetMapping(path = Array(""), produces = Array(MediaType.TEXT_PLAIN_VALUE))
   @ResponseStatus(HttpStatus.OK)
-  def getTestResult(): CompletableFuture[String] = {
-    Future.successful(s"Test controller: ${testService.getTestMessage}")
+  def getInfoResult(): CompletableFuture[String] = {
+    Future.successful(s"Info controller: ${infoService.getInfoMessage}")
   }
 
 }

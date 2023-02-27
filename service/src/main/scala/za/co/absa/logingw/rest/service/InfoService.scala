@@ -20,8 +20,8 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
 @Service
-class TestService @Autowired()() {
-  def getTestMessage: String = {
-    s"Test service is OK"
+class InfoService @Autowired()() {
+  def getInfoMessage: String = {
+    s"Basic info message to be here." // todo service version, some parts of configuration perhaps - Issue #15
   }
 }

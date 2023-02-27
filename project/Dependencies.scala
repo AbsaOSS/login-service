@@ -47,6 +47,9 @@ object Dependencies {
 
   lazy val servletApi = "javax.servlet" % "javax.servlet-api" % "3.0.1" % Provided
 
+  // this is UI + swagger annotations together, just annotathons should be in "io.swagger.core.v3":"swagger-annotations":"2.2.8"+
+  lazy val springDoc = "org.springdoc" % "springdoc-openapi-ui" % "1.6.14"
+
 
   // TODO bring actuator (health) endpoints in? - Issue #6
   //lazy val springBootStarterActuator = "org.springframework.boot" % "spring-boot-starter-actuator" % Versions.springBoot
@@ -74,6 +77,8 @@ object Dependencies {
     jjwtApi,
     jjwtImpl,
     jjwtJackson,
+
+    springDoc,
 
     scalaTest,
     springBootTest,
