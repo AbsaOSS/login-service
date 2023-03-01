@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 ABSA Group Limited
+ * Copyright 2021 ABSA Group Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,10 @@
 
 package za.co.absa.logingw.rest.service
 
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.stereotype.Service
+import org.springframework.boot.context.properties.{ConfigurationProperties, ConstructorBinding}
 
-@Service
-class InfoService @Autowired()(baseConfig: BaseConfig) {
-  def getInfoMessage: String = {
-    s"Basic info message to be here. '${baseConfig.someKey}'" // todo service version, some parts of configuration perhaps - Issue #15
-  }
-}
+@ConstructorBinding
+@ConfigurationProperties(prefix = "logingw.rest.service")
+class BaseConfig(
+                val someKey: String
+                )
