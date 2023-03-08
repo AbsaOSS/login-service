@@ -41,23 +41,21 @@ object Dependencies {
   lazy val springBootTomcat =         "org.springframework.boot" % "spring-boot-starter-tomcat" % Versions.springBoot % Provided
   lazy val springBootSecurity =       "org.springframework.boot" % "spring-boot-starter-security" % Versions.springBoot
 
+  //Enables /Health endpoint
+  lazy val springBootStarterActuator = "org.springframework.boot" % "spring-boot-starter-actuator" % Versions.springBoot
+
   lazy val jjwtApi = "io.jsonwebtoken" % "jjwt-api" % Versions.jjwt
   lazy val jjwtImpl = "io.jsonwebtoken" % "jjwt-impl" % Versions.jjwt % Runtime
   lazy val jjwtJackson = "io.jsonwebtoken" % "jjwt-jackson" % Versions.jjwt % Runtime
 
   lazy val servletApi = "javax.servlet" % "javax.servlet-api" % "3.0.1" % Provided
 
-  // this is UI + swagger annotations together, just annotathons should be in "io.swagger.core.v3":"swagger-annotations":"2.2.8"+
+  // this is UI + swagger annotations together, just annotations should be in "io.swagger.core.v3":"swagger-annotations":"2.2.8"+
   lazy val springDoc = "org.springdoc" % "springdoc-openapi-ui" % "1.6.14"
-
-
-  // TODO bring actuator (health) endpoints in? - Issue #6
-  //lazy val springBootStarterActuator = "org.springframework.boot" % "spring-boot-starter-actuator" % Versions.springBoot
 
   // TODO LDAP/Kerberos integration: - Issue #8
   // org.springframework.boot % {spring-boot-starter-security, spring-security-ldap, }
   // org.springframework.security.kerberos % {spring-security-kerberos-web, spring-security-kerberos-client}
-
 
   lazy val scalaTest = "org.scalatest" %% "scalatest" % Versions.scalatest % Test
   lazy val springBootTest = "org.springframework.boot" % "spring-boot-starter-test" % Versions.springBoot % Test
@@ -73,6 +71,8 @@ object Dependencies {
     springBootConfiguration,
     springBootTomcat,
     springBootSecurity,
+
+    springBootStarterActuator,
 
     jjwtApi,
     jjwtImpl,

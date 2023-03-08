@@ -28,7 +28,8 @@ lazy val parent = (project in file("."))
   .settings(
     name := "login-gateway",
     javacOptions ++= Seq("-source", "1.8", "-target", "1.8", "-Xlint"),
-    publish / skip := true
+    publish / skip := true,
+    javaOptions ++= Seq("-Dspring.jmx.enabled=true", "-Dmanagement.endpoints.jmx.exposure.include=health")
   )
 
 
@@ -40,3 +41,5 @@ lazy val service = project // no need to define file, because path is same as va
     inheritJarManifest := true,
   ).enablePlugins(TomcatPlugin)
   .enablePlugins(AutomateHeaderPlugin)
+
+
