@@ -45,10 +45,10 @@ import org.springframework.context.annotation._
   `type` = SecuritySchemeType.HTTP,
   scheme = "basic"
 )
-@SpringBootApplication
 @Configuration
+@SpringBootApplication()
 @PropertySource(Array("classpath:application.properties"))
-@ConfigurationPropertiesScan(Array("za.co.absa.logingw.rest"))
+@ConfigurationPropertiesScan(Array("za.co.absa.logingw.rest.config"))
 class Application extends SpringBootServletInitializer {
 
   override def configure(application: SpringApplicationBuilder): SpringApplicationBuilder =

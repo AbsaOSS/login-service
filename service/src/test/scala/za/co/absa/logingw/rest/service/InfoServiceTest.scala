@@ -22,6 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.TestContextManager
 
+
 @SpringBootTest
 class InfoServiceTest extends AnyFlatSpec with Matchers {
 
@@ -32,6 +33,6 @@ class InfoServiceTest extends AnyFlatSpec with Matchers {
   new TestContextManager(this.getClass).prepareTestInstance(this)
 
   "InfoService" should "give expected test message" in {
-    infoService.getInfoMessage shouldEqual "Basic info message to be here."
+    infoService.getInfoMessage shouldEqual "Basic info message to be here. 'BETA'"
   }
 }

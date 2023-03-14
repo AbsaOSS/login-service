@@ -18,9 +18,11 @@ package za.co.absa.logingw.rest.service
 
 import io.jsonwebtoken.security.Keys
 import io.jsonwebtoken.{Jwts, SignatureAlgorithm}
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.context.properties.{ConfigurationProperties, ConstructorBinding}
 import org.springframework.stereotype.Service
 import za.co.absa.logingw.model.User
+import za.co.absa.logingw.rest.config.BaseConfig
 
 import java.security.{KeyPair, PublicKey}
 import java.time.Instant
@@ -28,19 +30,17 @@ import java.time.temporal.ChronoUnit
 import java.util.Date
 
 @Service
-class JWTService {
+class JWTService @Autowired()(baseConfig: BaseConfig){
 
-  // TODO move to configuration in #5
-  @ConstructorBinding
-  @ConfigurationProperties(prefix = "logingw.rest.service")
-  private val rsaKeyPair: KeyPair = Keys.keyPairFor(SignatureAlgorithm.RS256)
+
+  private val rsaKeyPair: KeyPair = Keys.keyPairFor(SignatureAlgorithm.valueOf(baseConfig.algName))
 
   def generateToken(user: User): String = {
     import scala.collection.JavaConverters._
 
-    // TODO take delta from config in #5
+
     val expiration = Date.from(
-      Instant.now().plus(2, ChronoUnit.HOURS)
+      Instant.now().plus(baseConfig.expTime, ChronoUnit.HOURS)
     )
     val issuedAt = Date.from(Instant.now())
     // needs to be Java List/Array, otherwise incorrect claim is generated

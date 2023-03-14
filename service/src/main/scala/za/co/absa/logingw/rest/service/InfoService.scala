@@ -18,6 +18,7 @@ package za.co.absa.logingw.rest.service
 
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
+import za.co.absa.logingw.rest.config.BaseConfig
 
 @Service
 class InfoService @Autowired()(baseConfig: BaseConfig) {
