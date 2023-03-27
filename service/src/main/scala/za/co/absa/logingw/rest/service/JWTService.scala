@@ -19,7 +19,6 @@ package za.co.absa.logingw.rest.service
 import io.jsonwebtoken.security.Keys
 import io.jsonwebtoken.{Jwts, SignatureAlgorithm}
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.context.properties.{ConfigurationProperties, ConstructorBinding}
 import org.springframework.stereotype.Service
 import za.co.absa.logingw.model.User
 import za.co.absa.logingw.rest.config.BaseConfig

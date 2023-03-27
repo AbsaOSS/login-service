@@ -20,8 +20,8 @@ import org.springframework.boot.context.properties.{ConfigurationProperties, Con
 
 @ConstructorBinding
 @ConfigurationProperties(prefix = "logingw.rest.config")
-class BaseConfig(
-  val algName: String,
-  val expTime: Int,
-  val someKey: String = "example"
-                )
+case class BaseConfig(
+  algName: String,
+  expTime: Int,
+  someKey: String = "BETA"
+)

@@ -26,7 +26,7 @@ import scala.util.Try
 
 class JWTServiceTest extends AnyFlatSpec {
 
-  private val testConfig = new BaseConfig(algName = "RS256", someKey = null, expTime = 2)
+  private val testConfig = BaseConfig(algName = "RS256", expTime = 2)
   private val jwtService: JWTService = new JWTService(testConfig)
 
   private val userWithoutGroups: User = User(
