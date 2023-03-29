@@ -26,6 +26,7 @@ import io.swagger.v3.oas.annotations.{ExternalDocumentation, OpenAPIDefinition}
 import org.springframework.boot.SpringApplication
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.builder.SpringApplicationBuilder
+import org.springframework.boot.context.properties.ConfigurationPropertiesScan
 import org.springframework.boot.web.servlet.support.SpringBootServletInitializer
 import org.springframework.context.annotation._
 
@@ -44,8 +45,10 @@ import org.springframework.context.annotation._
   `type` = SecuritySchemeType.HTTP,
   scheme = "basic"
 )
-@SpringBootApplication
 @Configuration
+@SpringBootApplication()
+@PropertySource(Array("classpath:application.properties"))
+@ConfigurationPropertiesScan(Array("za.co.absa.logingw.rest.config"))
 class Application extends SpringBootServletInitializer {
 
   override def configure(application: SpringApplicationBuilder): SpringApplicationBuilder =

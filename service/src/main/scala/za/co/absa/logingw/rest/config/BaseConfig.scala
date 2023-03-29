@@ -14,15 +14,14 @@
  * limitations under the License.
  */
 
-package za.co.absa.logingw.rest.service
+package za.co.absa.logingw.rest.config
 
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.stereotype.Service
-import za.co.absa.logingw.rest.config.BaseConfig
+import org.springframework.boot.context.properties.{ConfigurationProperties, ConstructorBinding}
 
-@Service
-class InfoService @Autowired()(baseConfig: BaseConfig) {
-  def getInfoMessage: String = {
-    s"Basic info message to be here. '${baseConfig.someKey}'" // todo service version, some parts of configuration perhaps - Issue #15
-  }
-}
+@ConstructorBinding
+@ConfigurationProperties(prefix = "logingw.rest.config")
+case class BaseConfig(
+  algName: String,
+  expTime: Int,
+  someKey: String = "BETA"
+)
