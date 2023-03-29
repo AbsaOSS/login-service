@@ -1,0 +1,24 @@
+logingw:
+  rest:
+    jwt:
+      exp-time: '4'
+      alg-name: RS256
+    config:
+      some-key: BETA
+
+    users:
+      enabled: true
+      known-users:
+        -
+          username: "user1"
+          password: "password1"
+        -
+          username: "user2"
+          password: "password1"
+
+spring:
+  application:
+    name: login-gateway
+
+server:
+  port: '9090'
