@@ -19,7 +19,8 @@ package za.co.absa.logingw.rest.config
 import org.springframework.boot.context.properties.{ConfigurationProperties, ConstructorBinding}
 
 @ConstructorBinding
-@ConfigurationProperties(prefix = "logingw.rest.config")
-case class BaseConfig(
-  someKey: String = "BETA"
+@ConfigurationProperties(prefix = "logingw.rest.jwt")
+case class JwtConfig(
+  algName: String,
+  expTime: Int
 )

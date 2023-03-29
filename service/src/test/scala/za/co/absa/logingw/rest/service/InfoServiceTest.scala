@@ -30,12 +30,11 @@ class InfoServiceTest extends AnyFlatSpec with Matchers {
 
   @Autowired
   private var infoService: InfoService = _
-  private val testConfig = BaseConfig(algName = "RS256", expTime = 2)
 
   // Makes the above autowired work
   new TestContextManager(this.getClass).prepareTestInstance(this)
 
   "InfoService" should "give expected test message" in {
-    infoService.getInfoMessage shouldEqual s"Basic info message to be here. '${testConfig.someKey}'"
+    infoService.getInfoMessage shouldEqual s"Basic info message to be here. 'BETA'" // this is what application.properties contain
   }
 }
