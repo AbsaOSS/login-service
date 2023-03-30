@@ -23,11 +23,22 @@ import org.springframework.boot.context.properties.{ConfigurationProperties, Con
 case class UsersConfig(
   enabled: Boolean,
   knownUsers: Array[UserConfig],
-)
+) {
+  // todo validation of duplicates, etc -- Issue #24 validation
+  lazy val knownUsersMap: Map[String, UserConfig] = knownUsers
+    .map { entry => (entry.username, entry) }
+    .toMap
+}
 
 @ConstructorBinding
 case class UserConfig(
   username: String,
-  password: String
-  // todo groups
-)
+  password: String,
+  email: String, // todo sanitize nulls/values
+  groups: Array[String]
+) {
+
+  override def toString(): String = {
+    s"UserConfig($username, $password, ${Option(email)}, ${Option(groups).map(_.toList)})"
+  }
+}

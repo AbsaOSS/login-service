@@ -17,12 +17,10 @@
 package za.co.absa.logingw.rest
 
 import org.springframework.context.annotation.{Bean, Configuration}
-import org.springframework.security.authentication.AuthenticationProvider
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.web.SecurityFilterChain
-import za.co.absa.logingw.rest.provider.DummyAuthenticationProvider
 
 @Configuration
 @EnableWebSecurity
@@ -41,6 +39,7 @@ class SecurityConfig {
         "/swagger-ui/**", "/swagger-ui.html", // "/swagger-ui.html" redirects to "/swagger-ui/index.html
         "/swagger-resources/**", "/v3/api-docs/**", // swagger needs these
         "/info",
+        "/users", // todo remove
         "/token/public-key").permitAll()
         .anyRequest().authenticated()
         .and()
@@ -51,8 +50,4 @@ class SecurityConfig {
 
     http.build()
   }
-
-  @Bean
-  def authenticationProvider: AuthenticationProvider = new DummyAuthenticationProvider
-
 }

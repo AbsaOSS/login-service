@@ -12,13 +12,24 @@ logingw:
         -
           username: "user1"
           password: "password1"
+          email: "user1@example.com"
         -
-          username: "user2"
-          password: "password1"
+          username: "TestUser"
+          password: "password123"
+          email: "test@abs.com"
+          groups:
+            - "groupA"
+            - "groupB"
 
 spring:
   application:
     name: login-gateway
+
+logging:
+  level:
+    org:
+      springframework:
+        security: DEBUG
 
 server:
   port: '9090'

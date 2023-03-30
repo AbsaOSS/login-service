@@ -31,7 +31,6 @@ import java.util.Date
 @Service
 class JWTService @Autowired()(jwtConfig: JwtConfig){
 
-
   private val rsaKeyPair: KeyPair = Keys.keyPairFor(SignatureAlgorithm.valueOf(jwtConfig.algName))
 
   def generateToken(user: User): String = {

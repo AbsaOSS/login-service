@@ -16,6 +16,7 @@
 
 package za.co.absa.logingw.rest.controller
 
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.{HttpStatus, MediaType}
 import org.springframework.web.bind.annotation._
@@ -31,9 +32,14 @@ class DebugUsersController @Autowired()(usersConf: UsersConfig) {
 
   import za.co.absa.logingw.utils.implicits._
 
+  val logger = LoggerFactory.getLogger(classOf[DebugUsersController])
+
+
   @GetMapping(path = Array(""), produces = Array(MediaType.TEXT_PLAIN_VALUE))
   @ResponseStatus(HttpStatus.OK)
   def getUsersFromConfigDebugListing(): CompletableFuture[String] = {
+    logger.info(s"Debug knownUsers:\n${usersConf.knownUsers.mkString(",\n")}")
+
     Future.successful(s"Debug knownUsers:\n${usersConf.knownUsers.mkString(",\n")}")
   }
 
