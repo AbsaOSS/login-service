@@ -29,3 +29,12 @@ Swagger doc site is available at `http://localhost:8080/swagger-ui.html`
 ### Need the OpenAPI 3 yaml file?
 It is available for download while running the service at `http://localhost:8080/v3/api-docs.yaml` - 
 gets generated from code (specifically from Spring annotations) 
+
+## How to generate Code coverage report
+```
+sbt jacoco
+```
+Code coverage will be generated on path:
+```
+{project-root}/{module}/target/scala-{scala_version}/jacoco/report/html
+```
