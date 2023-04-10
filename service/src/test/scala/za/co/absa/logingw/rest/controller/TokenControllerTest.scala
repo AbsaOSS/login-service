@@ -57,7 +57,7 @@ class TokenControllerTest extends AnyFlatSpec with ControllerIntegrationTestBase
     )(FakeAuthentication.fakeUserAuthentication)
   }
 
-  it should "return should fail for anonymous (not authenticated) user" in {
+  it should "fail for anonymous (not authenticated) user" in {
     val fakeJWT = "abc.fakeJWTToken.abc"
     when(jwtService.generateToken(any[User]())).thenReturn(fakeJWT)
 
