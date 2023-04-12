@@ -41,6 +41,8 @@ object Dependencies {
   lazy val springBootTomcat =         "org.springframework.boot" % "spring-boot-starter-tomcat" % Versions.springBoot % Provided
   lazy val springBootSecurity =       "org.springframework.boot" % "spring-boot-starter-security" % Versions.springBoot
 
+  lazy val springSecurityLDAP = "org.springframework.security" % "spring-security-ldap" % Versions.spring
+
   lazy val jjwtApi = "io.jsonwebtoken" % "jjwt-api" % Versions.jjwt
   lazy val jjwtImpl = "io.jsonwebtoken" % "jjwt-impl" % Versions.jjwt % Runtime
   lazy val jjwtJackson = "io.jsonwebtoken" % "jjwt-jackson" % Versions.jjwt % Runtime
@@ -73,6 +75,8 @@ object Dependencies {
     springBootConfiguration,
     springBootTomcat,
     springBootSecurity,
+
+    springSecurityLDAP,
 
     jjwtApi,
     jjwtImpl,
