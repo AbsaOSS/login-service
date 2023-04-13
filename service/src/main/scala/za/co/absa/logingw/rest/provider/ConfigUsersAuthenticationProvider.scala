@@ -30,24 +30,21 @@ import za.co.absa.logingw.rest.config.UsersConfig
 class ConfigUsersAuthenticationProvider @Autowired()(usersConfig: UsersConfig) extends AuthenticationProvider {
 
   val logger = LoggerFactory.getLogger(classOf[ConfigUsersAuthenticationProvider])
-  logger.info(s"ConfigUsersAuthenticationProvider init")
-  // logger.info(s"userConfig: ${usersConfig.knownUsers.toList}")
+  logger.debug(s"ConfigUsersAuthenticationProvider init")
 
   override def authenticate(authentication: Authentication): Authentication = {
     import scala.collection.JavaConverters._
 
-    // todo check if enabled!
+    // todo check if enabled?
 
     val username = authentication.getName
     val password = authentication.getCredentials.toString
 
     lazy val badCreds = new BadCredentialsException("Bad credentials provided.")
 
-
     usersConfig.knownUsersMap.get(username).map { usersConfig =>
       if (usersConfig.password == password) {
-        logger.error(s"user login: $username - ok")
-        // todo fill fail when email etc is null
+        logger.info(s"user login: $username - ok")
         val principal = User(username, usersConfig.email, usersConfig.groups.toList)
         new UsernamePasswordAuthenticationToken(principal, password,
           usersConfig.groups.map(new SimpleGrantedAuthority(_)).toList.asJava)
