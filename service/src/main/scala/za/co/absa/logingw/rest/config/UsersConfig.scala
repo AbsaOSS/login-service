@@ -18,16 +18,30 @@ package za.co.absa.logingw.rest.config
 
 import org.springframework.boot.context.properties.{ConfigurationProperties, ConstructorBinding}
 
+import javax.annotation.PostConstruct
+
 @ConstructorBinding
 @ConfigurationProperties(prefix = "logingw.rest.users")
 case class UsersConfig(
   enabled: Boolean,
   knownUsers: Array[UserConfig],
-) {
+) extends ConfigValidatable {
   // todo validation of duplicates, etc -- Issue #24 validation
   lazy val knownUsersMap: Map[String, UserConfig] = knownUsers
     .map { entry => (entry.username, entry) }
     .toMap
+
+  override def validate(): Unit = {
+    if (Option(enabled).isEmpty) {
+      throw new ConfigValidationException("enabled is empty")
+    }
+    knownUsers.foreach(_.validate())
+  }
+
+  @PostConstruct
+  def init() {
+    this.validate()
+  }
 }
 
 @ConstructorBinding
@@ -36,9 +50,25 @@ case class UserConfig(
   password: String,
   email: String, // todo sanitize nulls/values
   groups: Array[String]
-) {
+) extends ConfigValidatable {
 
   override def toString(): String = {
     s"UserConfig($username, $password, ${Option(email)}, ${Option(groups).map(_.toList)})"
+  }
+
+  override def validate() = {
+    // Until is resolved https://github.com/spring-projects/spring-boot/issues/33669
+    if (Option(username).isEmpty) {
+      throw new ConfigValidationException("Username is empty")
+    }
+
+    if (Option(password).isEmpty) {
+      throw new ConfigValidationException("Password is empty")
+    }
+
+    if (Option(email).isEmpty) {
+      throw new ConfigValidationException("Email is empty")
+    }
+
   }
 }
