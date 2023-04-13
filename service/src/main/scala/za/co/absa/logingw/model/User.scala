@@ -16,4 +16,4 @@
 
 package za.co.absa.logingw.model
 
-case class User(name: String, email: String, groups: Seq[String])
+case class User(name: String, email: Option[String], groups: Seq[String])
