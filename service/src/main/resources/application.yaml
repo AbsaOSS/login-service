@@ -13,6 +13,7 @@ logingw:
           username: "user1"
           password: "password1"
           email: "user1@example.com"
+          groups:
         -
           username: "TestUser"
           password: "password123"

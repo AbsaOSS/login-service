@@ -15,6 +15,6 @@
 
 package za.co.absa.logingw.rest.config
 
-class ConfigValidationException(val msg: String, val errors: Seq[String] = Seq.empty)
-  extends Exception(s"$msg Due to errors: ${errors.mkString(",")}")
+class ConfigValidationException(val msg: String)
+  extends Exception(msg)
 

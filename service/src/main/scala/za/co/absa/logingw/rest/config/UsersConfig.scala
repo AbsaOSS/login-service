@@ -70,5 +70,9 @@ case class UserConfig(
       throw new ConfigValidationException("Email is empty")
     }
 
+    if (Option(groups).isEmpty) {
+      throw new ConfigValidationException("groups are missing (empty groups are allowed)!")
+    }
+
   }
 }
