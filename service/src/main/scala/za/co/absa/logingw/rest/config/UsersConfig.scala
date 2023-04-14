@@ -23,7 +23,6 @@ import javax.annotation.PostConstruct
 @ConstructorBinding
 @ConfigurationProperties(prefix = "logingw.rest.users")
 case class UsersConfig(
-  enabled: Boolean,
   knownUsers: Array[UserConfig],
 ) extends ConfigValidatable {
   // todo validation of duplicates, etc -- Issue #24 validation
@@ -32,10 +31,12 @@ case class UsersConfig(
     .toMap
 
   override def validate(): Unit = {
-    if (Option(enabled).isEmpty) {
-      throw new ConfigValidationException("enabled is empty")
+    if (Option(knownUsers).isEmpty) {
+      throw new ConfigValidationException("knownUsers is missing")
     }
     knownUsers.foreach(_.validate())
+
+    // todo validate duplicates
   }
 
   @PostConstruct
@@ -59,15 +60,15 @@ case class UserConfig(
   override def validate() = {
     // Until is resolved https://github.com/spring-projects/spring-boot/issues/33669
     if (Option(username).isEmpty) {
-      throw new ConfigValidationException("Username is empty")
+      throw new ConfigValidationException("username is empty")
     }
 
     if (Option(password).isEmpty) {
-      throw new ConfigValidationException("Password is empty")
+      throw new ConfigValidationException("password is empty")
     }
 
     if (Option(email).isEmpty) {
-      throw new ConfigValidationException("Email is empty")
+      throw new ConfigValidationException("email is empty")
     }
 
     if (Option(groups).isEmpty) {

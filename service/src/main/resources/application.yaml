@@ -7,7 +7,6 @@ logingw:
       some-key: BETA
 
     users:
-      enabled: true
       known-users:
         -
           username: "user1"
