@@ -16,7 +16,6 @@
 
 package za.co.absa.logingw.rest
 
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.{Bean, Configuration}
 import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder
@@ -30,10 +29,7 @@ import za.co.absa.logingw.rest.provider.ad.ldap.ActiveDirectoryLDAPAuthenticatio
 
 @Configuration
 @EnableWebSecurity
-class SecurityConfig @Autowired()(
-                                   /* TODO autowire only if given provider specified in config */
-                                   adLDAPConfig: ActiveDirectoryLDAPConfig
-                                 ) {
+class SecurityConfig() {
 
   @Bean
   def filterChain(http: HttpSecurity): SecurityFilterChain = {
@@ -62,6 +58,13 @@ class SecurityConfig @Autowired()(
   @Bean
   def authManager(http: HttpSecurity): AuthenticationManager = {
     val authenticationManagerBuilder = http.getSharedObject(classOf[AuthenticationManagerBuilder])
+
+    // TODO make it autowired but only if in confid AD LDAP provider is set up
+    val adLDAPConfig = ActiveDirectoryLDAPConfig(
+      "some.domain.com",
+      "ldaps://some.domain.com:636/",
+      "(samaccountname={1})"
+    )
 
     // TODO: take which providers and in which order to use from config
     authenticationManagerBuilder
