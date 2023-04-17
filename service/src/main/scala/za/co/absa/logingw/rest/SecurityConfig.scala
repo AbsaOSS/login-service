@@ -16,17 +16,24 @@
 
 package za.co.absa.logingw.rest
 
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.{Bean, Configuration}
-import org.springframework.security.authentication.AuthenticationProvider
+import org.springframework.security.authentication.AuthenticationManager
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.web.SecurityFilterChain
+import za.co.absa.logingw.rest.config.ActiveDirectoryLDAPConfig
 import za.co.absa.logingw.rest.provider.DummyAuthenticationProvider
+import za.co.absa.logingw.rest.provider.ad.ldap.ActiveDirectoryLDAPAuthenticationProvider
 
 @Configuration
 @EnableWebSecurity
-class SecurityConfig {
+class SecurityConfig @Autowired()(
+                                   /* TODO autowire only if given provider specified in config */
+                                   adLDAPConfig: ActiveDirectoryLDAPConfig
+                                 ) {
 
   @Bean
   def filterChain(http: HttpSecurity): SecurityFilterChain = {
@@ -53,6 +60,20 @@ class SecurityConfig {
   }
 
   @Bean
-  def authenticationProvider: AuthenticationProvider = new DummyAuthenticationProvider
+  def authManager(http: HttpSecurity): AuthenticationManager = {
+    val authenticationManagerBuilder = http.getSharedObject(classOf[AuthenticationManagerBuilder])
+
+    // TODO: take which providers and in which order to use from config
+    authenticationManagerBuilder
+      // if it is not null, on auth failure infinite recursion happens
+      .parentAuthenticationManager(null)
+      .authenticationProvider(
+        new ActiveDirectoryLDAPAuthenticationProvider(adLDAPConfig)
+      )
+      .authenticationProvider(
+        new DummyAuthenticationProvider()
+      )
+      .build
+  }
 
 }
