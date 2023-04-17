@@ -29,7 +29,7 @@ import za.co.absa.logingw.rest.provider.ad.ldap.ActiveDirectoryLDAPAuthenticatio
 
 @Configuration
 @EnableWebSecurity
-class SecurityConfig() {
+class SecurityConfig {
 
   @Bean
   def filterChain(http: HttpSecurity): SecurityFilterChain = {
