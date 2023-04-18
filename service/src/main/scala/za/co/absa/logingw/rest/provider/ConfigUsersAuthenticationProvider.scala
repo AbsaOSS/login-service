@@ -35,12 +35,10 @@ class ConfigUsersAuthenticationProvider @Autowired()(usersConfig: UsersConfig) e
   override def authenticate(authentication: Authentication): Authentication = {
     import scala.collection.JavaConverters._
 
-    // todo check if enabled?
-
     val username = authentication.getName
     val password = authentication.getCredentials.toString
 
-    lazy val badCreds = new BadCredentialsException("Bad credentials provided.")
+    lazy val badCreds = new BadCredentialsException("Bad credentials provided.") // deliberately do not provide more info
 
     usersConfig.knownUsersMap.get(username).map { usersConfig =>
       if (usersConfig.password == password) {
