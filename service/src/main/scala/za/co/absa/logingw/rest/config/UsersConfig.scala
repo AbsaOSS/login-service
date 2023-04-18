@@ -25,18 +25,23 @@ import javax.annotation.PostConstruct
 case class UsersConfig(
   knownUsers: Array[UserConfig],
 ) extends ConfigValidatable {
-  // todo validation of duplicates, etc -- Issue #24 validation
   lazy val knownUsersMap: Map[String, UserConfig] = knownUsers
     .map { entry => (entry.username, entry) }
     .toMap
 
+  // todo validation is done using a custom trait/method -- Issue #24 validation
   override def validate(): Unit = {
     if (Option(knownUsers).isEmpty) {
       throw new ConfigValidationException("knownUsers is missing")
     }
-    knownUsers.foreach(_.validate())
 
-    // todo validate duplicates
+    val groupedByUsers = knownUsers.groupBy(_.username)
+    if (groupedByUsers.size < knownUsers.size) {
+      val duplicates = groupedByUsers.filter { case (username, configs) => configs.length > 1 }.map(_._1)
+      throw new ConfigValidationException(s"knownUsers contain duplicates, duplicated usernames: ${duplicates.mkString(", ")}")
+    }
+
+    knownUsers.foreach(_.validate())
   }
 
   @PostConstruct
@@ -49,7 +54,7 @@ case class UsersConfig(
 case class UserConfig(
   username: String,
   password: String,
-  email: String, // todo sanitize nulls/values
+  email: String,
   groups: Array[String]
 ) extends ConfigValidatable {
 

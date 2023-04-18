@@ -34,19 +34,36 @@ class UsersConfigTest extends AnyFlatSpec with Matchers {
   }
 
   val usersCfg = UsersConfig(knownUsers = Array(userCfg))
-
   "UsersConfig" should "validate ok expected filled content" in {
     usersCfg.validate()
   }
 
   it should "fail on missing knownUsers" in {
     intercept[ConfigValidationException] {
-      usersCfg.copy(knownUsers = null).validate()
+      UsersConfig(knownUsers = null).validate()
     }.msg should include("knownUsers is missing")
 
-    // todo allow even empty users?
+  }
 
-    // todo check duplicate username
+  it should "succeed with empty users" in {
+    UsersConfig(knownUsers = Array()).validate()
+  }
+
+  it should "fail on duplicate knownUsers" in {
+    val errMsg = intercept[ConfigValidationException] {
+      UsersConfig(knownUsers = Array(
+        UserConfig("sameUser", "password1", "mail@here.tld", Array("group1", "group2")),
+        UserConfig("sameUser", "password2", "anotherMail@here.tld", Array()),
+
+        UserConfig("sameUser2", "passwordX", "abc@def", Array()),
+        UserConfig("sameUser2", "passwordA", "jkl@mno", Array()),
+
+        UserConfig("okUser", "passwordO", "ooo@", Array())
+      )).validate()
+    }.msg
+
+    errMsg should include("knownUsers contain duplicates")
+    errMsg should include("duplicated usernames: sameUser, sameUser2")
   }
 
 }
