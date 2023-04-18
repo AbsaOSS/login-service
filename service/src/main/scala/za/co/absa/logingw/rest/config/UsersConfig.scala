@@ -30,6 +30,7 @@ case class UsersConfig(
     .toMap
 
   // todo validation is done using a custom trait/method -- Issue #24 validation
+  // Until is resolved https://github.com/spring-projects/spring-boot/issues/33669
   override def validate(): Unit = {
     if (Option(knownUsers).isEmpty) {
       throw new ConfigValidationException("knownUsers is missing")
@@ -63,7 +64,6 @@ case class UserConfig(
   }
 
   override def validate() = {
-    // Until is resolved https://github.com/spring-projects/spring-boot/issues/33669
     if (Option(username).isEmpty) {
       throw new ConfigValidationException("username is empty")
     }

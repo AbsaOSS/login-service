@@ -20,6 +20,7 @@ import io.jsonwebtoken.SignatureAlgorithm
 import org.springframework.boot.context.properties.{ConfigurationProperties, ConstructorBinding}
 
 import javax.annotation.PostConstruct
+import scala.util.{Failure, Try, Success}
 
 @ConstructorBinding
 @ConfigurationProperties(prefix = "logingw.rest.jwt")
@@ -35,7 +36,14 @@ case class JwtConfig(
 
   /** May throw ConfigValidationException or IllegalArgumentException */
   override def validate(): Unit = {
-    SignatureAlgorithm.valueOf(algName)
+    Try {
+      SignatureAlgorithm.valueOf(algName)
+    } match {
+      case Success(_) =>
+      case Failure(e: IllegalArgumentException) if e.getMessage.contains("No enum constant") =>
+        throw new ConfigValidationException(s"Invalid algName '$algName' was given.")
+      case Failure(e) => throw e
+    }
 
     if (expTime < 1) throw new ConfigValidationException("expTime must be positive (hours)")
   }
