@@ -56,11 +56,6 @@ object Dependencies {
   // TODO bring actuator (health) endpoints in? - Issue #6
   //lazy val springBootStarterActuator = "org.springframework.boot" % "spring-boot-starter-actuator" % Versions.springBoot
 
-  // TODO LDAP/Kerberos integration: - Issue #8
-  // org.springframework.boot % {spring-boot-starter-security, spring-security-ldap, }
-  // org.springframework.security.kerberos % {spring-security-kerberos-web, spring-security-kerberos-client}
-
-
   lazy val scalaTest = "org.scalatest" %% "scalatest" % Versions.scalatest % Test
   lazy val springBootTest = "org.springframework.boot" % "spring-boot-starter-test" % Versions.springBoot % Test
   lazy val springBootSecurityTest = "org.springframework.security" % "spring-security-test" % Versions.spring % Test
