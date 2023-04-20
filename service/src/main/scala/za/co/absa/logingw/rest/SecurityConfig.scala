@@ -59,14 +59,14 @@ class SecurityConfig {
   def authManager(http: HttpSecurity): AuthenticationManager = {
     val authenticationManagerBuilder = http.getSharedObject(classOf[AuthenticationManagerBuilder])
 
-    // TODO make it autowired but only if in confid AD LDAP provider is set up
+    // TODO make it autowired but only if in confid AD LDAP provider is set up (#28)
     val adLDAPConfig = ActiveDirectoryLDAPConfig(
       "some.domain.com",
       "ldaps://some.domain.com:636/",
       "(samaccountname={1})"
     )
 
-    // TODO: take which providers and in which order to use from config
+    // TODO: take which providers and in which order to use from config (#28)
     authenticationManagerBuilder
       // if it is not null, on auth failure infinite recursion happens
       .parentAuthenticationManager(null)
