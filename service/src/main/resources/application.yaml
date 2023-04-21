@@ -11,7 +11,6 @@ logingw:
         -
           username: "user1"
           password: "password1"
-          email: "user1@example.com"
           groups:
         -
           username: "TestUser"
@@ -20,12 +19,12 @@ logingw:
           groups:
             - "groupA"
             - "groupB"
-  auth:
-    ad:
-      ldap:
-        domain: "some.domain.com"
-        url: "ldaps://some.domain.com:636/"
-        search-filter: "(samaccountname={1})"
+    auth:
+      ad:
+        ldap:
+          domain: "some.domain.com"
+          url: "ldaps://some.domain.com:636/"
+          search-filter: "(samaccountname={1})"
 
 spring:
   application:

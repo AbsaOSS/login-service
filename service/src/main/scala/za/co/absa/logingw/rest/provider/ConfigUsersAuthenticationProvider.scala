@@ -17,19 +17,15 @@
 package za.co.absa.logingw.rest.provider
 
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.security.authentication.{AuthenticationProvider, BadCredentialsException, UsernamePasswordAuthenticationToken}
 import org.springframework.security.core.Authentication
 import org.springframework.security.core.authority.SimpleGrantedAuthority
-import org.springframework.stereotype.Component
 import za.co.absa.logingw.model.User
 import za.co.absa.logingw.rest.config.UsersConfig
 
+class ConfigUsersAuthenticationProvider(usersConfig: UsersConfig) extends AuthenticationProvider {
 
-@Component
-class ConfigUsersAuthenticationProvider @Autowired()(usersConfig: UsersConfig) extends AuthenticationProvider {
-
-  val logger = LoggerFactory.getLogger(classOf[ConfigUsersAuthenticationProvider])
+  private val logger = LoggerFactory.getLogger(classOf[ConfigUsersAuthenticationProvider])
   logger.debug(s"ConfigUsersAuthenticationProvider init")
 
   override def authenticate(authentication: Authentication): Authentication = {
@@ -43,7 +39,7 @@ class ConfigUsersAuthenticationProvider @Autowired()(usersConfig: UsersConfig) e
     usersConfig.knownUsersMap.get(username).map { usersConfig =>
       if (usersConfig.password == password) {
         logger.info(s"user login: $username - ok")
-        val principal = User(username, usersConfig.email, usersConfig.groups.toList)
+        val principal = User(username, Option(usersConfig.email), usersConfig.groups.toList)
         new UsernamePasswordAuthenticationToken(principal, password,
           usersConfig.groups.map(new SimpleGrantedAuthority(_)).toList.asJava)
       } else {

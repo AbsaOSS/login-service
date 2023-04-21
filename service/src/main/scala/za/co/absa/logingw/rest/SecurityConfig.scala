@@ -16,6 +16,7 @@
 
 package za.co.absa.logingw.rest
 
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.{Bean, Configuration}
 import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder
@@ -23,8 +24,8 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.web.SecurityFilterChain
-import za.co.absa.logingw.rest.config.ActiveDirectoryLDAPConfig
-import za.co.absa.logingw.rest.provider.DummyAuthenticationProvider
+import za.co.absa.logingw.rest.config.{ActiveDirectoryLDAPConfig, UsersConfig}
+import za.co.absa.logingw.rest.provider.ConfigUsersAuthenticationProvider
 import za.co.absa.logingw.rest.provider.ad.ldap.ActiveDirectoryLDAPAuthenticationProvider
 
 @Configuration
@@ -55,26 +56,27 @@ class SecurityConfig {
     http.build()
   }
 
+  @Autowired
+  val usersConfig: UsersConfig = null
+
+  // TODO make it autowired but only if in config AD LDAP provider is set up (#28)
+  @Autowired
+  val adLDAPConfig: ActiveDirectoryLDAPConfig = null
+
   @Bean
   def authManager(http: HttpSecurity): AuthenticationManager = {
     val authenticationManagerBuilder = http.getSharedObject(classOf[AuthenticationManagerBuilder])
-
-    // TODO make it autowired but only if in confid AD LDAP provider is set up (#28)
-    val adLDAPConfig = ActiveDirectoryLDAPConfig(
-      "some.domain.com",
-      "ldaps://some.domain.com:636/",
-      "(samaccountname={1})"
-    )
 
     // TODO: take which providers and in which order to use from config (#28)
     authenticationManagerBuilder
       // if it is not null, on auth failure infinite recursion happens
       .parentAuthenticationManager(null)
+      // currently, comment out or reorder the auth providers you want to use - #28
       .authenticationProvider(
-        new ActiveDirectoryLDAPAuthenticationProvider(adLDAPConfig)
+        new ConfigUsersAuthenticationProvider(usersConfig)
       )
       .authenticationProvider(
-        new DummyAuthenticationProvider()
+        new ActiveDirectoryLDAPAuthenticationProvider(adLDAPConfig)
       )
       .build
   }

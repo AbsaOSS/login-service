@@ -55,12 +55,12 @@ case class UsersConfig(
 case class UserConfig(
   username: String,
   password: String,
-  email: String,
+  email: String, // may be null
   groups: Array[String]
 ) extends ConfigValidatable {
 
   override def toString(): String = {
-    s"UserConfig($username, $password, ${Option(email)}, ${Option(groups).map(_.toList)})"
+    s"UserConfig($username, $password, $email, ${Option(groups).map(_.toList)})"
   }
 
   override def validate() = {
@@ -70,10 +70,6 @@ case class UserConfig(
 
     if (Option(password).isEmpty) {
       throw new ConfigValidationException("password is empty")
-    }
-
-    if (Option(email).isEmpty) {
-      throw new ConfigValidationException("email is empty")
     }
 
     if (Option(groups).isEmpty) {
