@@ -25,9 +25,9 @@ import scala.util.{Failure, Try, Success}
 @ConstructorBinding
 @ConfigurationProperties(prefix = "logingw.rest.jwt")
 case class JwtConfig(
-                      algName: String,
-                      expTime: Int
-                    ) extends ConfigValidatable {
+  algName: String,
+  expTime: Int
+) extends ConfigValidatable {
 
   @PostConstruct
   def init() {

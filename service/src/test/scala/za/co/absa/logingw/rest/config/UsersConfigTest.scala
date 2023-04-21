@@ -27,7 +27,7 @@ class UsersConfigTest extends AnyFlatSpec with Matchers {
     userCfg.validate()
   }
 
-  it should "fail on missing user/pwd/mail/groups" in {
+  it should "fail on missing user/pwd/groups" in {
     intercept[ConfigValidationException] {
       userCfg.copy(username = null).validate()
     }.msg should include("username is empty")
@@ -37,16 +37,16 @@ class UsersConfigTest extends AnyFlatSpec with Matchers {
     }.msg should include("password is empty")
 
     intercept[ConfigValidationException] {
-      userCfg.copy(email = null).validate()
-    }.msg should include("email is empty")
-
-    intercept[ConfigValidationException] {
       userCfg.copy(groups = null).validate()
     }.msg should include("groups are missing")
   }
 
-  it should "validate ok empty groups" in {
+  it should "succeed empty groups" in {
     userCfg.copy(groups = Array.empty).validate()
+  }
+
+  it should "succeed missing email (it is optional)" in {
+    userCfg.copy(email = null).validate()
   }
 
   val usersCfg = UsersConfig(knownUsers = Array(userCfg))
@@ -72,7 +72,7 @@ class UsersConfigTest extends AnyFlatSpec with Matchers {
         UserConfig("sameUser", "password2", "anotherMail@here.tld", Array()),
 
         UserConfig("sameUser2", "passwordX", "abc@def", Array()),
-        UserConfig("sameUser2", "passwordA", "jkl@mno", Array()),
+        UserConfig("sameUser2", "passwordA", null, Array()),
 
         UserConfig("okUser", "passwordO", "ooo@", Array())
       )).validate()
