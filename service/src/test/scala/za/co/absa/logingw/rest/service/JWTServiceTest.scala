@@ -29,10 +29,14 @@ class JWTServiceTest extends AnyFlatSpec {
   private val testConfig = JwtConfig(algName = "RS256", expTime = 2)
   private val jwtService: JWTService = new JWTService(testConfig)
 
-  private val userWithoutGroups: User = User(
+  private val userWithoutEmailAndGroups: User = User(
     name = "testUser",
-    email = "test@gmail.com",
+    email = None,
     groups = Seq.empty
+  )
+
+  private val userWithoutGroups: User = userWithoutEmailAndGroups.copy(
+    email = Some("test@gmail.com")
   )
 
   private val userWithGroups: User = userWithoutGroups.copy(
@@ -62,14 +66,26 @@ class JWTServiceTest extends AnyFlatSpec {
     assert(actualSubject === userWithoutGroups.name)
   }
 
-  it should "return a JWT with email claim equal to User.email" in {
+  it should "return a JWT with email claim equal to User.email if it is not None" in {
     val jwt = jwtService.generateToken(userWithoutGroups)
     val parsedJWT = parseJWT(jwt)
-    val actualSubject = parsedJWT
+
+    val actualEmail = parsedJWT
       .map(_.getBody.get("email", classOf[String]))
       .get
 
-    assert(actualSubject === userWithoutGroups.email)
+    assert(userWithoutGroups.email contains actualEmail)
+  }
+
+  it should "return a JWT without email claim if User.email is None" in {
+    val jwt = jwtService.generateToken(userWithoutEmailAndGroups)
+    val parsedJWT = parseJWT(jwt)
+
+    assert(parsedJWT.isSuccess)
+    parsedJWT.foreach { jwt =>
+      val actualEmail = jwt.getBody.get("email")
+      assert(actualEmail === null)
+    }
   }
 
   it should "turn groups into empty `groups` claim for user without groups" in {

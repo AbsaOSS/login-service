@@ -4,6 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
@@ -13,8 +14,18 @@
  * limitations under the License.
  */
 
-addSbtPlugin("com.earldouglas" % "xsbt-web-plugin" % "4.2.4")
-addSbtPlugin("de.heikoseeberger" % "sbt-header" % "5.9.0")
-addSbtPlugin("com.github.sbt" % "sbt-jacoco" % "3.4.0")
+package za.co.absa.logingw.rest.config
 
-addDependencyTreePlugin
+import org.springframework.boot.context.properties.{ConfigurationProperties, ConstructorBinding}
+
+
+/**
+ * Configuration for AD LDAP(s) authentication provider.
+ *
+ * @param domain AD domain name, ex. "some.domain.com"
+ * @param url URL to AD LDAP, ex. "ldaps://some.domain.com:636/"
+ * @param searchFilter LDAP filter used when searching for groups, ex. "(samaccountname={1})"
+ */
+@ConstructorBinding
+@ConfigurationProperties(prefix = "logingw.rest.auth.ad.ldap")
+case class ActiveDirectoryLDAPConfig(domain: String, url: String, searchFilter: String)
