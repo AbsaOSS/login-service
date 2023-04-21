@@ -33,7 +33,7 @@ class DummyAuthenticationProvider extends AuthenticationProvider {
     val password = authentication.getCredentials.toString
 
     if(username == validUsername && password == validPassword) {
-      val principal = User(username, "test@abs.com", Seq.empty)
+      val principal = User(username, Some("test@abs.com"), Seq.empty)
       new UsernamePasswordAuthenticationToken(principal, password, Seq.empty[GrantedAuthority].asJava)
     } else throw new BadCredentialsException("Bad credentials provided.")
 

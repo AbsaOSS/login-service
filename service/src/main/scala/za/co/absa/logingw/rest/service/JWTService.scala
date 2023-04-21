@@ -29,8 +29,7 @@ import java.time.temporal.ChronoUnit
 import java.util.Date
 
 @Service
-class JWTService @Autowired()(baseConfig: BaseConfig){
-
+class JWTService @Autowired()(baseConfig: BaseConfig) {
 
   private val rsaKeyPair: KeyPair = Keys.keyPairFor(SignatureAlgorithm.valueOf(baseConfig.algName))
 
@@ -45,13 +44,17 @@ class JWTService @Autowired()(baseConfig: BaseConfig){
     // needs to be Java List/Array, otherwise incorrect claim is generated
     val groupsClaim = user.groups.asJava
 
-    Jwts
+    val jwtBuilderWithoutEmail = Jwts
       .builder()
       .setSubject(user.name)
       .setExpiration(expiration)
       .setIssuedAt(issuedAt)
       .claim("groups", groupsClaim)
-      .claim("email", user.email)
+
+    user
+      .email
+      .map(jwtBuilderWithoutEmail.claim("email", _))
+      .getOrElse(jwtBuilderWithoutEmail)
       .signWith(rsaKeyPair.getPrivate)
       .compact()
   }

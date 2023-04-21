@@ -30,6 +30,19 @@ Swagger doc site is available at `http://localhost:8080/swagger-ui.html`
 It is available for download while running the service at `http://localhost:8080/v3/api-docs.yaml` - 
 gets generated from code (specifically from Spring annotations) 
 
+## Authentication Providers
+### ActiveDirectoryLDAPAuthenticationProvider
+Uses LDAP(s) to authenticate user in Active Directory and to fetch groups that this user belongs to.
+
+Requires `ActiveDirectoryLDAPConfig(domain: String, url: String, searchFilter: String)`.
+#### Tips
+##### How to obtain certificate for LDAPS
+1. Run `openssl s_client -connect <ldaps_host>:<ldaps_port>`.
+2. Copy the part starting with `-----BEGIN CERTIFICATE-----` and ending with `-----END CERTIFICATE-----`. 
+3. Create file `ldapcert.pem` and paste content from (2) there.
+4. Run `keytool -import -file ldapcert.pem -alias ldaps -keystore <path_to_jdk>/jre/lib/security/cacerts -storepass <password>` (default password is *changeit*).
+5. Enter `yes` when prompted.
+
 ## How to generate Code coverage report
 ```
 sbt jacoco

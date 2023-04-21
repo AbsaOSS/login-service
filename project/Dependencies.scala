@@ -41,6 +41,8 @@ object Dependencies {
   lazy val springBootTomcat =         "org.springframework.boot" % "spring-boot-starter-tomcat" % Versions.springBoot % Provided
   lazy val springBootSecurity =       "org.springframework.boot" % "spring-boot-starter-security" % Versions.springBoot
 
+  lazy val springSecurityLDAP = "org.springframework.security" % "spring-security-ldap" % Versions.spring
+
   lazy val jjwtApi = "io.jsonwebtoken" % "jjwt-api" % Versions.jjwt
   lazy val jjwtImpl = "io.jsonwebtoken" % "jjwt-impl" % Versions.jjwt % Runtime
   lazy val jjwtJackson = "io.jsonwebtoken" % "jjwt-jackson" % Versions.jjwt % Runtime
@@ -53,11 +55,6 @@ object Dependencies {
 
   // TODO bring actuator (health) endpoints in? - Issue #6
   //lazy val springBootStarterActuator = "org.springframework.boot" % "spring-boot-starter-actuator" % Versions.springBoot
-
-  // TODO LDAP/Kerberos integration: - Issue #8
-  // org.springframework.boot % {spring-boot-starter-security, spring-security-ldap, }
-  // org.springframework.security.kerberos % {spring-security-kerberos-web, spring-security-kerberos-client}
-
 
   lazy val scalaTest = "org.scalatest" %% "scalatest" % Versions.scalatest % Test
   lazy val springBootTest = "org.springframework.boot" % "spring-boot-starter-test" % Versions.springBoot % Test
@@ -73,6 +70,8 @@ object Dependencies {
     springBootConfiguration,
     springBootTomcat,
     springBootSecurity,
+
+    springSecurityLDAP,
 
     jjwtApi,
     jjwtImpl,
