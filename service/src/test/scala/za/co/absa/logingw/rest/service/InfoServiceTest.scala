@@ -21,7 +21,6 @@ import org.scalatest.matchers.should.Matchers
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.TestContextManager
-import za.co.absa.logingw.rest.config.BaseConfig
 
 
 
