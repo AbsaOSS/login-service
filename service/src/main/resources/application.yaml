@@ -1,10 +1,10 @@
 logingw:
   rest:
     jwt:
-      exp-time: '4'
-      alg-name: RS256
+      exp-time: 4
+      alg-name: "RS256"
     config:
-      some-key: BETA
+      some-key: "BETA"
 
     users:
       known-users:
@@ -28,7 +28,7 @@ logingw:
 
 spring:
   application:
-    name: login-gateway
+    name: "login-gateway"
 
 server:
-  port: '9090'
+  port: 9090
