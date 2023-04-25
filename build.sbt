@@ -49,7 +49,7 @@ lazy val service = project // no need to define file, because path is same as va
     inheritJarManifest := true,
   )
   .settings(
-    jacocoReportSettings := commonJacocoReportSettings.withTitle(s"login-gateway:service Jacoco Report - ${scalaVersion.value}"),
+    jacocoReportSettings := commonJacocoReportSettings.withTitle(s"login-gateway:service Jacoco Report - scala:${scalaVersion.value}"),
     jacocoExcludes := commonJacocoExcludes
   ).enablePlugins(TomcatPlugin)
   .enablePlugins(AutomateHeaderPlugin)
