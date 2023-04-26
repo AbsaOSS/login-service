@@ -18,9 +18,11 @@ package za.co.absa.logingw.rest.config
 
 import io.jsonwebtoken.SignatureAlgorithm
 import org.springframework.boot.context.properties.{ConfigurationProperties, ConstructorBinding}
+import za.co.absa.logingw.rest.config.validation.{ConfigValidatable, ConfigValidationException, ConfigValidationResult}
+import za.co.absa.logingw.rest.config.validation.ConfigValidationResult.{ConfigValidationError, ConfigValidationSuccess}
 
 import javax.annotation.PostConstruct
-import scala.util.{Failure, Try, Success}
+import scala.util.{Failure, Success, Try}
 
 @ConstructorBinding
 @ConfigurationProperties(prefix = "logingw.rest.jwt")
@@ -31,20 +33,25 @@ case class JwtConfig(
 
   @PostConstruct
   def init() {
-    this.validate()
+    this.failOnValidationError()
   }
 
   /** May throw ConfigValidationException or IllegalArgumentException */
-  override def validate(): Unit = {
-    Try {
+  override def validate(): ConfigValidationResult = {
+
+    val algValidation = Try {
       SignatureAlgorithm.valueOf(algName)
     } match {
-      case Success(_) =>
+      case Success(_) => ConfigValidationSuccess
       case Failure(e: IllegalArgumentException) if e.getMessage.contains("No enum constant") =>
-        throw new ConfigValidationException(s"Invalid algName '$algName' was given.")
+        ConfigValidationError(ConfigValidationException(s"Invalid algName '$algName' was given."))
       case Failure(e) => throw e
     }
 
-    if (expTime < 1) throw new ConfigValidationException("expTime must be positive (hours)")
+    val expTimeResult = if (expTime < 1) {
+      ConfigValidationError(ConfigValidationException("expTime must be positive (hours)"))
+    } else ConfigValidationSuccess
+
+    algValidation.merge(expTimeResult)
   }
 }

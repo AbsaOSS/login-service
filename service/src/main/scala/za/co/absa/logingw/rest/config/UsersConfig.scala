@@ -17,6 +17,8 @@
 package za.co.absa.logingw.rest.config
 
 import org.springframework.boot.context.properties.{ConfigurationProperties, ConstructorBinding}
+import za.co.absa.logingw.rest.config.validation.ConfigValidationResult.{ConfigValidationError, ConfigValidationSuccess}
+import za.co.absa.logingw.rest.config.validation.{ConfigValidatable, ConfigValidationException, ConfigValidationResult}
 
 import javax.annotation.PostConstruct
 
@@ -31,23 +33,28 @@ case class UsersConfig(
 
   // todo validation is done using a custom trait/method -- Issue #24 validation
   // Until is resolved https://github.com/spring-projects/spring-boot/issues/33669
-  override def validate(): Unit = {
-    if (Option(knownUsers).isEmpty) {
-      throw new ConfigValidationException("knownUsers is missing")
-    }
+  override def validate(): ConfigValidationResult = {
+    Option(knownUsers).map { existingKnownUsers =>
 
-    val groupedByUsers = knownUsers.groupBy(_.username)
-    if (groupedByUsers.size < knownUsers.size) {
-      val duplicates = groupedByUsers.filter { case (username, configs) => configs.length > 1 }.map(_._1)
-      throw new ConfigValidationException(s"knownUsers contain duplicates, duplicated usernames: ${duplicates.mkString(", ")}")
-    }
+      val kuDuplicatesResult = {
+        val groupedByUsers = existingKnownUsers.groupBy(_.username)
+        if (groupedByUsers.size < existingKnownUsers.size) {
+          val duplicates = groupedByUsers.filter { case (username, configs) => configs.length > 1 }.map(_._1)
+          ConfigValidationError(ConfigValidationException(s"knownUsers contain duplicates, duplicated usernames: ${duplicates.mkString(", ")}"))
+        } else ConfigValidationSuccess
+      }
 
-    knownUsers.foreach(_.validate())
+      val usersResult = existingKnownUsers.map(_.validate()).toList
+
+      (kuDuplicatesResult :: usersResult)
+        .foldLeft[ConfigValidationResult](ConfigValidationSuccess)(ConfigValidationResult.merge)
+
+    }.getOrElse(ConfigValidationError(ConfigValidationException("knownUsers is missing")))
   }
 
   @PostConstruct
   def init() {
-    this.validate()
+    this.failOnValidationError()
   }
 }
 
@@ -63,18 +70,22 @@ case class UserConfig(
     s"UserConfig($username, $password, $email, ${Option(groups).map(_.toList)})"
   }
 
-  override def validate() = {
-    if (Option(username).isEmpty) {
-      throw new ConfigValidationException("username is empty")
-    }
+  override def validate(): ConfigValidationResult = {
+    val results = Seq(
+      Option(username)
+        .map(_ => ConfigValidationSuccess)
+        .getOrElse(ConfigValidationError(ConfigValidationException("username is empty"))),
 
-    if (Option(password).isEmpty) {
-      throw new ConfigValidationException("password is empty")
-    }
+      Option(password)
+        .map(_ => ConfigValidationSuccess)
+        .getOrElse(ConfigValidationError(ConfigValidationException("password is empty"))),
 
-    if (Option(groups).isEmpty) {
-      throw new ConfigValidationException("groups are missing (empty groups are allowed)!")
-    }
+      Option(groups)
+        .map(_ => ConfigValidationSuccess)
+        .getOrElse(ConfigValidationError(ConfigValidationException("groups are missing (empty groups are allowed)!")))
 
+    )
+
+    results.foldLeft[ConfigValidationResult](ConfigValidationSuccess)(ConfigValidationResult.merge)
   }
 }

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-package za.co.absa.logingw.rest.config
+package za.co.absa.logingw.rest.config.validation
 
-class ConfigValidationException(val msg: String)
+case class ConfigValidationException(msg: String)
   extends Exception(msg)
 

@@ -18,68 +18,97 @@ package za.co.absa.logingw.rest.config
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+import za.co.absa.logingw.rest.config.validation.ConfigValidationException
+import za.co.absa.logingw.rest.config.validation.ConfigValidationResult.{ConfigValidationError, ConfigValidationSuccess}
 
 class UsersConfigTest extends AnyFlatSpec with Matchers {
 
   val userCfg = UserConfig("user1", "password1", "mail@here.tld", Array("group1", "group2"))
 
   "UserConfig" should "validate expected filled content" in {
-    userCfg.validate()
+    userCfg.validate() shouldBe ConfigValidationSuccess
   }
 
   it should "fail on missing user/pwd/groups" in {
-    intercept[ConfigValidationException] {
-      userCfg.copy(username = null).validate()
-    }.msg should include("username is empty")
+    userCfg.copy(username = null).validate() shouldBe
+      ConfigValidationError(ConfigValidationException("username is empty"))
 
-    intercept[ConfigValidationException] {
-      userCfg.copy(password = null).validate()
-    }.msg should include("password is empty")
+    userCfg.copy(password = null).validate() shouldBe
+      ConfigValidationError(ConfigValidationException("password is empty"))
 
-    intercept[ConfigValidationException] {
-      userCfg.copy(groups = null).validate()
-    }.msg should include("groups are missing")
+    val groupsValidation = userCfg.copy(groups = null).validate()
+    groupsValidation shouldBe a[ConfigValidationError]
+    groupsValidation.getErrors should have size 1
+    groupsValidation.getErrors.head.msg should include("groups are missing") // there is other info
+
   }
 
   it should "succeed empty groups" in {
-    userCfg.copy(groups = Array.empty).validate()
+    userCfg.copy(groups = Array.empty).validate() shouldBe ConfigValidationSuccess
   }
 
   it should "succeed missing email (it is optional)" in {
-    userCfg.copy(email = null).validate()
+    userCfg.copy(email = null).validate() shouldBe ConfigValidationSuccess
+  }
+
+  it should "throw validation exception with .failOnValidationError wrapper" in {
+    intercept[ConfigValidationException] {
+      userCfg.copy(password = null).failOnValidationError()
+    }.msg should include("password is empty")
   }
 
   val usersCfg = UsersConfig(knownUsers = Array(userCfg))
   "UsersConfig" should "validate ok expected filled content" in {
-    usersCfg.validate()
+    usersCfg.validate() shouldBe ConfigValidationSuccess
   }
 
   it should "fail on missing knownUsers" in {
-    intercept[ConfigValidationException] {
-      UsersConfig(knownUsers = null).validate()
-    }.msg should include("knownUsers is missing")
-
+    UsersConfig(knownUsers = null).validate() shouldBe
+      ConfigValidationError(ConfigValidationException("knownUsers is missing"))
   }
 
   it should "succeed with empty users" in {
-    UsersConfig(knownUsers = Array()).validate()
+    UsersConfig(knownUsers = Array()).validate() shouldBe ConfigValidationSuccess
   }
 
   it should "fail on duplicate knownUsers" in {
-    val errMsg = intercept[ConfigValidationException] {
-      UsersConfig(knownUsers = Array(
-        UserConfig("sameUser", "password1", "mail@here.tld", Array("group1", "group2")),
-        UserConfig("sameUser", "password2", "anotherMail@here.tld", Array()),
+    val duplicateValidationResult = UsersConfig(knownUsers = Array(
+      UserConfig("sameUser", "password1", "mail@here.tld", Array("group1", "group2")),
+      UserConfig("sameUser", "password2", "anotherMail@here.tld", Array()),
 
-        UserConfig("sameUser2", "passwordX", "abc@def", Array()),
-        UserConfig("sameUser2", "passwordA", null, Array()),
+      UserConfig("sameUser2", "passwordX", "abc@def", Array()),
+      UserConfig("sameUser2", "passwordA", null, Array()),
 
-        UserConfig("okUser", "passwordO", "ooo@", Array())
-      )).validate()
-    }.msg
+      UserConfig("okUser", "passwordO", "ooo@", Array())
+    )).validate()
 
-    errMsg should include("knownUsers contain duplicates")
-    errMsg should include("duplicated usernames: sameUser, sameUser2")
+    duplicateValidationResult shouldBe a[ConfigValidationError]
+    duplicateValidationResult.getErrors should have size 1
+
+    val errorMsg = duplicateValidationResult.getErrors.head.msg
+    errorMsg should include("knownUsers contain duplicates")
+    errorMsg should include("duplicated usernames: sameUser, sameUser2")
+  }
+
+  it should "fail multiple errors" in {
+    val multiErrorsResult = UsersConfig(knownUsers = Array(
+      UserConfig("sameUser", "password1", "mail@here.tld", Array("group1", "group2")),
+      UserConfig("sameUser", "password2", "anotherMail@here.tld", Array()),
+
+      UserConfig("userNoPass", null, "abc@def", Array()),
+      UserConfig("noMailIsFine", "password2", null, Array()),
+      UserConfig("userNoMissingGroups", "passwordO", "ooo@", null)
+    )).validate()
+
+    multiErrorsResult shouldBe a[ConfigValidationError]
+    multiErrorsResult.getErrors should have size 3
+
+    val errorMsgs = multiErrorsResult.getErrors.map(_.msg)
+    errorMsgs should contain theSameElementsAs Seq(
+      "knownUsers contain duplicates, duplicated usernames: sameUser",
+      "password is empty",
+      "groups are missing (empty groups are allowed)!"
+    )
   }
 
 }
