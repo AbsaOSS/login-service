@@ -16,11 +16,28 @@
 
 package za.co.absa.logingw.rest.config.validation
 
+import org.slf4j.LoggerFactory
+
 sealed trait ConfigValidationResult {
-  def getErrors: Seq[ConfigValidationException]
+  private val logger = LoggerFactory.getLogger(classOf[ConfigValidatable])
+
+  def errors: Seq[ConfigValidationException]
 
   def merge(anotherResult: ConfigValidationResult): ConfigValidationResult = ConfigValidationResult.merge(this, anotherResult)
 
+  /**
+   * Convenience method to turn a ConfigValidationResult into throwing an exception if present
+   * @throws ConfigValidationException for the first error if there any
+   */
+  @throws(classOf[ConfigValidationException])
+  def throwOnErrors(): Unit = {
+    errors.headOption.foreach { firstError =>
+      // all errors are logged
+      logger.error(s"validation errors (${errors.length}):\n  ${errors.mkString(",\n  ")}")
+      // but only the first is in the error stack
+      throw firstError
+    }
+  }
 }
 
 object ConfigValidationResult {
@@ -33,11 +50,11 @@ object ConfigValidationResult {
   }
 
   case object ConfigValidationSuccess extends ConfigValidationResult {
-    override def getErrors: Seq[ConfigValidationException] = Seq.empty
+    override def errors: Seq[ConfigValidationException] = Seq.empty
   }
 
   case class ConfigValidationError(reasons: Seq[ConfigValidationException]) extends ConfigValidationResult {
-    override def getErrors: Seq[ConfigValidationException] = reasons
+    override def errors: Seq[ConfigValidationException] = reasons
   }
 
   case object ConfigValidationError {

@@ -16,27 +16,7 @@
 
 package za.co.absa.logingw.rest.config.validation
 
-import org.slf4j.LoggerFactory
-
 trait ConfigValidatable {
-
-  private val logger = LoggerFactory.getLogger(classOf[ConfigValidatable])
-
   def validate(): ConfigValidationResult
-
-  /**
-   * @throws ConfigValidationException if `validate()` returns any errors
-   */
-  def failOnValidationError(): Unit = {
-    val errors = validate().getErrors
-
-    if(errors.nonEmpty) {
-      // all errors are logged
-      logger.error(s"validation errors (${errors.length}):\n  ${errors.mkString(",\n  ")}")
-      // but only the first is in the error stack
-      throw errors.head
-    }
-
-  }
 
 }

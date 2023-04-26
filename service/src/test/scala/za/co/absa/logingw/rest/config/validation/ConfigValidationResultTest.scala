@@ -26,24 +26,31 @@ class ConfigValidationResultTest extends AnyFlatSpec with Matchers {
   private val cvExc2 = ConfigValidationException("exception2")
 
   "ConfigValidationResult" should "merge results correctly" in {
-
     ConfigValidationSuccess.merge(ConfigValidationSuccess) shouldBe ConfigValidationSuccess
     ConfigValidationSuccess.merge(ConfigValidationError(cvExc1)) shouldBe ConfigValidationError(cvExc1)
     ConfigValidationError(cvExc1).merge(ConfigValidationSuccess) shouldBe ConfigValidationError(cvExc1)
 
     ConfigValidationError(cvExc1).merge(ConfigValidationError(cvExc2)) shouldBe
-      ConfigValidationError(Seq(cvExc1, cvExc2)
-      )
+      ConfigValidationError(Seq(cvExc1, cvExc2))
   }
 
-  it should "getErrors based on implementation" in {
-    ConfigValidationSuccess.getErrors shouldBe empty
-    ConfigValidationError(Seq(cvExc1, cvExc2)).getErrors shouldBe Seq(cvExc1, cvExc2)
+  it should "return .errors based on implementation" in {
+    ConfigValidationSuccess.errors shouldBe empty
+    ConfigValidationError(Seq(cvExc1, cvExc2)).errors shouldBe Seq(cvExc1, cvExc2)
   }
 
-  "ConfigValidationError(ConfigValidationException)" should
-    "be a shorthand for ConfigValidationError(reasons: Seq[ConfigValidationException])" in {
-      ConfigValidationError(cvExc1) shouldBe ConfigValidationError(Seq(cvExc1))
+  it should "throw with .throwOnErrors with errors present" in {
+    intercept[ConfigValidationException] {
+      ConfigValidationError(Seq(cvExc1, cvExc2)).throwOnErrors()
+    }.msg shouldBe "exception1" // first exc get propagated
+  }
+
+  it should "not throw with .throwOnErrors without errors present" in {
+    ConfigValidationSuccess.throwOnErrors() // does not throw
+  }
+
+  "ConfigValidationError(CVEx)" should "be alias for ConfigValidationError(Seq(CVEx))" in {
+    ConfigValidationError(cvExc1) shouldBe ConfigValidationError(Seq(cvExc1))
   }
 
 }

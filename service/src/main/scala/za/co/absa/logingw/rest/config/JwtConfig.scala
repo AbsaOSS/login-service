@@ -32,8 +32,8 @@ case class JwtConfig(
 ) extends ConfigValidatable {
 
   @PostConstruct
-  def init() {
-    this.failOnValidationError()
+  def init(): Unit = {
+    this.validate().throwOnErrors()
   }
 
   /** May throw ConfigValidationException or IllegalArgumentException */

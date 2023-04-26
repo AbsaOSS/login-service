@@ -16,6 +16,5 @@
 
 package za.co.absa.logingw.rest.config.validation
 
-case class ConfigValidationException(msg: String)
-  extends Exception(msg)
+case class ConfigValidationException(msg: String) extends Exception(msg)
 

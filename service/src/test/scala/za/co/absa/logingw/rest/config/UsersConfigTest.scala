@@ -23,7 +23,7 @@ import za.co.absa.logingw.rest.config.validation.ConfigValidationResult.{ConfigV
 
 class UsersConfigTest extends AnyFlatSpec with Matchers {
 
-  val userCfg = UserConfig("user1", "password1", "mail@here.tld", Array("group1", "group2"))
+  private val userCfg = UserConfig("user1", "password1", "mail@here.tld", Array("group1", "group2"))
 
   "UserConfig" should "validate expected filled content" in {
     userCfg.validate() shouldBe ConfigValidationSuccess
@@ -38,8 +38,8 @@ class UsersConfigTest extends AnyFlatSpec with Matchers {
 
     val groupsValidation = userCfg.copy(groups = null).validate()
     groupsValidation shouldBe a[ConfigValidationError]
-    groupsValidation.getErrors should have size 1
-    groupsValidation.getErrors.head.msg should include("groups are missing") // there is other info
+    groupsValidation.errors should have size 1
+    groupsValidation.errors.head.msg should include("groups are missing") // there is other info
 
   }
 
@@ -51,13 +51,7 @@ class UsersConfigTest extends AnyFlatSpec with Matchers {
     userCfg.copy(email = null).validate() shouldBe ConfigValidationSuccess
   }
 
-  it should "throw validation exception with .failOnValidationError wrapper" in {
-    intercept[ConfigValidationException] {
-      userCfg.copy(password = null).failOnValidationError()
-    }.msg should include("password is empty")
-  }
-
-  val usersCfg = UsersConfig(knownUsers = Array(userCfg))
+  private val usersCfg = UsersConfig(knownUsers = Array(userCfg))
   "UsersConfig" should "validate ok expected filled content" in {
     usersCfg.validate() shouldBe ConfigValidationSuccess
   }
@@ -83,9 +77,9 @@ class UsersConfigTest extends AnyFlatSpec with Matchers {
     )).validate()
 
     duplicateValidationResult shouldBe a[ConfigValidationError]
-    duplicateValidationResult.getErrors should have size 1
+    duplicateValidationResult.errors should have size 1
 
-    val errorMsg = duplicateValidationResult.getErrors.head.msg
+    val errorMsg = duplicateValidationResult.errors.head.msg
     errorMsg should include("knownUsers contain duplicates")
     errorMsg should include("duplicated usernames: sameUser, sameUser2")
   }
@@ -101,9 +95,9 @@ class UsersConfigTest extends AnyFlatSpec with Matchers {
     )).validate()
 
     multiErrorsResult shouldBe a[ConfigValidationError]
-    multiErrorsResult.getErrors should have size 3
+    multiErrorsResult.errors should have size 3
 
-    val errorMsgs = multiErrorsResult.getErrors.map(_.msg)
+    val errorMsgs = multiErrorsResult.errors.map(_.msg)
     errorMsgs should contain theSameElementsAs Seq(
       "knownUsers contain duplicates, duplicated usernames: sameUser",
       "password is empty",

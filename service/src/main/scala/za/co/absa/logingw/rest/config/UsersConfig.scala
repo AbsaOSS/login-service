@@ -39,7 +39,7 @@ case class UsersConfig(
       val kuDuplicatesResult = {
         val groupedByUsers = existingKnownUsers.groupBy(_.username)
         if (groupedByUsers.size < existingKnownUsers.size) {
-          val duplicates = groupedByUsers.filter { case (username, configs) => configs.length > 1 }.map(_._1)
+          val duplicates = groupedByUsers.filter { case (username, configs) => configs.length > 1 }.keys
           ConfigValidationError(ConfigValidationException(s"knownUsers contain duplicates, duplicated usernames: ${duplicates.mkString(", ")}"))
         } else ConfigValidationSuccess
       }
@@ -53,8 +53,8 @@ case class UsersConfig(
   }
 
   @PostConstruct
-  def init() {
-    this.failOnValidationError()
+  def init(): Unit = {
+    this.validate().throwOnErrors()
   }
 }
 
@@ -66,7 +66,7 @@ case class UserConfig(
   groups: Array[String]
 ) extends ConfigValidatable {
 
-  override def toString(): String = {
+  override def toString: String = {
     s"UserConfig($username, $password, $email, ${Option(groups).map(_.toList)})"
   }
 
