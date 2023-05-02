@@ -14,12 +14,7 @@
  * limitations under the License.
  */
 
-package za.co.absa.logingw.rest.config
+package za.co.absa.logingw.rest.config.validation
 
-import org.springframework.boot.context.properties.{ConfigurationProperties, ConstructorBinding}
+case class ConfigValidationException(msg: String) extends Exception(msg)
 
-@ConstructorBinding
-@ConfigurationProperties(prefix = "logingw.rest.config")
-case class BaseConfig(
-  someKey: String = "BETA"
-)
