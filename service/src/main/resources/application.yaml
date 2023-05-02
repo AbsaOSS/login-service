@@ -1,11 +1,13 @@
 logingw:
   rest:
+    # Rest General Config
     jwt:
       exp-time: 4
       alg-name: "RS256"
     config:
       some-key: "BETA"
 
+    # Users (config-defined)
     users:
       known-users:
         -
@@ -19,6 +21,8 @@ logingw:
           groups:
             - "groupA"
             - "groupB"
+            -
+    # Rest Auth Config (AD)
     auth:
       ad:
         ldap:
@@ -26,9 +30,31 @@ logingw:
           url: "ldaps://some.domain.com:636/"
           search-filter: "(samaccountname={1})"
 
+# App Config
 spring:
   application:
     name: "login-gateway"
-
+  jmx:
+    enabled: true
 server:
   port: 9090
+
+# Health Check Config + JMX Config
+springdoc:
+  show-actuator: true
+
+management:
+  health:
+    #TODO: Enable Ldap check when fully Implemented - issue #20
+    ldap:
+      enabled: "false"
+  endpoints:
+    jmx:
+      exposure:
+        include: "health"
+    web:
+      exposure:
+        include: "health"
+  endpoint:
+    health:
+      show-details: "never"
