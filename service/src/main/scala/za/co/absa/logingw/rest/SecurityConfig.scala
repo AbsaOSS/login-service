@@ -39,6 +39,7 @@ class SecurityConfig {
         "/swagger-ui/**", "/swagger-ui.html", // "/swagger-ui.html" redirects to "/swagger-ui/index.html
         "/swagger-resources/**", "/v3/api-docs/**", // swagger needs these
         "/info",
+        "/actuator/**",
         "/token/public-key").permitAll()
         .anyRequest().authenticated()
         .and()

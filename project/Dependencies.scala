@@ -53,8 +53,8 @@ object Dependencies {
   lazy val springDoc = "org.springdoc" % "springdoc-openapi-ui" % "1.6.14"
 
 
-  // TODO bring actuator (health) endpoints in? - Issue #6
-  //lazy val springBootStarterActuator = "org.springframework.boot" % "spring-boot-starter-actuator" % Versions.springBoot
+  // Enables /actuator/health endpoint
+  lazy val springBootStarterActuator = "org.springframework.boot" % "spring-boot-starter-actuator" % Versions.springBoot
 
   lazy val scalaTest = "org.scalatest" %% "scalatest" % Versions.scalatest % Test
   lazy val springBootTest = "org.springframework.boot" % "spring-boot-starter-test" % Versions.springBoot % Test
@@ -78,6 +78,8 @@ object Dependencies {
     jjwtJackson,
 
     springDoc,
+
+    springBootStarterActuator,
 
     scalaTest,
     springBootTest,
