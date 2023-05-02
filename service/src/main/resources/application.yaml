@@ -21,7 +21,7 @@ logingw:
           groups:
             - "groupA"
             - "groupB"
-            -
+
     # Rest Auth Config (AD)
     auth:
       ad:
