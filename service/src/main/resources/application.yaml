@@ -45,8 +45,8 @@ springdoc:
 
 management:
   health:
-    #TODO: Enable Ldap check when fully Implemented - issue #20
     ldap:
+      #TODO: Enable Ldap check for actuator/health when fully Implemented - issue #34
       enabled: "false"
   endpoints:
     jmx:
