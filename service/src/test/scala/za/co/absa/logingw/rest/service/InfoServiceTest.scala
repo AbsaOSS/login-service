@@ -38,4 +38,5 @@ class InfoServiceTest extends AnyFlatSpec with Matchers {
   "InfoService" should "give expected test message" in {
     infoService.getInfoMessage shouldEqual s"Basic info message to be here. '${testConfig.someKey}'"
   }
+
 }
