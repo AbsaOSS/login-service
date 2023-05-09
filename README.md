@@ -23,7 +23,8 @@ This will package the `application.yaml` to the resulting package, so this appro
 Externally-defined-`application.yaml` option that will not package (i.e. pollute) the resulting package.
 
 Shown in IDEA:
-todo add image here
+
+![spring-config-location-idea-example-censored](https://github.com/AbsaOSS/login-gateway/assets/4457378/02390dbe-0b71-48e3-a3ea-b6ca7f6ea500)
   
 
 ## Source idea
