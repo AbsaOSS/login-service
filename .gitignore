@@ -49,3 +49,4 @@ build.log
 
 # actual application.yaml (just keeping the example one)
 /service/**/application.yaml
+/service/**/local.application.yaml
