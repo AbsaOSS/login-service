@@ -14,26 +14,27 @@
  * limitations under the License.
  */
 
-package za.co.absa.logingw.rest.service
+package za.co.absa.logingw.rest.actuator
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.actuate.health.{Health, HealthEndpoint, HealthIndicator, Status}
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.test.context.TestContextManager
-
-
+import org.springframework.test.context.{TestContextManager, TestPropertySource}
 
 @SpringBootTest
-class InfoServiceTest extends AnyFlatSpec with Matchers {
+class ActuatorHealthTest extends AnyFlatSpec with Matchers {
 
   @Autowired
-  private var infoService: InfoService = _
+  private var healthService: HealthEndpoint = _
 
   // Makes the above autowired work
   new TestContextManager(this.getClass).prepareTestInstance(this)
 
-  "InfoService" should "give expected test message" in {
-    infoService.getInfoMessage shouldEqual s"Basic info message to be here. 'BETA'" // this is what application.properties contain
+  "The Overall HealthEndpoint Status" should "return UP" in {
+    val health = healthService.health()
+    assert(health.getStatus == Status.UP)
   }
+  //TODO: Add more tests for each dependency (Example Ldap when implemented fully) - issue #20
 }

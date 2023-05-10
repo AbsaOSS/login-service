@@ -21,7 +21,7 @@ import io.jsonwebtoken.{Jwts, SignatureAlgorithm}
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import za.co.absa.logingw.model.User
-import za.co.absa.logingw.rest.config.BaseConfig
+import za.co.absa.logingw.rest.config.JwtConfig
 
 import java.security.{KeyPair, PublicKey}
 import java.time.Instant
@@ -29,29 +29,32 @@ import java.time.temporal.ChronoUnit
 import java.util.Date
 
 @Service
-class JWTService @Autowired()(baseConfig: BaseConfig){
+class JWTService @Autowired()(jwtConfig: JwtConfig) {
 
-
-  private val rsaKeyPair: KeyPair = Keys.keyPairFor(SignatureAlgorithm.valueOf(baseConfig.algName))
+  private val rsaKeyPair: KeyPair = Keys.keyPairFor(SignatureAlgorithm.valueOf(jwtConfig.algName))
 
   def generateToken(user: User): String = {
     import scala.collection.JavaConverters._
 
 
     val expiration = Date.from(
-      Instant.now().plus(baseConfig.expTime, ChronoUnit.HOURS)
+      Instant.now().plus(jwtConfig.expTime, ChronoUnit.HOURS)
     )
     val issuedAt = Date.from(Instant.now())
     // needs to be Java List/Array, otherwise incorrect claim is generated
     val groupsClaim = user.groups.asJava
 
-    Jwts
+    val jwtBuilderWithoutEmail = Jwts
       .builder()
       .setSubject(user.name)
       .setExpiration(expiration)
       .setIssuedAt(issuedAt)
       .claim("groups", groupsClaim)
-      .claim("email", user.email)
+
+    user
+      .email
+      .map(jwtBuilderWithoutEmail.claim("email", _))
+      .getOrElse(jwtBuilderWithoutEmail)
       .signWith(rsaKeyPair.getPrivate)
       .compact()
   }

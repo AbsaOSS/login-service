@@ -26,7 +26,7 @@ import java.util
 
 object FakeAuthentication {
 
-  val fakeUser: User = User("fakeUser", "fake@gmail.com", Seq.empty)
+  val fakeUser: User = User("fakeUser", Some("fake@gmail.com"), Seq.empty)
 
   val fakeUserAuthentication: Authentication = new UsernamePasswordAuthenticationToken(
     fakeUser, "fakePassword", new util.ArrayList[GrantedAuthority]()
