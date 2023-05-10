@@ -48,5 +48,5 @@ build.log
 .bsp
 
 # actual application.yaml (just keeping the example one)
-/service/**/application.yaml
-/service/**/local.application.yaml
+/service/**/main/resources/application.yaml
+/service/**/main/resources/local.application.yaml
