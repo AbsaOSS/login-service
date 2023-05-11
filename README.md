@@ -4,9 +4,28 @@ AbsaOSS Common Login gateway using JWT Public key signatures
 ## Basic usecase schematics
 ![login-gw-basic-usecase2](https://user-images.githubusercontent.com/4457378/219037599-5674b63b-403c-4c02-8a54-a6e12dc01d47.png)
 
+## Configuration
+The project requires a valid configuration file to run.
+An [example configuration](https://github.com/AbsaOSS/login-gateway/blob/master/service/src/main/resources/example.application.yaml)
+file is provided to take inspiration from.
 
-## Necessary preconditions
-  - TODO configuration description
+The project will look for the Spring config in multiple places and
+in a specific order precisely as described at 
+[Spring boot - Externalized Configuration](https://docs.spring.io/spring-boot/docs/current/reference/html/features.html#features.external-config).
+Without having to study the whole documentation section, let us offer a few simple ways:
+
+### Locally available `application.yaml`
+If you are looking to build and run locally, just copy and rename the `example.application.yaml` to 
+`application.yaml` (and make any changes to the example data) and you will be up and running.
+This will package the `application.yaml` to the resulting package, so this approach is only usage for local tests/development.
+
+### Supply argument `--spring.config.location=my/path/my.application.yaml`
+Externally-defined-`application.yaml` option that will not package (i.e. pollute) the resulting package.
+
+Shown in IDEA:
+
+![spring-config-location-idea-example-censored](https://github.com/AbsaOSS/login-gateway/assets/4457378/02390dbe-0b71-48e3-a3ea-b6ca7f6ea500)
+  
 
 ## Source idea
 The implementation is heavily inspired by [Enceladus](https://github.com/AbsaOSS/enceladus) that already contained 
