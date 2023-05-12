@@ -21,5 +21,5 @@ import org.springframework.boot.context.properties.{ConfigurationProperties, Con
 @ConstructorBinding
 @ConfigurationProperties(prefix = "logingw.rest.config")
 case class BaseConfig(
-  someKey: String = "BETA"
+  someKey: String
 )
