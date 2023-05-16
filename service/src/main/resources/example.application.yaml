@@ -39,7 +39,7 @@ spring:
 server:
   port: 9090
 
-# Health Check Config + JMX Config
+# Health and Info Check Config + JMX Config
 springdoc:
   show-actuator: true
 
@@ -48,13 +48,34 @@ management:
     ldap:
       #TODO: Enable Ldap check for actuator/health when fully Implemented - issue #34
       enabled: "false"
+  info:
+    env:
+      enabled: "true"
+    git:
+      enabled: "true"
+      mode: "full"
   endpoints:
     jmx:
       exposure:
-        include: "health"
+        include:
+          - "health"
+          - "info"
     web:
       exposure:
-        include: "health"
+        include:
+          - "health"
+          - "info"
   endpoint:
     health:
       show-details: "never"
+
+info:
+  app:
+    name: "${spring.application.name}"
+    build: "0.1"
+    description: "Application used a reusable authentication tool"
+    env: "Dev"
+  security:
+    ldap: "Enabled"
+
+
