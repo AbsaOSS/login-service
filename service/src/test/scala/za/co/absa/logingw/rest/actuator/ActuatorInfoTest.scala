@@ -19,22 +19,21 @@ package za.co.absa.logingw.rest.actuator
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.actuate.health.{HealthEndpoint, Status}
+import org.springframework.boot.actuate.info.InfoEndpoint
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.TestContextManager
 
 @SpringBootTest
-class ActuatorHealthTest extends AnyFlatSpec with Matchers {
+class ActuatorInfoTest extends AnyFlatSpec with Matchers {
 
   @Autowired
-  private var healthService: HealthEndpoint = _
+  private var infoService: InfoEndpoint = _
 
   // Makes the above autowired work
   new TestContextManager(this.getClass).prepareTestInstance(this)
 
-  "The Overall HealthEndpoint Status" should "return UP" in {
-    val health = healthService.health()
-    assert(health.getStatus == Status.UP)
+  "The info Endpoint" should "return the correct test value" in {
+    val info = infoService.info()
+    assert(info.toString == "{test=This is a test value}")
   }
-  //TODO: Add more tests for each dependency (Example Ldap when implemented fully) - issue #20
 }
