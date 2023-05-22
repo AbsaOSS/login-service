@@ -46,3 +46,7 @@ dist
 test-output
 build.log
 .bsp
+
+# actual application.yaml (just keeping the example one)
+/service/**/main/resources/application.yaml
+/service/**/main/resources/local.application.yaml
