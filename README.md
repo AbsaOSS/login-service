@@ -106,17 +106,8 @@ Remote JMX is also an option and may be enabled with some config changes in the 
 ## Info endpoint
 Springboot Actuator is enabled for this project. This enables an Info endpoint that can be populated with various information that may be
 useful to the troubleshooting and usage of the application. The endpoint can be accessed via the following url:  `http://localhost:port/actuator/info`.
-The information types available are as follows:
+The information types available and how to use them is shown in the example config ("example.application.yaml").
 
-| ID     | Usage                                                        |
-|--------|--------------------------------------------------------------|
- | build  | Exposes build information                                    |
-| env    | Exposes any property marked under "info" in the config       |
- | git    | Exposes git related information from the git.properties file |
-| java   | Exposes Java runtime information                             |
-
-In the given example config ("example.application.yaml"), the env and git properties are enabled. 
-An example git.properties file has also been included ("example.git.properties"), simply rename it to "git.properties" in order to make use of it.
 Running the example config will get you the following output:
 
  ```
@@ -125,3 +116,8 @@ Running the example config will get you the following output:
 
 If you wish to change what is shown here, you can do so by changing the fields and attributes in the application file. 
 More info on the Actuator Info Service can be found here: https://reflectoring.io/spring-boot-info-endpoint/
+
+## git.properties
+An example git.properties file has also been included ("example.git.properties"), simply rename it to "git.properties" in order to make use of it in the info endpoint.
+If you wish to generate an accurate git.properties file, you can do so by setting the "logingw.rest.config.git-properties" to true.
+This will generate a new file with updated git information on application startup. You may need to set the property to false and restart the application once the file has been generated in order for it to be visible on the info endpoint.

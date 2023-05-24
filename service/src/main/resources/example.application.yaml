@@ -6,6 +6,7 @@ logingw:
       alg-name: "RS256"
     config:
       some-key: "BETA"
+      git-properties: false
 
     # Users (config-defined)
     users:
@@ -48,12 +49,21 @@ management:
     ldap:
       #TODO: Enable Ldap check for actuator/health when fully Implemented - issue #34
       enabled: "false"
+  # Expose information under Actuator/info
   info:
+    # Exposes any property marked under "info" in the config
     env:
       enabled: "true"
+    #Exposes git related information from the git.properties file
     git:
       enabled: "true"
       mode: "full"
+    #Exposes Java runtime information
+    java:
+      enabled: "true"
+    #Exposes build information
+    build:
+      enabled: "true"
   endpoints:
     jmx:
       exposure:
@@ -69,6 +79,7 @@ management:
     health:
       show-details: "never"
 
+# Information to be exposed by the 'env' tag in the springboot actuator
 info:
   app:
     name: "${spring.application.name}"
@@ -77,5 +88,3 @@ info:
     env: "Dev"
   security:
     ldap: "Enabled"
-
-
