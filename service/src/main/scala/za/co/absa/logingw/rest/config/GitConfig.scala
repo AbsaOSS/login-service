@@ -19,7 +19,6 @@ package za.co.absa.logingw.rest.config
 import org.springframework.boot.context.properties.{ConfigurationProperties, ConstructorBinding}
 import javax.annotation.PostConstruct
 import java.io.PrintWriter
-import java.util.Date
 import java.text.SimpleDateFormat
 
 @ConstructorBinding

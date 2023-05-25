@@ -121,3 +121,6 @@ More info on the Actuator Info Service can be found here: https://reflectoring.i
 An example git.properties file has also been included ("example.git.properties"), simply rename it to "git.properties" in order to make use of it in the info endpoint.
 If you wish to generate an accurate git.properties file, you can do so by setting the "logingw.rest.config.git-properties" to true.
 This will generate a new file with updated git information on application startup. You may need to set the property to false and restart the application once the file has been generated in order for it to be visible on the info endpoint.
+
+This requires Git to be installed and available on the host. If failing, please disable the feature in your config (set "logingw.rest.config.git-properties" to false).
+The example git.properties file provided may be edited manually if the git generation is functioning incorrectly.
