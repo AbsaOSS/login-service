@@ -28,21 +28,32 @@ spring:
 server:
   port: 9090
 
-# Health Check Config + JMX Config
+# Health and Info Check Config + JMX Config
 springdoc:
   show-actuator: true
 
 management:
   health:
     ldap:
+      #TODO: Enable Ldap check for actuator/health when fully Implemented - issue #34
       enabled: "false"
+  info:
+    env:
+      enabled: "true"
   endpoints:
     jmx:
       exposure:
-        include: "health"
+        include:
+          - "health"
+          - "info"
     web:
       exposure:
-        include: "health"
+        include:
+          - "health"
+          - "info"
   endpoint:
     health:
       show-details: "never"
+
+info:
+  test: "This is a test value"

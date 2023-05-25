@@ -19,9 +19,9 @@ package za.co.absa.logingw.rest.actuator
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.actuate.health.{Health, HealthEndpoint, HealthIndicator, Status}
+import org.springframework.boot.actuate.health.{HealthEndpoint, Status}
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.test.context.{TestContextManager, TestPropertySource}
+import org.springframework.test.context.TestContextManager
 
 @SpringBootTest
 class ActuatorHealthTest extends AnyFlatSpec with Matchers {

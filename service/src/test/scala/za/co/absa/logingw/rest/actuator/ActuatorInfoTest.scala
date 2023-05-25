@@ -14,26 +14,26 @@
  * limitations under the License.
  */
 
-package za.co.absa.logingw.rest.service
+package za.co.absa.logingw.rest.actuator
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.actuate.info.InfoEndpoint
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.TestContextManager
 
-
-
 @SpringBootTest
-class InfoServiceTest extends AnyFlatSpec with Matchers {
+class ActuatorInfoTest extends AnyFlatSpec with Matchers {
 
   @Autowired
-  private var infoService: InfoService = _
+  private var infoService: InfoEndpoint = _
 
   // Makes the above autowired work
   new TestContextManager(this.getClass).prepareTestInstance(this)
 
-  "InfoService" should "give expected test message" in {
-    infoService.getInfoMessage shouldEqual s"Basic info message to be here. 'BETA'" // this is what application.properties contain
+  "The info Endpoint" should "return the correct test value" in {
+    val info = infoService.info()
+    assert(info.toString == "{test=This is a test value}")
   }
 }

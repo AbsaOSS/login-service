@@ -102,3 +102,25 @@ Local JMX is currently enabled on the project. In order to utilize it please fol
 6. Find the health endpoint and click on it to view its attributes and operations. You can use the attributes and operations to check the health of the login-gateway and perform management tasks.
 You can now use JConsole to monitor and manage your local application by accessing the available endpoints.
 Remote JMX is also an option and may be enabled with some config changes in the application.properties file.
+
+## Info endpoint
+Springboot Actuator is enabled for this project. This enables an Info endpoint that can be populated with various information that may be
+useful to the troubleshooting and usage of the application. The endpoint can be accessed via the following url:  `http://localhost:port/actuator/info`.
+The information types available and how to use them is shown in the example config ("example.application.yaml").
+
+Running the example config will get you the following output:
+
+ ```
+{"app":{"name":"login-gateway","build":"0.1","description":"Application used a reusable authentication tool","env":"Dev"},"security":{"ldap":"Enabled"},"git":{"commit":{"id":{"full":"git_id"},"message":{"full":"Added Git Properties"},"user":{"email":"exampleuser@org.com"},"time":"5/15/2023"}}}
+ ```
+
+If you wish to change what is shown here, you can do so by changing the fields and attributes in the application file. 
+More info on the Actuator Info Service can be found here: https://reflectoring.io/spring-boot-info-endpoint/
+
+## git.properties
+An example git.properties file has also been included ("example.git.properties"), simply rename it to "git.properties" in order to make use of it in the info endpoint.
+If you wish to generate an accurate git.properties file, you can do so by setting the "logingw.rest.config.git-properties" to true.
+This will generate a new file with updated git information on application startup. You may need to set the property to false and restart the application once the file has been generated in order for it to be visible on the info endpoint.
+
+This requires Git to be installed and available on the host. If failing, please disable the feature in your config (set "logingw.rest.config.git-properties" to false).
+The example git.properties file provided may be edited manually if the git generation is functioning incorrectly.
