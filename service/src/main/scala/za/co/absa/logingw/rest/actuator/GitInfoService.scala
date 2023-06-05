@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package za.co.absa.logingw.rest.service
+package za.co.absa.logingw.rest.actuator
 
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.actuate.info.{Info, InfoContributor}
@@ -22,7 +22,7 @@ import org.springframework.stereotype.Component
 import za.co.absa.logingw.rest.config.GitPropertiesHolder
 
 @Component
-class CustomGitInfoService(@Value("${management.info.git.enabled:false}") gitInfoEnabled: Boolean, @Value("${logingw.rest.config.generate-git-properties:false}") gitGenerationEnabled: Boolean) extends InfoContributor {
+class GitInfoService(@Value("${management.info.git.enabled:false}") gitInfoEnabled: Boolean, @Value("${logingw.rest.config.generate-git-properties:false}") gitGenerationEnabled: Boolean) extends InfoContributor {
 
   override def contribute(builder: Info.Builder): Unit = {
 
@@ -34,7 +34,8 @@ class CustomGitInfoService(@Value("${management.info.git.enabled:false}") gitInf
         "commit" -> Map(
           "id" -> gitProperties.commitId,
           "time" -> gitProperties.commitTime
-        )))
+        )
+      ))
     }
   }
 }

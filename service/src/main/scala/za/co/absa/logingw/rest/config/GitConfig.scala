@@ -38,6 +38,7 @@ case class GitProperties(branch: String, commitId: String, commitTime: String)
 object GitPropertiesHolder {
   var gitProperties: GitProperties = _
 }
+
 object GitPropertiesGenerator {
   def generateGitProperties(): Unit = {
     val gitPropertiesFile = "service\\src\\main\\resources\\git.properties"
