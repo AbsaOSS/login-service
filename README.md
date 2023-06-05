@@ -119,16 +119,20 @@ More info on the Actuator Info Service can be found here: https://reflectoring.i
 
 ## git.properties
 An example git.properties file has also been included ("example.git.properties"), simply rename it to "git.properties" in order to make use of it in the info endpoint.
-If you wish to generate an accurate git.properties file, you can do so by running the test found under package "za.co.absa.logingw.rest.actuator.tooling" called GitPropertiesGenerator.scala
-In order to run the test the line (line 30) that reads as:
-```
-ignore should "generate git.properties file" in {
-```
-should be changed to:
-```
-"This function" should "generate git.properties file" in {
-```
-once this is done, running or debugging the test will generate a git.properties file to be used for the info endpoint.
+If you wish to generate an accurate git.properties file, you can do so in 2 ways:
+
+1) Setting the "logingw.rest.config.generate-git-properties" to true.
+   This will generate a new file with updated git information on application startup.
+2) by running the test found under package "za.co.absa.logingw.rest.actuator.tooling" called GitPropertiesGenerator.scala
+   In order to run the test the line (line 30) that reads as:
+   ```
+   ignore should "generate git.properties file" in {
+   ```
+   should be changed to:
+   ```
+   "This function" should "generate git.properties file" in {
+   ```
+   once this is done, running or debugging the test will generate a git.properties file to be used for the info endpoint.
 
 This requires Git to be installed and available on the host.
 The example git.properties file provided may be edited manually if the git generation is functioning incorrectly.

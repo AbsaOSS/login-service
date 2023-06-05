@@ -6,6 +6,10 @@ logingw:
       alg-name: "RS256"
     config:
       some-key: "BETA"
+      #Generates git.properties file for use on info endpoint.
+      #Application will have to be restarted after file generation for information to be visible.
+      #Recommended to set the property to false after file has been generated.
+      generate-git-properties: true
 
     # Users (config-defined)
     users:
@@ -56,7 +60,6 @@ management:
     #Exposes git related information from the git.properties file
     git:
       enabled: "true"
-      mode: "full"
     #Exposes Java runtime information
     java:
       enabled: "true"
