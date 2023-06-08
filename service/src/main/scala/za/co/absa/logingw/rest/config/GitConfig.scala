@@ -23,37 +23,59 @@ import java.io.{PrintWriter, IOException}
 import scala.util.Try
 
 @ConstructorBinding
-@ConfigurationProperties(prefix = "logingw.rest.config")
-case class GitConfig(generateGitProperties: Boolean) {
+@ConfigurationProperties(prefix = "logingw.rest.config.git-info")
+case class GitConfig(generateGitProperties: Boolean, generateGitPropertiesFile: Boolean) {
 
   @PostConstruct
   def init(): Unit = {
     if(generateGitProperties)
-      GitPropertiesGenerator.generateGitProperties()
+      GitPropertiesGenerator.generateGitProperties(generateGitPropertiesFile)
   }
 }
 
-case class GitProperties(branch: String, commitId: String, commitTime: String)
-
-object GitPropertiesHolder {
-  var gitProperties: GitProperties = _
-}
-
 object GitPropertiesGenerator {
-  def generateGitProperties(): Unit = {
-    val gitPropertiesFile = "service\\src\\main\\resources\\git.properties"
+  private var branch: String = _
+  private var commitId: String = _
+  private var commitTime: String = _
+  def generateGitProperties(writeFile: Boolean): Unit = {
     val dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
-    val gitBranch = getGitOutput("git rev-parse --abbrev-ref HEAD")
-    val gitCommitId = getGitOutput("git rev-parse HEAD")
-    val gitCommitTime = dateFormat.format(getGitOutput("git show -s --format=%ct HEAD").map(_.toLong * 1000).getOrElse(0L))
-    val content =
-      s"""|git.branch=${gitBranch.getOrElse("unknown")}
-          |git.commit.id=${gitCommitId.getOrElse("unknown")}
-          |git.commit.time=$gitCommitTime
-          |""".stripMargin
+    setProperties(
+      getGitOutput("git rev-parse --abbrev-ref HEAD").getOrElse("unknown"),
+      getGitOutput("git rev-parse HEAD").getOrElse("unknown"),
+      dateFormat.format(getGitOutput("git show -s --format=%ct HEAD").map(_.toLong * 1000).getOrElse(0L))
+    )
+    if(writeFile)
+      writeGitPropertiesToFile()
+  }
 
-    GitPropertiesHolder.gitProperties = GitProperties(gitBranch.getOrElse("unknown"), gitCommitId.getOrElse("unknown"), gitCommitTime)
+  def setProperties(branch: String, commitId: String, commitTime: String): Unit = {
+    this.branch = branch
+    this.commitId = commitId
+    this.commitTime = commitTime
+  }
+
+  def getBranch: String = branch
+  def getCommitId: String = commitId
+  def getCommitTime: String = commitTime
+
+  private def getGitOutput(command: String): Option[String] = {
+    Try(sys.process.Process(command).lineStream_!.headOption)
+      .recover {
+        case ex: IOException =>
+          println(s"Failed to execute Git command: $command")
+          None
+      }
+      .getOrElse(None)
+  }
+
+  private def writeGitPropertiesToFile() : Unit = {
+    val gitPropertiesFile = "service\\src\\main\\resources\\git.properties"
     val writer = new PrintWriter(gitPropertiesFile)
+    val content =
+      s"""|git.branch=${this.branch}
+          |git.commit.id=${this.commitId}
+          |git.commit.time=${this.commitTime}
+          |""".stripMargin
 
     try {
       writer.println(content)
@@ -63,15 +85,5 @@ object GitPropertiesGenerator {
     } finally {
       writer.close()
     }
-  }
-
-  def getGitOutput(command: String): Option[String] = {
-    Try(sys.process.Process(command).lineStream_!.headOption)
-      .recover {
-        case ex: IOException =>
-          println(s"Failed to execute Git command: $command")
-          None
-      }
-      .getOrElse(None)
   }
 }

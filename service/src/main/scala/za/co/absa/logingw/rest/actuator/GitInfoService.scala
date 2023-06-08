@@ -19,21 +19,22 @@ package za.co.absa.logingw.rest.actuator
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.actuate.info.{Info, InfoContributor}
 import org.springframework.stereotype.Component
-import za.co.absa.logingw.rest.config.GitPropertiesHolder
+import za.co.absa.logingw.rest.config.GitPropertiesGenerator
 
 @Component
-class GitInfoService(@Value("${management.info.git.enabled:false}") gitInfoEnabled: Boolean, @Value("${logingw.rest.config.generate-git-properties:false}") gitGenerationEnabled: Boolean) extends InfoContributor {
+class GitInfoService(@Value("${management.info.git.enabled:false}")
+                     gitInfoEnabled: Boolean,
+                     @Value("${logingw.rest.config.git-info.generate-git-properties:false}")
+                     gitGenerationEnabled: Boolean) extends InfoContributor {
 
   override def contribute(builder: Info.Builder): Unit = {
 
-    val gitProperties = GitPropertiesHolder.gitProperties
-
     if(gitInfoEnabled && gitGenerationEnabled) {
       builder.withDetail("git", Map(
-        "branch" -> gitProperties.branch,
+        "branch" -> GitPropertiesGenerator.getBranch,
         "commit" -> Map(
-          "id" -> gitProperties.commitId,
-          "time" -> gitProperties.commitTime
+          "id" -> GitPropertiesGenerator.getCommitId,
+          "time" -> GitPropertiesGenerator.getCommitTime
         )
       ))
     }

@@ -20,13 +20,13 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import org.springframework.boot.actuate.info.Info.Builder
 import org.springframework.boot.test.context.SpringBootTest
-import za.co.absa.logingw.rest.config.{GitProperties, GitPropertiesHolder}
 import org.mockito.Mockito._
+import za.co.absa.logingw.rest.config.GitPropertiesGenerator
 
 @SpringBootTest
 class GitInfoServiceTest extends AnyFlatSpec with Matchers {
 
-  GitPropertiesHolder.gitProperties = GitProperties("Test1","Test2","Test3")
+  GitPropertiesGenerator.setProperties("Test1","Test2","Test3")
   private val infoService: GitInfoService = new GitInfoService(true, true)
 
   "GitInfoService" should "contribute git information" in {
@@ -35,10 +35,10 @@ class GitInfoServiceTest extends AnyFlatSpec with Matchers {
     infoService.contribute(builderMock)
 
     val expectedDetails = Map(
-      "branch" -> GitPropertiesHolder.gitProperties.branch,
+      "branch" -> GitPropertiesGenerator.getBranch,
       "commit" -> Map(
-        "id" -> GitPropertiesHolder.gitProperties.commitId,
-        "time" -> GitPropertiesHolder.gitProperties.commitTime
+        "id" -> GitPropertiesGenerator.getCommitId,
+        "time" -> GitPropertiesGenerator.getCommitTime
       )
     )
     verify(builderMock).withDetail("git", expectedDetails)

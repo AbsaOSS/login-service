@@ -23,10 +23,10 @@ import org.springframework.boot.test.context.SpringBootTest
 import za.co.absa.logingw.rest.config.GitPropertiesGenerator
 
 @SpringBootTest
-class GitPropertiesGenerator extends AnyFlatSpec with Matchers {
+class GitPropertiesGeneratorTool extends AnyFlatSpec with Matchers {
 
   ignore should "generate git.properties file" in {
-    GitPropertiesGenerator.generateGitProperties()
+    GitPropertiesGenerator.generateGitProperties(true)
     assert(Files.exists(Paths.get("service\\src\\main\\resources\\git.properties")))
   }
-  }
+}

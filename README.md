@@ -106,7 +106,7 @@ Remote JMX is also an option and may be enabled with some config changes in the 
 ## Info endpoint
 Springboot Actuator is enabled for this project. This enables an Info endpoint that can be populated with various information that may be
 useful to the troubleshooting and usage of the application. The endpoint can be accessed via the following url:  `http://localhost:port/actuator/info`.
-The information types available and how to use them is shown in the example config ("example.application.yaml").
+The information types available and how to use them is shown in the example config (`example.application.yaml`).
 
 Running the example config will get you the following output:
 
@@ -118,12 +118,12 @@ If you wish to change what is shown here, you can do so by changing the fields a
 More info on the Actuator Info Service can be found here: https://reflectoring.io/spring-boot-info-endpoint/
 
 ## git.properties
-An example git.properties file has also been included ("example.git.properties"), simply rename it to "git.properties" in order to make use of it in the info endpoint.
-If you wish to generate an accurate git.properties file, you can do so in 2 ways:
+An example git.properties file has also been included (`example.git.properties`), simply rename it to `git.properties` in order to make use of it in the info endpoint.
+If you wish to generate an accurate `git.properties file`, you can do so in 2 ways:
 
-1) Setting the "logingw.rest.config.generate-git-properties" to true.
-   This will generate a new file with updated git information on application startup.
-2) by running the test found under package "za.co.absa.logingw.rest.actuator.tooling" called GitPropertiesGenerator.scala
+1) Setting the `logingw.rest.config.git-info.generate-git-properties` to `true` will display newly generated git information.
+   Additionally setting `logingw.rest.config.git-info.generate-git-properties-file` to `true` will generate a new file with the updated git information on application startup.
+2) By manually adjusting and running the test in `za.co.absa.logingw.rest.actuator.tooling.GitPropertiesGenerator.scala`
    In order to run the test the line (line 30) that reads as:
    ```
    ignore should "generate git.properties file" in {
@@ -132,7 +132,7 @@ If you wish to generate an accurate git.properties file, you can do so in 2 ways
    ```
    "This function" should "generate git.properties file" in {
    ```
-   once this is done, running or debugging the test will generate a git.properties file to be used for the info endpoint.
+   once this is done, running or debugging the test will generate a `git.properties` file to be used for the info endpoint.
 
 This requires Git to be installed and available on the host.
-The example git.properties file provided may be edited manually if the git generation is functioning incorrectly.
+The example `git.properties` file provided may be edited manually if the git generation is functioning incorrectly.

@@ -7,9 +7,13 @@ logingw:
     config:
       some-key: "BETA"
       #Generates git.properties file for use on info endpoint.
-      #Application will have to be restarted after file generation for information to be visible.
-      #Recommended to set the property to false after file has been generated.
-      generate-git-properties: true
+      git-info:
+        #Generate Git Information on each run of the application.
+        generate-git-properties: true
+        #Generate git.properties file on application startup.
+        #Generate-git-properties must be true for this config to take effect.
+        #Once file has been generated, you may set these properties to false as the application will now read the details from the generated file on start-up.
+        generate-git-properties-file: true
 
     # Users (config-defined)
     users:

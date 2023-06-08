@@ -31,7 +31,6 @@ lazy val commonJacocoReportSettings: JacocoReportSettings = JacocoReportSettings
 lazy val commonJacocoExcludes: Seq[String] = Seq(
 //    "za.co.absa.logingw.model.User*", // class and related objects
 //    "za.co.absa.logingw.rest.config.BaseConfig" // class only
-      "src/main/scala/za/co/absa/logingw/rest/config/GitConfig.scala"
 )
 
 lazy val parent = (project in file("."))
