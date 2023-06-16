@@ -28,7 +28,7 @@ case class GitConfig(gitProperties: Boolean) {
   @PostConstruct
   def init(): Unit = {
     if(gitProperties)
-    this.GitPropertiesGenerator.generateGitProperties()
+      this.GitPropertiesGenerator.generateGitProperties()
   }
 
   object GitPropertiesGenerator {
