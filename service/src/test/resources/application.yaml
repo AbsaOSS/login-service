@@ -22,7 +22,7 @@ loginsvc:
 # App Config
 spring:
   application:
-    name: "login-gateway"
+    name: "login-service"
   jmx:
     enabled: true
 server:

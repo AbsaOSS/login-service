@@ -39,8 +39,8 @@ ThisBuild / developers := List(
 )
 
 // TODO create a site on github.io  - Issue #1
-//ThisBuild / homepage := Some(url("https://github.com/AbsaOSS/login-gw"))
-ThisBuild / description := "Login gateway for JWT public signing services"
+//ThisBuild / homepage := Some(url("https://github.com/AbsaOSS/login-service"))
+ThisBuild / description := "Login service for JWT public signing services"
 
 // licenceHeader check:
 ThisBuild / organizationName := "ABSA Group Limited"
