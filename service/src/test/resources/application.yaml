@@ -1,4 +1,4 @@
-logingw:
+loginsvc:
   rest:
     # Rest General Config
     jwt:

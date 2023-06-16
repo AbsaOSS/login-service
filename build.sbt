@@ -17,7 +17,7 @@ import Dependencies._
 import com.github.sbt.jacoco.report.JacocoReportSettings
 
 ThisBuild / organization := "za.co.absa"
-ThisBuild / name         := "login-gateway"
+ThisBuild / name         := "login-service"
 
 lazy val scala212 = "2.12.17"
 
@@ -29,27 +29,27 @@ lazy val commonJacocoReportSettings: JacocoReportSettings = JacocoReportSettings
 )
 
 lazy val commonJacocoExcludes: Seq[String] = Seq(
-//    "za.co.absa.logingw.model.User*", // class and related objects
-//    "za.co.absa.logingw.rest.config.BaseConfig" // class only
+//    "za.co.absa.loginsvc.model.User*", // class and related objects
+//    "za.co.absa.loginsvc.rest.config.BaseConfig" // class only
 )
 
 lazy val parent = (project in file("."))
   .aggregate(service)
   .settings(
-    name := "login-gateway",
+    name := "login-service",
     javacOptions ++= Seq("-source", "1.8", "-target", "1.8", "-Xlint"),
     publish / skip := true
   )
 
 lazy val service = project // no need to define file, because path is same as val name
   .settings(
-    name := "login-gateway-service",
+    name := "login-service-service",
     libraryDependencies ++= serviceDependencies,
     webappWebInfClasses := true,
-    inheritJarManifest := true,
+    inheritJarManifest := true
   )
   .settings(
-    jacocoReportSettings := commonJacocoReportSettings.withTitle(s"login-gateway:service Jacoco Report - scala:${scalaVersion.value}"),
+    jacocoReportSettings := commonJacocoReportSettings.withTitle(s"login-service:service Jacoco Report - scala:${scalaVersion.value}"),
     jacocoExcludes := commonJacocoExcludes
   ).enablePlugins(TomcatPlugin)
   .enablePlugins(AutomateHeaderPlugin)
