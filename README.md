@@ -37,7 +37,7 @@ a similar single purpose login functionality with JWT. Also, Tomcat@SBT implemen
 Currently, only a skeleton of the project exists. The project uses `xsbt-web-plugin` plugin, therefore to get
 the service running (also builds the service `war`), one can run:
 
-```sbt
+```
 sbt
 service / Tomcat / start
 ```
