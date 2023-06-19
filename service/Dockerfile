@@ -3,23 +3,25 @@
 # Tomcat OS base image
 FROM artifacts.bcp.absa.co.za/docker.io/tomcat:9.0.62-jdk8-corretto
 
-# LABEL org.opencontainers.image.authors="ABSA OSS"
+LABEL org.opencontainers.image.authors="ABSA OSS"
+LABEL org.opencontainers.image.title="Login service"
+LABEL org.opencontainers.image.base.name="absaoss/login-service:0.0.1-SNAPSHOT"
 # todo naming for us
 
 # todo remove default
 ARG BUILD_PROXY
 
-# todo make path from externally checked out LS
 ARG LS_WAR_PATH=./target/scala-2.12
-ARG LS_WAR=login-service.war
+# deploy as root
+ARG LS_WAR=ROOT.war
 
 # todo remove default
 ENV CONFIG=./src/main/resources/local.application.yaml
 
 # build via (docker root = project root):
-# docker build .
+# docker build -t absaoss/login-service:0.0.1-SNAPSHOT .
 # run via
-# docker run -p 8080:8080 imageid
+# docker run -p 8080:8080 absaoss/login-service:0.0.1-SNAPSHOT
 
 # test via:
 # http://localhost:8080/login-service/token/public-key
