@@ -1,12 +1,12 @@
-# login-gateway
-AbsaOSS Common Login gateway using JWT Public key signatures
+# login-service
+AbsaOSS Common Login service using JWT Public key signatures
 
 ## Basic usecase schematics
 ![login-gw-basic-usecase2](https://user-images.githubusercontent.com/4457378/219037599-5674b63b-403c-4c02-8a54-a6e12dc01d47.png)
 
 ## Configuration
 The project requires a valid configuration file to run.
-An [example configuration](https://github.com/AbsaOSS/login-gateway/blob/master/service/src/main/resources/example.application.yaml)
+An [example configuration](https://github.com/AbsaOSS/login-service/blob/master/service/src/main/resources/example.application.yaml)
 file is provided to take inspiration from.
 
 The project will look for the Spring config in multiple places and
@@ -24,7 +24,7 @@ Externally-defined-`application.yaml` option that will not package (i.e. pollute
 
 Shown in IDEA:
 
-![spring-config-location-idea-example-censored](https://github.com/AbsaOSS/login-gateway/assets/4457378/02390dbe-0b71-48e3-a3ea-b6ca7f6ea500)
+![spring-config-location-idea-example-censored](https://github.com/AbsaOSS/login-service/assets/4457378/02390dbe-0b71-48e3-a3ea-b6ca7f6ea500)
   
 
 ## Source idea
@@ -37,7 +37,7 @@ a similar single purpose login functionality with JWT. Also, Tomcat@SBT implemen
 Currently, only a skeleton of the project exists. The project uses `xsbt-web-plugin` plugin, therefore to get
 the service running (also builds the service `war`), one can run:
 
-```sbt
+```
 sbt
 service / Tomcat / start
 ```
@@ -72,7 +72,7 @@ Code coverage will be generated on path:
 ```
 ## Health check endpoint
 Springboot Actuator is enabled for this project. This provides the user with an endpoint (readable via HTTP or JMX)
-that describes the overall status of the login-gateway as well as its parts.
+that describes the overall status of the login-service as well as its parts.
 ### Accessing health endpoint via http
 Health Endpoint can be accessed via http using the following URL: `http://localhost:port/actuator/health`
 Accessing the above should give you the following Json message if all is functional and healthy:
@@ -91,15 +91,15 @@ The health endpoint is also available via the Swagger: `http://localhost:port/sw
 ### Using JMX to monitor /actuator/health
 Local JMX is currently enabled on the project. In order to utilize it please follow the following steps:
 #### Steps
-1. Start the login-gateway application.
+1. Start the login-service application.
 2. Open a terminal or command prompt and run the following command to start JConsole:
     ```
     jconsole
     ```
-3. In the JConsole window that opens, select the process corresponding to the login-gateway application from the list of local processes.
-4. Click the Connect button. JConsole will connect to the JMX agent running in the login-gateway application.
+3. In the JConsole window that opens, select the process corresponding to the login-service application from the list of local processes.
+4. Click the Connect button. JConsole will connect to the JMX agent running in the login-service application.
 5. In the MBean tab, expand the org.springframework.boot domain to see the available JMX endpoints.
-6. Find the health endpoint and click on it to view its attributes and operations. You can use the attributes and operations to check the health of the login-gateway and perform management tasks.
+6. Find the health endpoint and click on it to view its attributes and operations. You can use the attributes and operations to check the health of the login-service and perform management tasks.
 You can now use JConsole to monitor and manage your local application by accessing the available endpoints.
 Remote JMX is also an option and may be enabled with some config changes in the application.properties file.
 
@@ -111,7 +111,7 @@ The information types available and how to use them is shown in the example conf
 Running the example config will get you the following output:
 
  ```
-{"app":{"name":"login-gateway","build":"0.1","description":"Application used a reusable authentication tool","env":"Dev"},"security":{"ldap":"Enabled"},"git":{"commit":{"id":{"full":"git_id"},"message":{"full":"Added Git Properties"},"user":{"email":"exampleuser@org.com"},"time":"5/15/2023"}}}
+{"app":{"name":"login-service","build":"0.1","description":"Application used a reusable authentication tool","env":"Dev"},"security":{"ldap":"Enabled"},"git":{"commit":{"id":{"full":"git_id"},"message":{"full":"Added Git Properties"},"user":{"email":"exampleuser@org.com"},"time":"5/15/2023"}}}
  ```
 
 If you wish to change what is shown here, you can do so by changing the fields and attributes in the application file. 
@@ -121,8 +121,8 @@ More info on the Actuator Info Service can be found here: https://reflectoring.i
 An example git.properties file has also been included (`example.git.properties`), simply rename it to `git.properties` in order to make use of it in the info endpoint.
 If you wish to generate an accurate `git.properties file`, you can do so in 2 ways:
 
-1) Setting the `logingw.rest.config.git-info.generate-git-properties` to `true` will display newly generated git information.
-   Additionally setting `logingw.rest.config.git-info.generate-git-properties-file` to `true` will generate a new file with the updated git information on application startup.
+1) Setting the `loginsvc.rest.config.git-info.generate-git-properties` to `true` will display newly generated git information.
+   Additionally setting `loginsvc.rest.config.git-info.generate-git-properties-file` to `true` will generate a new file with the updated git information on application startup.
 2) By manually adjusting and running the test in `za.co.absa.logingw.rest.actuator.tooling.GitPropertiesGenerator.scala`
    In order to run the test the line (line 30) that reads as:
    ```

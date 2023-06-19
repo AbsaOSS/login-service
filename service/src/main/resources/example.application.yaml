@@ -1,4 +1,4 @@
-logingw:
+loginsvc:
   rest:
     # Rest General Config
     jwt:
@@ -41,7 +41,7 @@ logingw:
 # App Config
 spring:
   application:
-    name: "login-gateway"
+    name: "login-service"
   jmx:
     enabled: true
 server:
