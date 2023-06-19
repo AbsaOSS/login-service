@@ -29,7 +29,7 @@ lazy val commonJacocoReportSettings: JacocoReportSettings = JacocoReportSettings
 )
 
 lazy val commonJacocoExcludes: Seq[String] = Seq(
-//    "za.co.absa.loginsvc.model.User*", // class and related objects
+    "za.co.absa.loginsvc.rest.Application*"
 //    "za.co.absa.loginsvc.rest.config.BaseConfig" // class only
 )
 
