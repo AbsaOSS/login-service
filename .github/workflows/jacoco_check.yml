@@ -50,6 +50,7 @@ jobs:
           min-coverage-changed-files: ${{ matrix.changed }}
           title: JaCoCo code coverage report - scala:${{ matrix.scala }}
           update-comment: true
+          debug-mode: true
       - name: Get the Coverage info
         run: |
           echo "Total coverage ${{ steps.jacoco.outputs.coverage-overall }}"
