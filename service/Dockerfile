@@ -26,11 +26,6 @@ ENV LS_WAR=ROOT.war
 # Copy Spring application properties
 COPY $CONFIG /opt/application.yaml
 
-# Copy Tomcat properties # todo needed for what?
-#COPY ./deployment/npintdedatassets/dev/resources/tomcat/server.xml /usr/local/tomcat/conf/
-#COPY ./deployment/npintdedatassets/dev/resources/tomcat/rewrite.config /usr/local/tomcat/conf/Catalina/localhost/
-
-# Copy applications (wildcards!)
 COPY $LS_WAR_PATH/*.war /usr/local/tomcat/webapps/$LS_WAR
 
 ENV SPRING_CONFIG_ADDITIONAL-LOCATION=/opt/application.yaml
@@ -40,6 +35,7 @@ ENV https_proxy=$BUILD_PROXY
 ENV HTTP_PROXY=$BUILD_PROXY
 ENV HTTPS_PROXY=$BUILD_PROXY
 
+# uncomment and add packages you would need to install via yum if any
 #RUN yum -y update
 #RUN yum -y install htop procps
 
