@@ -23,9 +23,7 @@ ARG SSL=true
 ARG BASE_IMAGE=tomcat:9-jdk8-corretto
 FROM $BASE_IMAGE as base
 
-LABEL org.opencontainers.image.authors="ABSA OSS"
-LABEL org.opencontainers.image.title="Login service"
-LABEL org.opencontainers.image.base.name="absaoss/login-service:latest"
+LABEL org.opencontainers.image.authors="ABSA"
 
 ARG BUILD_PROXY
 ARG CONFIG=./src/main/resources/example.application.yaml
