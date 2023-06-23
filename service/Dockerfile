@@ -1,7 +1,8 @@
 # LS docker file
 
-# Tomcat OS base image
-FROM artifacts.bcp.absa.co.za/docker.io/tomcat:9.0.62-jdk8-corretto
+# Tomcat OS base image, feel free to use another (e.g. your hardened one)
+ARG BASE_IMAGE=tomcat:9-jdk8-corretto
+FROM $BASE_IMAGE
 
 LABEL org.opencontainers.image.authors="ABSA OSS"
 LABEL org.opencontainers.image.title="Login service"
