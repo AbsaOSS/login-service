@@ -17,6 +17,10 @@ loginsvc:
 
     # Users (config-defined)
     users:
+      #Auth Protocol
+      #Set the order of the protocol starting from 1
+      #Set to 0 to disable
+      enable: 1
       known-users:
         -
           username: "user1"
@@ -34,6 +38,10 @@ loginsvc:
     auth:
       ad:
         ldap:
+          #Auth Protocol
+          #Set the order of the protocol starting from 1
+          #Set to 0 to disable
+          enable: 2
           domain: "some.domain.com"
           url: "ldaps://some.domain.com:636/"
           search-filter: "(samaccountname={1})"

@@ -18,36 +18,49 @@ package za.co.absa.loginsvc.rest
 
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.{Bean, Configuration}
-import org.springframework.security.authentication.AuthenticationManager
+import org.springframework.security.authentication.{AuthenticationManager, AuthenticationProvider}
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
-import za.co.absa.loginsvc.rest.config.{ActiveDirectoryLDAPConfig, UsersConfig}
+import za.co.absa.loginsvc.rest.config.auth.{ActiveDirectoryLDAPConfig, UsersConfig}
 import za.co.absa.loginsvc.rest.provider.ConfigUsersAuthenticationProvider
 import za.co.absa.loginsvc.rest.provider.ad.ldap.ActiveDirectoryLDAPAuthenticationProvider
 
 @Configuration
-class AuthManagerConfig @Autowired()(
-  // TODO make it autowired but only if in config AD LDAP provider is set up (#28)
-  usersConfig: UsersConfig,
-  adLDAPConfig: ActiveDirectoryLDAPConfig
-){
+class AuthManagerConfig{
+
+  @Autowired(required = false)
+  private var usersConfig: UsersConfig = _
+  @Autowired (required = false)
+  private var adLDAPConfig: ActiveDirectoryLDAPConfig = _
 
   @Bean
   def authManager(http: HttpSecurity): AuthenticationManager = {
-    val authenticationManagerBuilder = http.getSharedObject(classOf[AuthenticationManagerBuilder])
 
-    // TODO: take which providers and in which order to use from config (#28)
-    authenticationManagerBuilder
-      // if it is not null, on auth failure infinite recursion happens
-      .parentAuthenticationManager(null)
-      // currently, comment out or reorder the auth providers you want to use - #28
-      .authenticationProvider(
-        new ConfigUsersAuthenticationProvider(usersConfig)
-      )
-      .authenticationProvider(
-        new ActiveDirectoryLDAPAuthenticationProvider(adLDAPConfig)
-      )
-      .build
+    val authenticationManagerBuilder = http.getSharedObject(classOf[AuthenticationManagerBuilder]).parentAuthenticationManager(null)
+    val providerMap = Map.newBuilder[Int, AuthenticationProvider]
+
+    if (usersConfig != null) {
+      val configUsersAuthProvider = new ConfigUsersAuthenticationProvider(usersConfig)
+      providerMap += (usersConfig.enable -> configUsersAuthProvider)
+    }
+
+    if (adLDAPConfig != null) {
+      val adLDAPAuthProvider = new ActiveDirectoryLDAPAuthenticationProvider(adLDAPConfig)
+      providerMap += (adLDAPConfig.enable -> adLDAPAuthProvider)
+    }
+
+    val orderedProviders = providerMap
+      .result()
+      .filter(x => x._1 > 0)
+      .toList
+      .sortBy(_._1)
+      .map { case (_, provider) => provider }
+      .toArray
+
+    if(orderedProviders.isEmpty)
+      throw new Exception("No authentication method enabled in config")
+
+    orderedProviders.foreach(authenticationManagerBuilder.authenticationProvider)
+    authenticationManagerBuilder.build
   }
-
 }

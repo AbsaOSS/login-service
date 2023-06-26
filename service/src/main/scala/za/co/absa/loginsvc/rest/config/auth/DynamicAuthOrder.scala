@@ -14,18 +14,7 @@
  * limitations under the License.
  */
 
-package za.co.absa.loginsvc.rest.config
-
-import org.springframework.boot.context.properties.{ConfigurationProperties, ConstructorBinding}
-
-
-/**
- * Configuration for AD LDAP(s) authentication provider.
- *
- * @param domain AD domain name, ex. "some.domain.com"
- * @param url URL to AD LDAP, ex. "ldaps://some.domain.com:636/"
- * @param searchFilter LDAP filter used when searching for groups, ex. "(samaccountname={1})"
- */
-@ConstructorBinding
-@ConfigurationProperties(prefix = "loginsvc.rest.auth.ad.ldap")
-case class ActiveDirectoryLDAPConfig(domain: String, url: String, searchFilter: String)
+package za.co.absa.loginsvc.rest.config.auth
+trait DynamicAuthOrder {
+  def enable : Int
+}

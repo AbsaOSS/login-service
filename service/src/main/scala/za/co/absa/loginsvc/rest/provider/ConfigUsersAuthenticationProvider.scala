@@ -21,7 +21,7 @@ import org.springframework.security.authentication.{AuthenticationProvider, BadC
 import org.springframework.security.core.Authentication
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import za.co.absa.loginsvc.model.User
-import za.co.absa.loginsvc.rest.config.UsersConfig
+import za.co.absa.loginsvc.rest.config.auth.UsersConfig
 
 class ConfigUsersAuthenticationProvider(usersConfig: UsersConfig) extends AuthenticationProvider {
 

@@ -20,15 +20,15 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import org.springframework.security.authentication.{BadCredentialsException, UsernamePasswordAuthenticationToken}
 import org.springframework.security.core.GrantedAuthority
-import za.co.absa.loginsvc.rest.config.{UserConfig, UsersConfig}
+import za.co.absa.loginsvc.rest.config.auth.{UserConfig, UsersConfig}
 import za.co.absa.loginsvc.rest.provider.ConfigUsersAuthenticationProviderTest.simpleCredentialsToSpringAuth
 
 class ConfigUsersAuthenticationProviderTest extends AnyFlatSpec with Matchers {
 
   // testing config we are running against
-  val testConfig = UsersConfig(Array(
+  val testConfig: UsersConfig = UsersConfig(Array(
     UserConfig("testuser", "testpassword", "testuser@example.com", Array())
-  ))
+  ), 1)
   val authProvider = new ConfigUsersAuthenticationProvider(testConfig)
 
   "ConfigUsersAuthenticationProvider" should "authenticate authenticate with correct credentials" in {

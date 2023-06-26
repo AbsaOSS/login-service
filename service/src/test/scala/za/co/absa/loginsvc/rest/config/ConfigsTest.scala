@@ -21,6 +21,7 @@ import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.TestPropertySource
+import za.co.absa.loginsvc.rest.config.auth.{ActiveDirectoryLDAPConfig, UserConfig, UsersConfig}
 
 @SpringBootTest
 @TestPropertySource(locations = Array("classpath:application.yaml"))
