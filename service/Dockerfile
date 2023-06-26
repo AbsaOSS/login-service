@@ -55,7 +55,7 @@ RUN echo "This stage sets SSL=$SSL_ENABLED"
 # Copy Tomcat properties (to enable SSL)
 COPY ./src/main/resources/tomcat-ssl/server.xml /usr/local/tomcat/conf/
 
-ARG SSL_DNAME="CN=*.my.example.com, OU=project1, O=absa, L=Johannesburg, ST=Gauteng, C=za"
+ARG SSL_DNAME="CN=*.my.example.com, OU=project1, O=yourcompany, L=Johannesburg, ST=Gauteng, C=za"
 
 # A self-seigned certificate for HTTPS
 RUN keytool -genkeypair -keyalg RSA -alias tomcat -keysize 2048 \
