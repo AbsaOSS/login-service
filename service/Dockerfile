@@ -3,9 +3,9 @@
 # build via (docker root = project root):
 # docker build -t absaoss/login-service:latest \
 # --build-arg BUILD_PROXY=http://my.cool.proxy.here:3128 \
-# --build-arg CONFIG=./src/main/resources/my.awesome.local.application.yaml
+# --build-arg CONFIG=./path/to/my.awesome.local.application.yaml \
 # --build-arg SSL=true \
-# --build-arg SSL_DNAME="CN=*.my.domain.com, OU=project1, O=absa, L=Johannesburg, ST=Gauteng, C=za" .
+# --build-arg SSL_DNAME="CN=*.my.domain.com, OU=project1, O=mycorp, L=Johannesburg, ST=Gauteng, C=za" .
 # run via
 # docker run -p 8080:8080 -p 8443:8443 absaoss/login-service:latest
 
