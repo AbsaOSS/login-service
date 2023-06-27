@@ -23,10 +23,10 @@ import za.co.absa.loginsvc.rest.config.validation.{ConfigValidatable, ConfigVali
 import javax.annotation.PostConstruct
 
 @ConstructorBinding
-@ConfigurationProperties(prefix = "loginsvc.rest.users")
-case class UsersConfig(
-                        knownUsers: Array[UserConfig], enable: Int
-                      ) extends ConfigValidatable with DynamicAuthOrder {
+@ConfigurationProperties(prefix = "loginsvc.rest.auth.provider.users")
+case class UsersConfig(knownUsers: Array[UserConfig], order: Int)
+  extends ConfigValidatable with DynamicAuthOrder {
+
   lazy val knownUsersMap: Map[String, UserConfig] = knownUsers
     .map { entry => (entry.username, entry) }
     .toMap
@@ -35,7 +35,7 @@ case class UsersConfig(
   // Until is resolved https://github.com/spring-projects/spring-boot/issues/33669
   override def validate(): ConfigValidationResult = {
 
-    if(enable > 0)
+    if(order > 0)
     {
       Option(knownUsers).map { existingKnownUsers =>
 
@@ -64,8 +64,7 @@ case class UsersConfig(
 }
 
 @ConstructorBinding
-case class UserConfig(
-                       username: String,
+case class UserConfig(username: String,
                        password: String,
                        email: String, // may be null
                        groups: Array[String]

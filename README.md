@@ -54,21 +54,22 @@ gets generated from code (specifically from Spring annotations)
 The Login Service allows users to select which authentication providers they would like to use
 as well as the order in which the authentication methods get prioritized.
 
-This is done by setting a number (Greater than 0) on the "enable" tag for each auth method.
+This is done by setting a number (Greater than 0) on the `order` tag for each auth method.
 the number used indicates the order in which you would like to use the method.
 
 For Example:
 The 2 methods currently enabled are config specified users:
 ```
-logingw.rest.users.enable = 1
+loginsvc.rest.auth.provider.users.order = 1
 ```
 and ldap:
 ```
-logingw.rest.auth.ad.ldap = 2
+loginsvc.rest.auth.provider.ldap.order = 2
 ```
 In the above example, both methods are enabled with the config specified users taking priority over Ldap.
 
-In order to disable an authentication protocol, set the `enable` property to `0`.
+In order to disable an authentication protocol, set the `order` property to `0`
+or just exclude the properties from the config for that auth provider.
 Please ensure at least one auth method is enabled.
 
 ### ActiveDirectoryLDAPAuthenticationProvider

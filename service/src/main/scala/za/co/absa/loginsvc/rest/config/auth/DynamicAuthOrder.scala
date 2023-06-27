@@ -16,5 +16,5 @@
 
 package za.co.absa.loginsvc.rest.config.auth
 trait DynamicAuthOrder {
-  def enable : Int
+  def order : Int
 }

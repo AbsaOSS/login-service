@@ -31,12 +31,13 @@ import javax.annotation.PostConstruct
  * @param searchFilter LDAP filter used when searching for groups, ex. "(samaccountname={1})"
  */
 @ConstructorBinding
-@ConfigurationProperties(prefix = "loginsvc.rest.auth.ad.ldap")
-case class ActiveDirectoryLDAPConfig(domain: String, url: String, searchFilter: String, enable: Int) extends ConfigValidatable with DynamicAuthOrder
+@ConfigurationProperties(prefix = "loginsvc.rest.auth.provider.ldap")
+case class ActiveDirectoryLDAPConfig(domain: String, url: String, searchFilter: String, order: Int)
+  extends ConfigValidatable with DynamicAuthOrder
 {
   override def validate(): ConfigValidationResult = {
 
-    if(enable > 0)
+    if(order > 0)
     {
       val results = Seq(
         Option(domain)

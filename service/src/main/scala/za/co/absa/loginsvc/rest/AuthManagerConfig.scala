@@ -39,14 +39,14 @@ class AuthManagerConfig{
     val authenticationManagerBuilder = http.getSharedObject(classOf[AuthenticationManagerBuilder]).parentAuthenticationManager(null)
     val providerMap = Map.newBuilder[Int, AuthenticationProvider]
 
-    if (usersConfig != null) {
+    if (usersConfig != null && usersConfig.order > 0) {
       val configUsersAuthProvider = new ConfigUsersAuthenticationProvider(usersConfig)
-      providerMap += (usersConfig.enable -> configUsersAuthProvider)
+      providerMap += (usersConfig.order -> configUsersAuthProvider)
     }
 
-    if (adLDAPConfig != null) {
+    if (adLDAPConfig != null && adLDAPConfig.order > 0) {
       val adLDAPAuthProvider = new ActiveDirectoryLDAPAuthenticationProvider(adLDAPConfig)
-      providerMap += (adLDAPConfig.enable -> adLDAPAuthProvider)
+      providerMap += (adLDAPConfig.order -> adLDAPAuthProvider)
     }
 
     val orderedProviders = providerMap

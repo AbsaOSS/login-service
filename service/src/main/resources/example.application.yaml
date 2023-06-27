@@ -13,35 +13,34 @@ loginsvc:
         #Generate git.properties file on application startup.
         #Generate-git-properties must be true for this config to take effect.
         #Once file has been generated, you may set these properties to false as the application will now read the details from the generated file on start-up.
-        generate-git-properties-file: true
-
-    # Users (config-defined)
-    users:
-      #Auth Protocol
-      #Set the order of the protocol starting from 1
-      #Set to 0 to disable
-      enable: 1
-      known-users:
-        -
-          username: "user1"
-          password: "password1"
-          groups:
-        -
-          username: "TestUser"
-          password: "password123"
-          email: "test@abs.com"
-          groups:
-            - "groupA"
-            - "groupB"
+        generate-git-properties-file: false
 
     # Rest Auth Config (AD)
     auth:
-      ad:
+      provider:
+        # Users (config-defined)
+        users:
+          # Auth Protocol
+          # Set the order of the protocol starting from 1
+          # Set to 0 to disable or simply exclude the users tag from config
+          # NOTE: At least 1 auth protocol needs to be enabled
+          order: 1
+          known-users:
+            - username: "user1"
+              password: "password1"
+              groups:
+            - username: "TestUser"
+              password: "password123"
+              email: "test@abs.com"
+              groups:
+                - "groupA"
+                - "groupB"
         ldap:
-          #Auth Protocol
-          #Set the order of the protocol starting from 1
-          #Set to 0 to disable
-          enable: 2
+          # Auth Protocol
+          # Set the order of the protocol starting from 1
+          # Set to 0 to disable or simply exclude the ldap tag from config
+          # NOTE: At least 1 auth protocol needs to be enabled
+          order: 2
           domain: "some.domain.com"
           url: "ldaps://some.domain.com:636/"
           search-filter: "(samaccountname={1})"
