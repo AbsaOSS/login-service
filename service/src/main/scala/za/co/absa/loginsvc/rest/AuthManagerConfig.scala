@@ -23,6 +23,7 @@ import org.springframework.security.authentication.{AuthenticationManager, Authe
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import za.co.absa.loginsvc.rest.config.auth.{ActiveDirectoryLDAPConfig, DynamicAuthOrder, UsersConfig}
+import za.co.absa.loginsvc.rest.config.validation.ConfigValidationException
 import za.co.absa.loginsvc.rest.provider.ConfigUsersAuthenticationProvider
 import za.co.absa.loginsvc.rest.provider.ad.ldap.ActiveDirectoryLDAPAuthenticationProvider
 
@@ -46,7 +47,7 @@ class AuthManagerConfig{
     val orderedProviders = createProviders(configs)
 
     if(orderedProviders.isEmpty)
-      throw new Exception("No authentication method enabled in config")
+      throw ConfigValidationException("No authentication method enabled in config")
 
     orderedProviders.foreach(
       auth => {
@@ -57,12 +58,11 @@ class AuthManagerConfig{
   }
 
   private def createProviders(configs: Array[DynamicAuthOrder]): SortedMap[Int, AuthenticationProvider] = {
-    val resultsMap = SortedMap.empty[Int, AuthenticationProvider] ++ configs.filter(_.order > 0)
+    SortedMap.empty[Int, AuthenticationProvider] ++ configs.filter(_.order > 0)
       .map {
-        case config@(c: UsersConfig) => (config.order, new ConfigUsersAuthenticationProvider(c))
-        case config@(c: ActiveDirectoryLDAPConfig) => (config.order, new ActiveDirectoryLDAPAuthenticationProvider(c))
-        case _ => throw new IllegalStateException("unsupported config type")
+        case c: UsersConfig => (c.order, new ConfigUsersAuthenticationProvider(c))
+        case c: ActiveDirectoryLDAPConfig => (c.order, new ActiveDirectoryLDAPAuthenticationProvider(c))
+        case other => throw new IllegalStateException(s"unsupported config $other")
       }
-    resultsMap.range(1, 999)
   }
 }

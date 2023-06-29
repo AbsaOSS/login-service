@@ -108,5 +108,4 @@ class UsersConfigTest extends AnyFlatSpec with Matchers {
   it should "pass validation if disabled despite missing values" in {
     UsersConfig(knownUsers = null, 0).validate() shouldBe ConfigValidationSuccess
   }
-
 }
