@@ -16,6 +16,7 @@
 
 package za.co.absa.loginsvc.rest
 
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.{Bean, Configuration}
 import org.springframework.security.authentication.{AuthenticationManager, AuthenticationProvider}
@@ -35,6 +36,8 @@ class AuthManagerConfig{
   @Autowired (required = false)
   private val adLDAPConfig: ActiveDirectoryLDAPConfig = null
 
+  private val logger = LoggerFactory.getLogger(classOf[AuthManagerConfig])
+
   @Bean
   def authManager(http: HttpSecurity): AuthenticationManager = {
 
@@ -45,7 +48,11 @@ class AuthManagerConfig{
     if(orderedProviders.isEmpty)
       throw new Exception("No authentication method enabled in config")
 
-    orderedProviders.foreach(auth => authenticationManagerBuilder.authenticationProvider(auth._2))
+    orderedProviders.foreach(
+      auth => {
+        logger.info(s"Authentication method ${auth._2.getClass.getSimpleName} has been initialized at order ${auth._1}")
+        authenticationManagerBuilder.authenticationProvider(auth._2)
+      })
     authenticationManagerBuilder.build
   }
 
