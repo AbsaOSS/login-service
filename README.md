@@ -59,7 +59,9 @@ Requires `ActiveDirectoryLDAPConfig(domain: String, url: String, searchFilter: S
 1. Run `openssl s_client -connect <ldaps_host>:<ldaps_port>`.
 2. Copy the part starting with `-----BEGIN CERTIFICATE-----` and ending with `-----END CERTIFICATE-----`. 
 3. Create file `ldapcert.pem` and paste content from (2) there.
-4. Run `keytool -import -file ldapcert.pem -alias ldaps -keystore <path_to_jdk>/jre/lib/security/cacerts -storepass <password>` (default password is *changeit*).
+4. Import the certificate to `cacarts`:
+   - For JDK8: Run `keytool -import -file ldapcert.pem -alias ldaps -keystore <path_to_jdk>/jre/lib/security/cacerts -storepass <password>` (default password is *changeit*).
+   - For JDK11: Run `keytool -import -file ldapcert.pem -alias ldaps -keystore <path_to_jdk>/lib/security/cacerts -storepass <password>` (default password is *changeit*).
 5. Enter `yes` when prompted.
 
 ## How to generate Code coverage report
