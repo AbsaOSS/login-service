@@ -7,17 +7,17 @@ loginsvc:
     config:
       some-key: "BETA"
 
-    # Users (config-defined)
-    users:
-      known-users:
-
     # Rest Auth Config (AD)
     auth:
-      ad:
+      provider:
         ldap:
+          order: 1
           domain: "some.domain.com"
           url: "ldaps://some.domain.com:636/"
           search-filter: "(samaccountname={1})"
+        # Users (config-defined)
+        users:
+          known-users:
 
 # App Config
 spring:

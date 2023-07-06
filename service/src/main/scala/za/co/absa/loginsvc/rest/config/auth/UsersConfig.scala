@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package za.co.absa.loginsvc.rest.config
+package za.co.absa.loginsvc.rest.config.auth
 
 import org.springframework.boot.context.properties.{ConfigurationProperties, ConstructorBinding}
 import za.co.absa.loginsvc.rest.config.validation.ConfigValidationResult.{ConfigValidationError, ConfigValidationSuccess}
@@ -23,10 +23,10 @@ import za.co.absa.loginsvc.rest.config.validation.{ConfigValidatable, ConfigVali
 import javax.annotation.PostConstruct
 
 @ConstructorBinding
-@ConfigurationProperties(prefix = "loginsvc.rest.users")
-case class UsersConfig(
-  knownUsers: Array[UserConfig],
-) extends ConfigValidatable {
+@ConfigurationProperties(prefix = "loginsvc.rest.auth.provider.users")
+case class UsersConfig(knownUsers: Array[UserConfig], order: Int)
+  extends ConfigValidatable with DynamicAuthOrder {
+
   lazy val knownUsersMap: Map[String, UserConfig] = knownUsers
     .map { entry => (entry.username, entry) }
     .toMap
@@ -34,22 +34,27 @@ case class UsersConfig(
   // todo validation is done using a custom trait/method -- Issue #24 validation
   // Until is resolved https://github.com/spring-projects/spring-boot/issues/33669
   override def validate(): ConfigValidationResult = {
-    Option(knownUsers).map { existingKnownUsers =>
 
-      val kuDuplicatesResult = {
-        val groupedByUsers = existingKnownUsers.groupBy(_.username)
-        if (groupedByUsers.size < existingKnownUsers.size) {
-          val duplicates = groupedByUsers.filter { case (username, configs) => configs.length > 1 }.keys
-          ConfigValidationError(ConfigValidationException(s"knownUsers contain duplicates, duplicated usernames: ${duplicates.mkString(", ")}"))
-        } else ConfigValidationSuccess
-      }
+    if(order > 0)
+    {
+      Option(knownUsers).map { existingKnownUsers =>
 
-      val usersResult = existingKnownUsers.map(_.validate()).toList
+        val kuDuplicatesResult = {
+          val groupedByUsers = existingKnownUsers.groupBy(_.username)
+          if (groupedByUsers.size < existingKnownUsers.length) {
+            val duplicates = groupedByUsers.filter { case (username, configs) => configs.length > 1 }.keys
+            ConfigValidationError(ConfigValidationException(s"knownUsers contain duplicates, duplicated usernames: ${duplicates.mkString(", ")}"))
+          } else ConfigValidationSuccess
+        }
 
-      (kuDuplicatesResult :: usersResult)
-        .foldLeft[ConfigValidationResult](ConfigValidationSuccess)(ConfigValidationResult.merge)
+        val usersResult = existingKnownUsers.map(_.validate()).toList
 
-    }.getOrElse(ConfigValidationError(ConfigValidationException("knownUsers is missing")))
+        (kuDuplicatesResult :: usersResult)
+          .foldLeft[ConfigValidationResult](ConfigValidationSuccess)(ConfigValidationResult.merge)
+
+      }.getOrElse(ConfigValidationError(ConfigValidationException("knownUsers is missing")))
+    }
+    else ConfigValidationSuccess
   }
 
   @PostConstruct
@@ -59,12 +64,11 @@ case class UsersConfig(
 }
 
 @ConstructorBinding
-case class UserConfig(
-  username: String,
-  password: String,
-  email: String, // may be null
-  groups: Array[String]
-) extends ConfigValidatable {
+case class UserConfig(username: String,
+                       password: String,
+                       email: String, // may be null
+                       groups: Array[String]
+                     ) extends ConfigValidatable {
 
   override def toString: String = {
     s"UserConfig($username, $password, $email, ${Option(groups).map(_.toList)})"

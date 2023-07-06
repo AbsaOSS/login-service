@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package za.co.absa.loginsvc.rest.config
+package za.co.absa.loginsvc.rest.config.auth
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -51,18 +51,18 @@ class UsersConfigTest extends AnyFlatSpec with Matchers {
     userCfg.copy(email = null).validate() shouldBe ConfigValidationSuccess
   }
 
-  private val usersCfg = UsersConfig(knownUsers = Array(userCfg))
+  private val usersCfg = UsersConfig(knownUsers = Array(userCfg), 1)
   "UsersConfig" should "validate ok expected filled content" in {
     usersCfg.validate() shouldBe ConfigValidationSuccess
   }
 
   it should "fail on missing knownUsers" in {
-    UsersConfig(knownUsers = null).validate() shouldBe
+    UsersConfig(knownUsers = null, 1).validate() shouldBe
       ConfigValidationError(ConfigValidationException("knownUsers is missing"))
   }
 
   it should "succeed with empty users" in {
-    UsersConfig(knownUsers = Array()).validate() shouldBe ConfigValidationSuccess
+    UsersConfig(knownUsers = Array(), 1).validate() shouldBe ConfigValidationSuccess
   }
 
   it should "fail on duplicate knownUsers" in {
@@ -74,7 +74,7 @@ class UsersConfigTest extends AnyFlatSpec with Matchers {
       UserConfig("sameUser2", "passwordA", null, Array()),
 
       UserConfig("okUser", "passwordO", "ooo@", Array())
-    )).validate()
+    ), 1).validate()
 
     duplicateValidationResult shouldBe a[ConfigValidationError]
     duplicateValidationResult.errors should have size 1
@@ -92,7 +92,7 @@ class UsersConfigTest extends AnyFlatSpec with Matchers {
       UserConfig("userNoPass", null, "abc@def", Array()),
       UserConfig("noMailIsFine", "password2", null, Array()),
       UserConfig("userNoMissingGroups", "passwordO", "ooo@", null)
-    )).validate()
+    ), 1).validate()
 
     multiErrorsResult shouldBe a[ConfigValidationError]
     multiErrorsResult.errors should have size 3
@@ -105,4 +105,7 @@ class UsersConfigTest extends AnyFlatSpec with Matchers {
     )
   }
 
+  it should "pass validation if disabled despite missing values" in {
+    UsersConfig(knownUsers = null, 0).validate() shouldBe ConfigValidationSuccess
+  }
 }

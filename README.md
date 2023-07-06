@@ -50,6 +50,28 @@ It is available for download while running the service at `http://localhost:port
 gets generated from code (specifically from Spring annotations) 
 
 ## Authentication Providers
+### Enabling and Selecting Authentication Providers
+The Login Service allows users to select which authentication providers they would like to use
+as well as the order in which the authentication methods get prioritized.
+
+This is done by setting a number (Greater than 0) on the `order` tag for each auth method.
+the number used indicates the order in which you would like to use the method.
+
+For Example:
+The 2 methods currently enabled are config specified users:
+```
+loginsvc.rest.auth.provider.users.order = 1
+```
+and ldap:
+```
+loginsvc.rest.auth.provider.ldap.order = 2
+```
+In the above example, both methods are enabled with the config specified users taking priority over Ldap.
+
+In order to disable an authentication protocol, set the `order` property to `0`
+or just exclude the properties from the config for that auth provider.
+Please ensure at least one auth method is enabled.
+
 ### ActiveDirectoryLDAPAuthenticationProvider
 Uses LDAP(s) to authenticate user in Active Directory and to fetch groups that this user belongs to.
 
