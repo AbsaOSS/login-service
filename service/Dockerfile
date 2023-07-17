@@ -13,20 +13,23 @@
 # http://localhost:8080/token/public-key
 # https://localhost:8443/token/public-key
 
-
-# --- Base image part (common for SSL true|false) ---
 # Conditional Docker image creation idea: https://stackoverflow.com/a/60820156/1773349
 # change to OFF to disable SSL
 ARG SSL=true
-
 # Tomcat OS base image, feel free to use another (e.g. your hardened one)
 ARG BASE_IMAGE=tomcat:9-jdk8-corretto
+
+# --- Base image part (common for SSL true|false) ---
 FROM $BASE_IMAGE as base
 
-LABEL org.opencontainers.image.authors="ABSA"
-
+# Provide your proxy if needed, e.g. http://my.proxy.examle.com:3128
 ARG BUILD_PROXY
+# Override of the example application config is possible
 ARG CONFIG=./src/main/resources/example.application.yaml
+
+# ARG SSL_DNAME is defined below in the SSL-enabled image
+
+LABEL org.opencontainers.image.authors="ABSA"
 
 ENV LS_WAR_PATH=./target/scala-2.12
 # deploy as root
@@ -55,6 +58,7 @@ RUN echo "This stage sets SSL=$SSL_ENABLED"
 # Copy Tomcat properties (to enable SSL)
 COPY ./src/main/resources/tomcat-ssl/server.xml /usr/local/tomcat/conf/
 
+# DNAME for self-signed cert, only applied for SSL=true
 ARG SSL_DNAME="CN=*.my.example.com, OU=project1, O=yourcompany, L=Johannesburg, ST=Gauteng, C=za"
 
 # A self-seigned certificate for HTTPS
