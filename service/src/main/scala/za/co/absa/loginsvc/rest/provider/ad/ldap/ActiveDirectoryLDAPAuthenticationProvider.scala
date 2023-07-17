@@ -23,7 +23,7 @@ import org.springframework.security.core.{Authentication, GrantedAuthority}
 import org.springframework.security.ldap.authentication.ad.{ActiveDirectoryLdapAuthenticationProvider => SpringSecurityActiveDirectoryLdapAuthenticationProvider}
 import org.springframework.security.ldap.userdetails.LdapUserDetailsMapper
 import za.co.absa.loginsvc.model.User
-import za.co.absa.loginsvc.rest.config.ActiveDirectoryLDAPConfig
+import za.co.absa.loginsvc.rest.config.auth.ActiveDirectoryLDAPConfig
 
 import java.util
 import scala.collection.JavaConverters._

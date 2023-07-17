@@ -16,38 +16,53 @@
 
 package za.co.absa.loginsvc.rest
 
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.{Bean, Configuration}
-import org.springframework.security.authentication.AuthenticationManager
+import org.springframework.security.authentication.{AuthenticationManager, AuthenticationProvider}
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
-import za.co.absa.loginsvc.rest.config.{ActiveDirectoryLDAPConfig, UsersConfig}
+import za.co.absa.loginsvc.rest.config.auth.{ActiveDirectoryLDAPConfig, DynamicAuthOrder, UsersConfig}
+import za.co.absa.loginsvc.rest.config.validation.ConfigValidationException
 import za.co.absa.loginsvc.rest.provider.ConfigUsersAuthenticationProvider
 import za.co.absa.loginsvc.rest.provider.ad.ldap.ActiveDirectoryLDAPAuthenticationProvider
 
+import scala.collection.immutable.SortedMap
+
 @Configuration
-class AuthManagerConfig @Autowired()(
-  // TODO make it autowired but only if in config AD LDAP provider is set up (#28)
-  usersConfig: UsersConfig,
-  adLDAPConfig: ActiveDirectoryLDAPConfig
-){
+class AuthManagerConfig{
+
+  @Autowired(required = false)
+  private val usersConfig: UsersConfig = null
+  @Autowired (required = false)
+  private val adLDAPConfig: ActiveDirectoryLDAPConfig = null
+
+  private val logger = LoggerFactory.getLogger(classOf[AuthManagerConfig])
 
   @Bean
   def authManager(http: HttpSecurity): AuthenticationManager = {
-    val authenticationManagerBuilder = http.getSharedObject(classOf[AuthenticationManagerBuilder])
 
-    // TODO: take which providers and in which order to use from config (#28)
-    authenticationManagerBuilder
-      // if it is not null, on auth failure infinite recursion happens
-      .parentAuthenticationManager(null)
-      // currently, comment out or reorder the auth providers you want to use - #28
-      .authenticationProvider(
-        new ConfigUsersAuthenticationProvider(usersConfig)
-      )
-      .authenticationProvider(
-        new ActiveDirectoryLDAPAuthenticationProvider(adLDAPConfig)
-      )
-      .build
+    val authenticationManagerBuilder = http.getSharedObject(classOf[AuthenticationManagerBuilder]).parentAuthenticationManager(null)
+    val configs: Array[DynamicAuthOrder] = Array(usersConfig, adLDAPConfig)
+    val orderedProviders = createProviders(configs)
+
+    if(orderedProviders.isEmpty)
+      throw ConfigValidationException("No authentication method enabled in config")
+
+    orderedProviders.foreach(
+      auth => {
+        logger.info(s"Authentication method ${auth._2.getClass.getSimpleName} has been initialized at order ${auth._1}")
+        authenticationManagerBuilder.authenticationProvider(auth._2)
+      })
+    authenticationManagerBuilder.build
   }
 
+  private def createProviders(configs: Array[DynamicAuthOrder]): SortedMap[Int, AuthenticationProvider] = {
+    SortedMap.empty[Int, AuthenticationProvider] ++ configs.filter(_.order > 0)
+      .map {
+        case c: UsersConfig => (c.order, new ConfigUsersAuthenticationProvider(c))
+        case c: ActiveDirectoryLDAPConfig => (c.order, new ActiveDirectoryLDAPAuthenticationProvider(c))
+        case other => throw new IllegalStateException(s"unsupported config $other")
+      }
+  }
 }
