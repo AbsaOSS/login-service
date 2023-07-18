@@ -26,6 +26,8 @@ FROM $BASE_IMAGE as base
 ARG BUILD_PROXY
 # Override of the example application config is possible
 ARG CONFIG=./src/main/resources/example.application.yaml
+# Provide path to LDAP cert in PEM format
+ARG LDAP_CERT
 
 # ARG SSL_DNAME is defined below in the SSL-enabled image
 
@@ -46,6 +48,10 @@ ENV http_proxy=$BUILD_PROXY
 ENV https_proxy=$BUILD_PROXY
 ENV HTTP_PROXY=$BUILD_PROXY
 ENV HTTPS_PROXY=$BUILD_PROXY
+
+# LDAP cert setup - include cert in cacerts to be trusted (JDK8 path version)
+COPY $LDAP_CERT /opt/ldapcert.pem
+RUN echo yes | keytool -import -file /opt/ldapcert.pem -alias ldaps -keystore $JAVA_HOME/jre/lib/security/cacerts -storepass changeit
 
 # uncomment and add packages you would need to install via yum if any
 #RUN yum -y update
