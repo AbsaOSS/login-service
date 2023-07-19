@@ -18,15 +18,18 @@ package za.co.absa.loginsvc.rest.service
 
 import io.jsonwebtoken.{Claims, Jws, Jwts}
 import org.scalatest.flatspec.AnyFlatSpec
+import org.springframework.beans.factory.annotation.Autowired
 import za.co.absa.loginsvc.model.User
-import za.co.absa.loginsvc.rest.config.JwtConfig
+import za.co.absa.loginsvc.rest.config.{ConfigProvider, JwtConfig}
 
 import java.util
 import scala.util.Try
 
 class JWTServiceTest extends AnyFlatSpec {
 
-  private val testConfig = JwtConfig(algName = "RS256", expTime = 2)
+  @Autowired
+  private val testConfig : ConfigProvider = null
+
   private val jwtService: JWTService = new JWTService(testConfig)
 
   private val userWithoutEmailAndGroups: User = User(

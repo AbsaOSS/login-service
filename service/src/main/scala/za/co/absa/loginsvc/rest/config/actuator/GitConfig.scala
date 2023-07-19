@@ -14,23 +14,19 @@
  * limitations under the License.
  */
 
-package za.co.absa.loginsvc.rest.config
+package za.co.absa.loginsvc.rest.config.actuator
 
 import org.springframework.boot.context.properties.{ConfigurationProperties, ConstructorBinding}
-import javax.annotation.PostConstruct
+
+import java.io.{IOException, PrintWriter}
 import java.text.SimpleDateFormat
-import java.io.{PrintWriter, IOException}
+import javax.annotation.PostConstruct
 import scala.util.Try
 
-@ConstructorBinding
-@ConfigurationProperties(prefix = "loginsvc.rest.config.git-info")
 case class GitConfig(generateGitProperties: Boolean, generateGitPropertiesFile: Boolean) {
 
-  @PostConstruct
-  def init(): Unit = {
-    if(generateGitProperties)
-      GitPropertiesGenerator.generateGitProperties(generateGitPropertiesFile)
-  }
+  if(generateGitProperties)
+    GitPropertiesGenerator.generateGitProperties(generateGitPropertiesFile)
 }
 
 object GitPropertiesGenerator {

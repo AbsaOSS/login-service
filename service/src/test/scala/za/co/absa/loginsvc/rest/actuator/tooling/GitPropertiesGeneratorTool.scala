@@ -20,7 +20,7 @@ import java.nio.file.{Files, Paths}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import org.springframework.boot.test.context.SpringBootTest
-import za.co.absa.loginsvc.rest.config.GitPropertiesGenerator
+import za.co.absa.loginsvc.rest.config.actuator.GitPropertiesGenerator
 
 @SpringBootTest
 class GitPropertiesGeneratorTool extends AnyFlatSpec with Matchers {

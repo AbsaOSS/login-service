@@ -24,17 +24,12 @@ import za.co.absa.loginsvc.rest.config.validation.ConfigValidationResult.{Config
 import javax.annotation.PostConstruct
 import scala.util.{Failure, Success, Try}
 
-@ConstructorBinding
-@ConfigurationProperties(prefix = "loginsvc.rest.jwt")
 case class JwtConfig(
   algName: String,
   expTime: Int
 ) extends ConfigValidatable {
 
-  @PostConstruct
-  def init(): Unit = {
-    this.validate().throwOnErrors()
-  }
+  //this.validate().throwOnErrors()
 
   /** May throw ConfigValidationException or IllegalArgumentException */
   override def validate(): ConfigValidationResult = {

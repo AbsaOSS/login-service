@@ -18,13 +18,13 @@ package za.co.absa.loginsvc.rest.config
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+import za.co.absa.loginsvc.rest.config.actuator.{GitConfig, GitPropertiesGenerator}
 
 class GitConfigTest extends AnyFlatSpec with Matchers {
 
   "The constructor" should " not generate git.properties" in {
     val checkOne = GitConfig(generateGitProperties = false, generateGitPropertiesFile = false)
     GitPropertiesGenerator.setProperties("Test1", "Test2", "Test3")
-    checkOne.init()
     assert(GitPropertiesGenerator.getBranch == "Test1" &&
       GitPropertiesGenerator.getCommitId == "Test2" &&
       GitPropertiesGenerator.getCommitTime == "Test3")
@@ -33,7 +33,7 @@ class GitConfigTest extends AnyFlatSpec with Matchers {
   "The constructor" should "generate git.properties" in {
     val checkTwo = GitConfig(generateGitProperties = true, generateGitPropertiesFile = false)
     GitPropertiesGenerator.setProperties("Test1", "Test2", "Test3")
-    checkTwo.init()
+    GitPropertiesGenerator.generateGitProperties(false)
     assert(GitPropertiesGenerator.getBranch != "Test1" &&
       GitPropertiesGenerator.getCommitId != "Test2" &&
       GitPropertiesGenerator.getCommitTime != "Test3")

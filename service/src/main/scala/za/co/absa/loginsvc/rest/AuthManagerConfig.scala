@@ -22,6 +22,7 @@ import org.springframework.context.annotation.{Bean, Configuration}
 import org.springframework.security.authentication.{AuthenticationManager, AuthenticationProvider}
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
+import za.co.absa.loginsvc.rest.config.ConfigProvider
 import za.co.absa.loginsvc.rest.config.auth.{ActiveDirectoryLDAPConfig, DynamicAuthOrder, UsersConfig}
 import za.co.absa.loginsvc.rest.config.validation.ConfigValidationException
 import za.co.absa.loginsvc.rest.provider.ConfigUsersAuthenticationProvider
@@ -32,10 +33,11 @@ import scala.collection.immutable.SortedMap
 @Configuration
 class AuthManagerConfig{
 
-  @Autowired(required = false)
-  private val usersConfig: UsersConfig = null
-  @Autowired (required = false)
-  private val adLDAPConfig: ActiveDirectoryLDAPConfig = null
+  @Autowired
+  private val configProvider: ConfigProvider = null
+
+  private val usersConfig: UsersConfig = configProvider.getUsersConfig
+  private val adLDAPConfig: ActiveDirectoryLDAPConfig = configProvider.getLdapConfig
 
   private val logger = LoggerFactory.getLogger(classOf[AuthManagerConfig])
 

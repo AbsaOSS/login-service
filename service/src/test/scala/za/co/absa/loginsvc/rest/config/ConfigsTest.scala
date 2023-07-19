@@ -28,16 +28,15 @@ import za.co.absa.loginsvc.rest.config.auth.{ActiveDirectoryLDAPConfig, UserConf
 class ConfigsTest {
 
   @Autowired
-  var baseConfig: BaseConfig = _
+  var configProvider: ConfigProvider = _
 
-  @Autowired
-  var jwtConfig: JwtConfig  = _
+  var baseConfig: BaseConfig = configProvider.getBaseConfig
 
-  @Autowired
-  var usersConfig: UsersConfig = _
+  var jwtConfig: JwtConfig  = configProvider.getJWTConfig
 
-  @Autowired
-  var activeDirectoryLDAPConfig: ActiveDirectoryLDAPConfig = _
+  var usersConfig: UsersConfig = configProvider.getUsersConfig
+
+  var activeDirectoryLDAPConfig: ActiveDirectoryLDAPConfig = configProvider.getLdapConfig
 
   @Test
   def testBaseConfig(): Unit = {
@@ -53,7 +52,7 @@ class ConfigsTest {
   @Test
   def testUserConfig(): Unit = {
     val actual = usersConfig.knownUsers
-    val expected = Array(UserConfig("user1", "password1", null, Array()), UserConfig("TestUser", "password123", "test@abs.com", Array("groupA", "groupB")))
+    val expected = Array(UserConfig("user1", "password1", null, Array()), UserConfig("TestUser", "password123", Option("test@abs.com"), Array("groupA", "groupB")))
     Range(0,actual.length).foreach{i =>
       actual(i).username shouldBe  expected(i).username
       actual(i).password shouldBe  expected(i).password

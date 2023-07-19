@@ -19,7 +19,7 @@ object Dependencies {
 
   object Versions {
     val jacksonModuleScala = "2.14.2"
-    val jacksonDatabind = jacksonModuleScala
+    val jacksonDatabind: String = jacksonModuleScala
     val typesafeConfig = "1.4.2"
     val javaCompat = "0.9.0"
 
@@ -29,6 +29,8 @@ object Dependencies {
     val jjwt = "0.11.5"
 
     val scalatest = "3.2.15"
+
+    val pureConfig = "0.17.2"
   }
 
   lazy val jacksonModuleScala = "com.fasterxml.jackson.module" %% "jackson-module-scala" % Versions.jacksonModuleScala
@@ -46,6 +48,9 @@ object Dependencies {
   lazy val jjwtApi = "io.jsonwebtoken" % "jjwt-api" % Versions.jjwt
   lazy val jjwtImpl = "io.jsonwebtoken" % "jjwt-impl" % Versions.jjwt % Runtime
   lazy val jjwtJackson = "io.jsonwebtoken" % "jjwt-jackson" % Versions.jjwt % Runtime
+
+  lazy val pureConfig = "com.github.pureconfig" %% "pureconfig" % Versions.pureConfig
+  lazy val pureConfigYaml = "com.github.pureconfig" %% "pureconfig-yaml" % Versions.pureConfig
 
   lazy val servletApi = "javax.servlet" % "javax.servlet-api" % "3.0.1" % Provided
 
@@ -76,6 +81,9 @@ object Dependencies {
     jjwtApi,
     jjwtImpl,
     jjwtJackson,
+
+    pureConfig,
+    pureConfigYaml,
 
     springDoc,
 

@@ -18,8 +18,4 @@ package za.co.absa.loginsvc.rest.config
 
 import org.springframework.boot.context.properties.{ConfigurationProperties, ConstructorBinding}
 
-@ConstructorBinding
-@ConfigurationProperties(prefix = "logingsvc.rest.config")
-case class BaseConfig(
-  someKey: String
-)
+case class BaseConfig(someKey: String)

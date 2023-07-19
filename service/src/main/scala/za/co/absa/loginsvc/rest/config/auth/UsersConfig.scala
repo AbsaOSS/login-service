@@ -22,14 +22,14 @@ import za.co.absa.loginsvc.rest.config.validation.{ConfigValidatable, ConfigVali
 
 import javax.annotation.PostConstruct
 
-@ConstructorBinding
-@ConfigurationProperties(prefix = "loginsvc.rest.auth.provider.users")
 case class UsersConfig(knownUsers: Array[UserConfig], order: Int)
   extends ConfigValidatable with DynamicAuthOrder {
 
   lazy val knownUsersMap: Map[String, UserConfig] = knownUsers
     .map { entry => (entry.username, entry) }
     .toMap
+
+    this.validate().throwOnErrors()
 
   // todo validation is done using a custom trait/method -- Issue #24 validation
   // Until is resolved https://github.com/spring-projects/spring-boot/issues/33669
@@ -56,22 +56,16 @@ case class UsersConfig(knownUsers: Array[UserConfig], order: Int)
     }
     else ConfigValidationSuccess
   }
-
-  @PostConstruct
-  def init(): Unit = {
-    this.validate().throwOnErrors()
-  }
 }
 
-@ConstructorBinding
 case class UserConfig(username: String,
                        password: String,
-                       email: String, // may be null
+                       email: Option[String], // may be null
                        groups: Array[String]
                      ) extends ConfigValidatable {
 
   override def toString: String = {
-    s"UserConfig($username, $password, $email, ${Option(groups).map(_.toList)})"
+    s"UserConfig($username, $password, ${email.getOrElse("")}, ${Option(groups).map(_.toList)})"
   }
 
   override def validate(): ConfigValidationResult = {
