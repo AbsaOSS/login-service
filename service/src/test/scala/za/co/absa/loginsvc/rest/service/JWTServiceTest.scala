@@ -18,9 +18,8 @@ package za.co.absa.loginsvc.rest.service
 
 import io.jsonwebtoken.{Claims, Jws, Jwts}
 import org.scalatest.flatspec.AnyFlatSpec
-import org.springframework.beans.factory.annotation.Autowired
 import za.co.absa.loginsvc.model.User
-import za.co.absa.loginsvc.rest.config.{ConfigProvider, JwtConfig}
+import za.co.absa.loginsvc.rest.config.ConfigProvider
 
 import java.util
 import scala.util.Try

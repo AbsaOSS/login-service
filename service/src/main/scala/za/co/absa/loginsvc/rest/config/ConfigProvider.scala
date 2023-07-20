@@ -1,7 +1,6 @@
 package za.co.absa.loginsvc.rest.config
 
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.context.annotation.Configuration
 import org.springframework.stereotype.Component
 import pureconfig.ConfigReader
 import pureconfig.generic.auto._

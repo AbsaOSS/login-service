@@ -21,8 +21,7 @@ import io.jsonwebtoken.{Jwts, SignatureAlgorithm}
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import za.co.absa.loginsvc.model.User
-import za.co.absa.loginsvc.rest.config.{JwtConfig, ConfigProvider}
-
+import za.co.absa.loginsvc.rest.config.ConfigProvider
 import java.security.{KeyPair, PublicKey}
 import java.time.Instant
 import java.time.temporal.ChronoUnit

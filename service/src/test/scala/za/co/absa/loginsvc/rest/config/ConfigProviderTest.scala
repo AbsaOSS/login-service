@@ -16,14 +16,9 @@
 
 package za.co.absa.loginsvc.rest.config
 
-import org.junit.jupiter.api.Test
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.test.context.TestPropertySource
-import za.co.absa.loginsvc.rest.config.auth.{ActiveDirectoryLDAPConfig, UserConfig, UsersConfig}
+import za.co.absa.loginsvc.rest.config.auth.{ActiveDirectoryLDAPConfig, UsersConfig}
 
 class ConfigProviderTest extends AnyFlatSpec with Matchers  {
 
