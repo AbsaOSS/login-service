@@ -19,14 +19,14 @@ package za.co.absa.loginsvc.rest.service
 import io.jsonwebtoken.{Claims, Jws, Jwts}
 import org.scalatest.flatspec.AnyFlatSpec
 import za.co.absa.loginsvc.model.User
-import za.co.absa.loginsvc.rest.config.ConfigProvider
+import za.co.absa.loginsvc.rest.config.{ConfigProvider, TestYaml}
 
 import java.util
 import scala.util.Try
 
 class JWTServiceTest extends AnyFlatSpec {
 
-  private val testConfig : ConfigProvider = new ConfigProvider("service\\src\\test\\resources\\application.yaml")
+  private val testConfig : ConfigProvider = new ConfigProvider(TestYaml.testString, true)
   private val jwtService: JWTService = new JWTService(testConfig)
 
   private val userWithoutEmailAndGroups: User = User(

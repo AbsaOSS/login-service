@@ -18,17 +18,23 @@ package za.co.absa.loginsvc.rest.config
 
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
-import pureconfig.ConfigReader
+import pureconfig._
 import pureconfig.generic.auto._
 import pureconfig.module.yaml._
 import za.co.absa.loginsvc.rest.config.actuator.GitConfig
 import za.co.absa.loginsvc.rest.config.auth._
 import za.co.absa.loginsvc.rest.config.validation.ConfigValidationException
+import java.nio.file.Files
 
 @Component
-class ConfigProvider(@Value("service\\src\\main\\resources\\application.yaml") path : String) {
+class ConfigProvider(@Value("service\\src\\main\\resources\\application.yaml") yaml : String, @Value("false") testEnvironment: Boolean) {
 
-  private val yamlConfig = YamlConfigSource.file(path)
+  private val yamlConfig: YamlConfigSource = {
+    if (testEnvironment)
+      YamlConfigSource.string(yaml)
+    else
+      YamlConfigSource.file(yaml)
+  }
 
   //GitConfig needs to be initialized at startup
   getGitConfig

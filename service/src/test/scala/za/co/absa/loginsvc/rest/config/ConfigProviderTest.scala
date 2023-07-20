@@ -22,7 +22,7 @@ import za.co.absa.loginsvc.rest.config.auth.{ActiveDirectoryLDAPConfig, UsersCon
 
 class ConfigProviderTest extends AnyFlatSpec with Matchers  {
 
-  private val configProvider : ConfigProvider = new ConfigProvider("service\\src\\test\\resources\\application.yaml")
+  private val configProvider : ConfigProvider = new ConfigProvider(TestYaml.testString, true)
 
   "The baseConfig properties" should "Match" in {
     var baseConfig: BaseConfig = configProvider.getBaseConfig
