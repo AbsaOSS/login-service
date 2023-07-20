@@ -1,5 +1,7 @@
 package za.co.absa.loginsvc.rest.config
 
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.context.annotation.Configuration
 import org.springframework.stereotype.Component
 import pureconfig.ConfigReader
 import pureconfig.generic.auto._
@@ -9,9 +11,12 @@ import za.co.absa.loginsvc.rest.config.auth._
 import za.co.absa.loginsvc.rest.config.validation.ConfigValidationException
 
 @Component
-class ConfigProvider {
+class ConfigProvider(@Value("service\\src\\main\\resources\\application.yaml") path : String) {
 
-  private val yamlConfig = YamlConfigSource.file("service\\src\\main\\resources\\application.yaml")
+  private val yamlConfig = YamlConfigSource.file(path)
+
+  //GitConfig needs to be initialized at startup
+  getGitConfig
 
   def getBaseConfig : BaseConfig = {
     createConfigClass[BaseConfig]("loginsvc.rest.config").

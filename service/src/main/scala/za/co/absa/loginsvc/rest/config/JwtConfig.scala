@@ -29,7 +29,7 @@ case class JwtConfig(
   expTime: Int
 ) extends ConfigValidatable {
 
-  //this.validate().throwOnErrors()
+  this.validate().throwOnErrors()
 
   /** May throw ConfigValidationException or IllegalArgumentException */
   override def validate(): ConfigValidationResult = {

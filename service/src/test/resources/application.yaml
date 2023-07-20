@@ -17,7 +17,12 @@ loginsvc:
           search-filter: "(samaccountname={1})"
         # Users (config-defined)
         users:
+          order: 0
           known-users:
+            - username: "user1"
+              password: "password1"
+              groups:
+                - "group1"
 
 # App Config
 spring:

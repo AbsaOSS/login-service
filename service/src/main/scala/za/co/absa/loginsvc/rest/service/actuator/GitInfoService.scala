@@ -24,7 +24,7 @@ import za.co.absa.loginsvc.rest.config.actuator.GitPropertiesGenerator
 @Component
 class GitInfoService(@Value("${management.info.git.enabled:false}")
                      gitInfoEnabled: Boolean,
-                     @Value("${logingw.rest.config.git-info.generate-git-properties:false}")
+                     @Value("${loginsvc.rest.config.git-info.generate-git-properties:false}")
                      gitGenerationEnabled: Boolean) extends InfoContributor {
 
   override def contribute(builder: Info.Builder): Unit = {

@@ -27,9 +27,7 @@ import scala.util.Try
 
 class JWTServiceTest extends AnyFlatSpec {
 
-  @Autowired
-  private val testConfig : ConfigProvider = null
-
+  private val testConfig : ConfigProvider = new ConfigProvider("service\\src\\test\\resources\\application.yaml")
   private val jwtService: JWTService = new JWTService(testConfig)
 
   private val userWithoutEmailAndGroups: User = User(

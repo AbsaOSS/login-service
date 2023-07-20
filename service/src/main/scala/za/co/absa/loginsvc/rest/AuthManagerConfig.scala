@@ -31,10 +31,7 @@ import za.co.absa.loginsvc.rest.provider.ad.ldap.ActiveDirectoryLDAPAuthenticati
 import scala.collection.immutable.SortedMap
 
 @Configuration
-class AuthManagerConfig{
-
-  @Autowired
-  private val configProvider: ConfigProvider = null
+class AuthManagerConfig @Autowired()(configProvider: ConfigProvider){
 
   private val usersConfig: UsersConfig = configProvider.getUsersConfig
   private val adLDAPConfig: ActiveDirectoryLDAPConfig = configProvider.getLdapConfig
