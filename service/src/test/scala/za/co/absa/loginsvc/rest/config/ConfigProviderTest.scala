@@ -18,12 +18,11 @@ package za.co.absa.loginsvc.rest.config
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import za.co.absa.loginsvc.rest.FakeConfig
 import za.co.absa.loginsvc.rest.config.auth.{ActiveDirectoryLDAPConfig, UsersConfig}
 
 class ConfigProviderTest extends AnyFlatSpec with Matchers  {
 
-  private val configProvider : ConfigProvider = new ConfigProvider(FakeConfig.testYaml)
+  private val configProvider : ConfigProvider = new ConfigProvider("service/src/test/resources/application.yaml")
 
   "The baseConfig properties" should "Match" in {
     var baseConfig: BaseConfig = configProvider.getBaseConfig
