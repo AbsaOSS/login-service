@@ -22,7 +22,7 @@ object FakeConfig {
     "loginsvc:\r\n" +
       "  rest:\r\n" +
       "    jwt:\r\n" +
-      "      exp-time: 3\r\n" +
+      "      exp-time: 4\r\n" +
       "      alg-name: \"RS256\"\r\n" +
       "    config:\r\n" +
       "      some-key: \"BETA\"\r\n\r\n" +

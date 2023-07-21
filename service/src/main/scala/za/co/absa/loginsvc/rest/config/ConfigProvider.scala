@@ -27,7 +27,7 @@ import za.co.absa.loginsvc.rest.config.validation.ConfigValidationException
 import java.nio.file.{InvalidPathException, Paths}
 
 @Component
-class ConfigProvider(@Value("${DefaultYamlPath:service\\src\\main\\resources\\application.yaml}") yamlContent: String) {
+class ConfigProvider(@Value("${DefaultYamlPath:service/src/main/resources/application.yaml}") yamlContent: String) {
 
   private var yamlConfig: YamlConfigSource = {
     if (isValidPath(yamlContent))
