@@ -24,16 +24,16 @@ import pureconfig.module.yaml._
 import za.co.absa.loginsvc.rest.config.actuator.GitConfig
 import za.co.absa.loginsvc.rest.config.auth._
 import za.co.absa.loginsvc.rest.config.validation.ConfigValidationException
-import java.nio.file.Files
+import java.nio.file.{InvalidPathException, Paths}
 
 @Component
-class ConfigProvider(@Value("service\\src\\main\\resources\\application.yaml") yaml : String, @Value("false") testEnvironment: Boolean) {
+class ConfigProvider(@Value("${DefaultYamlPath:service\\src\\main\\resources\\application.yaml}") yamlContent: String) {
 
-  private val yamlConfig: YamlConfigSource = {
-    if (testEnvironment)
-      YamlConfigSource.string(yaml)
+  private var yamlConfig: YamlConfigSource = {
+    if (isValidPath(yamlContent))
+      YamlConfigSource.file(yamlContent)
     else
-      YamlConfigSource.file(yaml)
+      YamlConfigSource.string(yamlContent)
   }
 
   //GitConfig needs to be initialized at startup
@@ -49,20 +49,39 @@ class ConfigProvider(@Value("service\\src\\main\\resources\\application.yaml") y
       getOrElse(GitConfig(generateGitProperties = false,generateGitPropertiesFile = false))
   }
   def getJWTConfig : JwtConfig = {
-    createConfigClass[JwtConfig]("loginsvc.rest.jwt").
+    var jwtConfig = createConfigClass[JwtConfig]("loginsvc.rest.jwt").
       getOrElse(throw ConfigValidationException("Error with JWT Config properties"))
+    jwtConfig.throwErrors()
+
+    jwtConfig
   }
 
   def getLdapConfig : ActiveDirectoryLDAPConfig = {
-    createConfigClass[ActiveDirectoryLDAPConfig]("loginsvc.rest.auth.provider.ldap").
+    var ldapConfig = createConfigClass[ActiveDirectoryLDAPConfig]("loginsvc.rest.auth.provider.ldap").
       getOrElse(ActiveDirectoryLDAPConfig(null, null, null, 0))
+    ldapConfig.throwErrors()
+
+    ldapConfig
   }
 
   def getUsersConfig : UsersConfig = {
-    createConfigClass[UsersConfig]("loginsvc.rest.auth.provider.users").
+    var userConfig = createConfigClass[UsersConfig]("loginsvc.rest.auth.provider.users").
       getOrElse(UsersConfig(Array.empty[UserConfig], 0))
+
+    userConfig.throwErrors()
+
+    userConfig
   }
 
   private def createConfigClass[A](nameSpace : String)(implicit reader: ConfigReader[A]) : Option[A] =
     this.yamlConfig.at(nameSpace).load[A].toOption
+
+  private def isValidPath(pathString: String): Boolean = {
+    try {
+      Paths.get(pathString)
+      true // If no exception is thrown, the pathString is valid
+    } catch {
+      case _: InvalidPathException => false // InvalidPathException indicates an invalid path
+    }
+  }
 }

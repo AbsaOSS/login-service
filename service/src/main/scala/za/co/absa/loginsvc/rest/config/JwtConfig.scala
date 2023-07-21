@@ -17,11 +17,8 @@
 package za.co.absa.loginsvc.rest.config
 
 import io.jsonwebtoken.SignatureAlgorithm
-import org.springframework.boot.context.properties.{ConfigurationProperties, ConstructorBinding}
 import za.co.absa.loginsvc.rest.config.validation.{ConfigValidatable, ConfigValidationException, ConfigValidationResult}
 import za.co.absa.loginsvc.rest.config.validation.ConfigValidationResult.{ConfigValidationError, ConfigValidationSuccess}
-
-import javax.annotation.PostConstruct
 import scala.util.{Failure, Success, Try}
 
 case class JwtConfig(
@@ -29,7 +26,8 @@ case class JwtConfig(
   expTime: Int
 ) extends ConfigValidatable {
 
-  this.validate().throwOnErrors()
+  def throwErrors(): Unit =
+    this.validate().throwOnErrors()
 
   /** May throw ConfigValidationException or IllegalArgumentException */
   override def validate(): ConfigValidationResult = {

@@ -14,14 +14,15 @@
  * limitations under the License.
  */
 
-package za.co.absa.loginsvc.rest.config
+package za.co.absa.loginsvc.rest
 
-object TestYaml {
-  def testString : String =
+object FakeConfig {
+
+  val testYaml: String =
     "loginsvc:\r\n" +
       "  rest:\r\n" +
       "    jwt:\r\n" +
-      "      exp-time: 4\r\n" +
+      "      exp-time: 3\r\n" +
       "      alg-name: \"RS256\"\r\n" +
       "    config:\r\n" +
       "      some-key: \"BETA\"\r\n\r\n" +

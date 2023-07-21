@@ -34,7 +34,8 @@ case class ActiveDirectoryLDAPConfig(domain: String, url: String, searchFilter: 
   extends ConfigValidatable with DynamicAuthOrder
 {
 
-  this.validate().throwOnErrors()
+  def throwErrors(): Unit =
+    this.validate().throwOnErrors()
 
   override def validate(): ConfigValidationResult = {
 

@@ -16,11 +16,8 @@
 
 package za.co.absa.loginsvc.rest.config.auth
 
-import org.springframework.boot.context.properties.{ConfigurationProperties, ConstructorBinding}
 import za.co.absa.loginsvc.rest.config.validation.ConfigValidationResult.{ConfigValidationError, ConfigValidationSuccess}
 import za.co.absa.loginsvc.rest.config.validation.{ConfigValidatable, ConfigValidationException, ConfigValidationResult}
-
-import javax.annotation.PostConstruct
 
 case class UsersConfig(knownUsers: Array[UserConfig], order: Int)
   extends ConfigValidatable with DynamicAuthOrder {
@@ -29,6 +26,7 @@ case class UsersConfig(knownUsers: Array[UserConfig], order: Int)
     .map { entry => (entry.username, entry) }
     .toMap
 
+  def throwErrors(): Unit =
     this.validate().throwOnErrors()
 
   // todo validation is done using a custom trait/method -- Issue #24 validation
