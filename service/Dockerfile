@@ -28,19 +28,17 @@ ARG BUILD_PROXY
 ARG CONFIG=./src/main/resources/example.application.yaml
 # Provide path to LDAP cert in PEM format
 ARG LDAP_SSL_CERT
-
 # ARG SSL_DNAME is defined below in the SSL-enabled image
+# In case you build the Dockerfile from another location than the default 'service' dir, provide a prefix to reach it
+ARG LS_PREFIX=.
 
 LABEL org.opencontainers.image.authors="ABSA"
-
-ENV LS_WAR_PATH=./target/scala-2.12
-# deploy as root
-ENV LS_WAR=ROOT.war
 
 # Copy Spring application properties
 COPY $CONFIG /opt/application.yaml
 
-COPY $LS_WAR_PATH/*.war /usr/local/tomcat/webapps/$LS_WAR
+# deploy as root application in tomcat
+COPY ${LS_PREFIX}/target/scala-2.12/*.war /usr/local/tomcat/webapps/ROOT.war
 
 ENV SPRING_CONFIG_ADDITIONAL-LOCATION=/opt/application.yaml
 
