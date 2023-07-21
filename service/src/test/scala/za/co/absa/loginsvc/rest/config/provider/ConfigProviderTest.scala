@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package za.co.absa.loginsvc.rest.config
+package za.co.absa.loginsvc.rest.config.provider
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import za.co.absa.loginsvc.rest.config.auth.{ActiveDirectoryLDAPConfig, UsersConfig}
+import za.co.absa.loginsvc.rest.config.{BaseConfig, JwtConfig}
 
 class ConfigProviderTest extends AnyFlatSpec with Matchers  {
 

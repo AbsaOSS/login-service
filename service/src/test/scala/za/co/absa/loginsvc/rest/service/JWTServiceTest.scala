@@ -19,7 +19,7 @@ package za.co.absa.loginsvc.rest.service
 import io.jsonwebtoken.{Claims, Jws, Jwts}
 import org.scalatest.flatspec.AnyFlatSpec
 import za.co.absa.loginsvc.model.User
-import za.co.absa.loginsvc.rest.config.ConfigProvider
+import za.co.absa.loginsvc.rest.config.provider.ConfigProvider
 
 import java.util
 import scala.util.Try

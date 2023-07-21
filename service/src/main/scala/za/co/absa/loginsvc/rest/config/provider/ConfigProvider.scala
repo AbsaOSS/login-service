@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package za.co.absa.loginsvc.rest.config
+package za.co.absa.loginsvc.rest.config.provider
 
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
@@ -24,10 +24,14 @@ import pureconfig.module.yaml._
 import za.co.absa.loginsvc.rest.config.actuator.GitConfig
 import za.co.absa.loginsvc.rest.config.auth._
 import za.co.absa.loginsvc.rest.config.validation.ConfigValidationException
+import za.co.absa.loginsvc.rest.config.{BaseConfig, JwtConfig}
+
 import java.nio.file.{InvalidPathException, Paths}
 
 @Component
-class ConfigProvider(@Value("${DefaultYamlPath:service/src/main/resources/application.yaml}") yamlContent: String) {
+class ConfigProvider(@Value("${DefaultYamlPath:service/src/main/resources/application.yaml}") yamlContent: String)
+  extends JwtConfigProvider
+    with AuthConfigProvider {
 
   private var yamlConfig: YamlConfigSource = {
     if (isValidPath(yamlContent))

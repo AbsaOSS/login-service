@@ -58,7 +58,7 @@ case class UsersConfig(knownUsers: Array[UserConfig], order: Int)
 
 case class UserConfig(username: String,
                        password: String,
-                       email: Option[String], // may be null
+                       email: Option[String], // may be None
                        groups: Array[String]
                      ) extends ConfigValidatable {
 
