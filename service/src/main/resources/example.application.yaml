@@ -29,6 +29,7 @@ loginsvc:
             - username: "user1"
               password: "password1"
               groups:
+                - "group1"
             - username: "TestUser"
               password: "password123"
               email: "test@abs.com"

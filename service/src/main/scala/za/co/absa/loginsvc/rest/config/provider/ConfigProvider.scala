@@ -61,20 +61,25 @@ class ConfigProvider(@Value("${DefaultYamlPath:service/src/main/resources/applic
   }
 
   def getLdapConfig : ActiveDirectoryLDAPConfig = {
-    var ldapConfig = createConfigClass[ActiveDirectoryLDAPConfig]("loginsvc.rest.auth.provider.ldap").
-      getOrElse(ActiveDirectoryLDAPConfig(null, null, null, 0))
-    ldapConfig.throwErrors()
-
-    ldapConfig
+    var ldapConfigOption = createConfigClass[ActiveDirectoryLDAPConfig]("loginsvc.rest.auth.provider.ldap")
+    if(ldapConfigOption.nonEmpty)
+      {
+        var ldapConfig = ldapConfigOption.get
+        ldapConfig.throwErrors()
+        ldapConfig
+      }
+    else ActiveDirectoryLDAPConfig("", "", "", 0)
   }
 
   def getUsersConfig : UsersConfig = {
-    var userConfig = createConfigClass[UsersConfig]("loginsvc.rest.auth.provider.users").
-      getOrElse(UsersConfig(Array.empty[UserConfig], 0))
+    var userConfigOption = createConfigClass[UsersConfig]("loginsvc.rest.auth.provider.users")
 
-    userConfig.throwErrors()
-
-    userConfig
+    if (userConfigOption.nonEmpty) {
+      var userConfig = userConfigOption.get
+      userConfig.throwErrors()
+      userConfig
+    }
+    else UsersConfig(Array.empty[UserConfig], 0)
   }
 
   private def createConfigClass[A](nameSpace : String)(implicit reader: ConfigReader[A]) : Option[A] =
