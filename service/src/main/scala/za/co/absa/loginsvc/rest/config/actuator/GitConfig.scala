@@ -16,11 +16,8 @@
 
 package za.co.absa.loginsvc.rest.config.actuator
 
-import org.springframework.boot.context.properties.{ConfigurationProperties, ConstructorBinding}
-
 import java.io.{IOException, PrintWriter}
 import java.text.SimpleDateFormat
-import javax.annotation.PostConstruct
 import scala.util.Try
 
 case class GitConfig(generateGitProperties: Boolean, generateGitPropertiesFile: Boolean) {

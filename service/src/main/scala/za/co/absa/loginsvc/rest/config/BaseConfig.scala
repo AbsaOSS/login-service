@@ -16,6 +16,4 @@
 
 package za.co.absa.loginsvc.rest.config
 
-import org.springframework.boot.context.properties.{ConfigurationProperties, ConstructorBinding}
-
 case class BaseConfig(someKey: String)

@@ -22,6 +22,8 @@ import org.scalatest.matchers.should.Matchers
 class GitConfigTest extends AnyFlatSpec with Matchers {
 
   "The constructor" should " not generate git.properties" in {
+    val gitConfig = GitConfig(generateGitProperties = false, generateGitPropertiesFile = false)
+
     GitPropertiesGenerator.setProperties("Test1", "Test2", "Test3")
     assert(GitPropertiesGenerator.getBranch == "Test1" &&
       GitPropertiesGenerator.getCommitId == "Test2" &&

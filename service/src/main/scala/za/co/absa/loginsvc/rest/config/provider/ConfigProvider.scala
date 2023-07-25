@@ -26,19 +26,12 @@ import za.co.absa.loginsvc.rest.config.auth._
 import za.co.absa.loginsvc.rest.config.validation.ConfigValidationException
 import za.co.absa.loginsvc.rest.config.{BaseConfig, JwtConfig}
 
-import java.nio.file.{InvalidPathException, Paths}
-
 @Component
-class ConfigProvider(@Value("${DefaultYamlPath:service/src/main/resources/application.yaml}") yamlContent: String)
+class ConfigProvider(@Value("${spring.config.location}") yamlContent: String)
   extends JwtConfigProvider
     with AuthConfigProvider {
 
-  private var yamlConfig: YamlConfigSource = {
-    if (isValidPath(yamlContent))
-      YamlConfigSource.file(yamlContent)
-    else
-      YamlConfigSource.string(yamlContent)
-  }
+  private val yamlConfig: YamlConfigSource = YamlConfigSource.file(yamlContent)
 
   //GitConfig needs to be initialized at startup
   getGitConfig
@@ -48,12 +41,8 @@ class ConfigProvider(@Value("${DefaultYamlPath:service/src/main/resources/applic
       getOrElse(BaseConfig(""))
   }
 
-  def getGitConfig : GitConfig = {
-    createConfigClass[GitConfig]("loginsvc.rest.config.git-info").
-      getOrElse(GitConfig(generateGitProperties = false,generateGitPropertiesFile = false))
-  }
   def getJWTConfig : JwtConfig = {
-    var jwtConfig = createConfigClass[JwtConfig]("loginsvc.rest.jwt").
+    val jwtConfig = createConfigClass[JwtConfig]("loginsvc.rest.jwt").
       getOrElse(throw ConfigValidationException("Error with JWT Config properties"))
     jwtConfig.throwErrors()
 
@@ -61,10 +50,10 @@ class ConfigProvider(@Value("${DefaultYamlPath:service/src/main/resources/applic
   }
 
   def getLdapConfig : ActiveDirectoryLDAPConfig = {
-    var ldapConfigOption = createConfigClass[ActiveDirectoryLDAPConfig]("loginsvc.rest.auth.provider.ldap")
+    val ldapConfigOption = createConfigClass[ActiveDirectoryLDAPConfig]("loginsvc.rest.auth.provider.ldap")
     if(ldapConfigOption.nonEmpty)
       {
-        var ldapConfig = ldapConfigOption.get
+        val ldapConfig = ldapConfigOption.get
         ldapConfig.throwErrors()
         ldapConfig
       }
@@ -72,25 +61,21 @@ class ConfigProvider(@Value("${DefaultYamlPath:service/src/main/resources/applic
   }
 
   def getUsersConfig : UsersConfig = {
-    var userConfigOption = createConfigClass[UsersConfig]("loginsvc.rest.auth.provider.users")
+    val userConfigOption = createConfigClass[UsersConfig]("loginsvc.rest.auth.provider.users")
 
     if (userConfigOption.nonEmpty) {
-      var userConfig = userConfigOption.get
+      val userConfig = userConfigOption.get
       userConfig.throwErrors()
       userConfig
     }
     else UsersConfig(Array.empty[UserConfig], 0)
   }
 
+  private def getGitConfig: GitConfig = {
+    createConfigClass[GitConfig]("loginsvc.rest.config.git-info").
+      getOrElse(GitConfig(generateGitProperties = false, generateGitPropertiesFile = false))
+  }
+
   private def createConfigClass[A](nameSpace : String)(implicit reader: ConfigReader[A]) : Option[A] =
     this.yamlConfig.at(nameSpace).load[A].toOption
-
-  private def isValidPath(pathString: String): Boolean = {
-    try {
-      Paths.get(pathString)
-      true // If no exception is thrown, the pathString is valid
-    } catch {
-      case _: InvalidPathException => false // InvalidPathException indicates an invalid path
-    }
-  }
 }

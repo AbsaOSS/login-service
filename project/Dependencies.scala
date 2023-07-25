@@ -35,11 +35,9 @@ object Dependencies {
 
   lazy val jacksonModuleScala = "com.fasterxml.jackson.module" %% "jackson-module-scala" % Versions.jacksonModuleScala
   lazy val jacksonDatabind = "com.fasterxml.jackson.core" % "jackson-databind" % Versions.jacksonDatabind
-  lazy val typeSafeConfig = "com.typesafe" % "config" % Versions.typesafeConfig
   lazy val javaCompat = "org.scala-lang.modules" %% "scala-java8-compat" % Versions.javaCompat
 
   lazy val springBootWeb =            "org.springframework.boot" % "spring-boot-starter-web" % Versions.springBoot
-  lazy val springBootConfiguration =  "org.springframework.boot" % "spring-boot-configuration-processor" % Versions.springBoot
   lazy val springBootTomcat =         "org.springframework.boot" % "spring-boot-starter-tomcat" % Versions.springBoot % Provided
   lazy val springBootSecurity =       "org.springframework.boot" % "spring-boot-starter-security" % Versions.springBoot
 
@@ -68,11 +66,9 @@ object Dependencies {
   def serviceDependencies: Seq[ModuleID] = Seq(
     jacksonModuleScala,
     jacksonDatabind,
-    typeSafeConfig,
     javaCompat,
 
     springBootWeb,
-    springBootConfiguration,
     springBootTomcat,
     springBootSecurity,
 
