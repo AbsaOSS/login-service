@@ -16,11 +16,8 @@
 
 package za.co.absa.loginsvc.rest.config.auth
 
-import org.springframework.boot.context.properties.{ConfigurationProperties, ConstructorBinding}
 import za.co.absa.loginsvc.rest.config.validation.ConfigValidationResult.{ConfigValidationError, ConfigValidationSuccess}
 import za.co.absa.loginsvc.rest.config.validation.{ConfigValidatable, ConfigValidationException, ConfigValidationResult}
-
-import javax.annotation.PostConstruct
 
 
 /**
