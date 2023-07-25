@@ -28,19 +28,17 @@ ARG BUILD_PROXY
 ARG CONFIG=./src/main/resources/example.application.yaml
 # Provide path to LDAP cert in PEM format
 ARG LDAP_SSL_CERT
-
 # ARG SSL_DNAME is defined below in the SSL-enabled image
+# In case you build the Dockerfile from another location than the default 'service' dir, provide a prefix to reach it
+ARG LS_PREFIX=.
 
 LABEL org.opencontainers.image.authors="ABSA"
-
-ENV LS_WAR_PATH=./target/scala-2.12
-# deploy as root
-ENV LS_WAR=ROOT.war
 
 # Copy Spring application properties
 COPY $CONFIG /opt/application.yaml
 
-COPY $LS_WAR_PATH/*.war /usr/local/tomcat/webapps/$LS_WAR
+# deploy as root application in tomcat
+COPY ${LS_PREFIX}/target/scala-2.12/*.war /usr/local/tomcat/webapps/ROOT.war
 
 ENV SPRING_CONFIG_ADDITIONAL-LOCATION=/opt/application.yaml
 
@@ -61,8 +59,8 @@ RUN echo yes | keytool -import -file /opt/ldapcert.pem -alias ldaps -keystore $J
 FROM base AS base-ssl-true
 ENV SSL_ENABLED=true
 RUN echo "This stage sets SSL=$SSL_ENABLED"
-# Copy Tomcat properties (to enable SSL)
-COPY ./src/main/resources/tomcat-ssl/server.xml /usr/local/tomcat/conf/
+# Enable SSL: Add our SSL connector after <Service name="Catalina"> is found in server.xml; .bak = backup
+RUN sed -i.bak '/<Service name="Catalina">/a <Connector port="8443" protocol="HTTP/1.1" SSLEnabled="true" maxThreads="150" scheme="https" secure="true" keystoreFile="/usr/local/tomcat/conf/selfsigned.p12" keystorePass="changeit" clientAuth="false" acceptCount="100"/>' /usr/local/tomcat/conf/server.xml
 
 # DNAME for self-signed cert, only applied for SSL=true
 ARG SSL_DNAME="CN=*.my.example.com, OU=project1, O=yourcompany, L=Johannesburg, ST=Gauteng, C=za"
