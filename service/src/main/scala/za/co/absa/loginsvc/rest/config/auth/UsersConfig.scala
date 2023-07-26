@@ -59,7 +59,7 @@ case class UsersConfig(knownUsers: Array[UserConfig], order: Int)
 case class UserConfig(username: String,
                        password: String,
                        email: Option[String],
-                       groups: Array[Option[String]]
+                       groups: Array[String]
                      ) extends ConfigValidatable {
 
   override def toString: String = {

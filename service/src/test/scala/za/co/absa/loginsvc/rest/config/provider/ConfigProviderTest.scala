@@ -46,7 +46,7 @@ class ConfigProviderTest extends AnyFlatSpec with Matchers  {
 
   "The usersConfig properties" should "Match" in {
     val usersConfig: UsersConfig = configProvider.getUsersConfig
-    assert(usersConfig.knownUsers(0).groups(0).get == "group1" &&
+    assert(usersConfig.knownUsers(0).groups(0) == "group1" &&
       usersConfig.knownUsers(0).email.isEmpty &&
       usersConfig.knownUsers(0).password == "password1" &&
       usersConfig.knownUsers(0).username == "user1" &&

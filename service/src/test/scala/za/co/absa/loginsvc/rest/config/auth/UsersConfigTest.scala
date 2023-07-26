@@ -23,7 +23,7 @@ import za.co.absa.loginsvc.rest.config.validation.ConfigValidationResult.{Config
 
 class UsersConfigTest extends AnyFlatSpec with Matchers {
 
-  private val userCfg = UserConfig("user1", "password1", Option("mail@here.tld"), Array(Option("group1"), Option("group2")))
+  private val userCfg = UserConfig("user1", "password1", Option("mail@here.tld"), Array("group1", "group2"))
 
   "UserConfig" should "validate expected filled content" in {
     userCfg.validate() shouldBe ConfigValidationSuccess
@@ -67,7 +67,7 @@ class UsersConfigTest extends AnyFlatSpec with Matchers {
 
   it should "fail on duplicate knownUsers" in {
     val duplicateValidationResult = UsersConfig(knownUsers = Array(
-      UserConfig("sameUser", "password1", Option("mail@here.tld"), Array(Option("group1"), Option("group2"))),
+      UserConfig("sameUser", "password1", Option("mail@here.tld"), Array("group1", "group2")),
       UserConfig("sameUser", "password2", Option("anotherMail@here.tld"), Array()),
 
       UserConfig("sameUser2", "passwordX", Option("abc@def"), Array()),
@@ -86,7 +86,7 @@ class UsersConfigTest extends AnyFlatSpec with Matchers {
 
   it should "fail multiple errors" in {
     val multiErrorsResult = UsersConfig(knownUsers = Array(
-      UserConfig("sameUser", "password1", Option("mail@here.tld"), Array(Option("group1"), Option("group2"))),
+      UserConfig("sameUser", "password1", Option("mail@here.tld"), Array("group1", "group2")),
       UserConfig("sameUser", "password2", Option("anotherMail@here.tld"), Array()),
 
       UserConfig("userNoPass", null, Option("abc@def"), Array()),
