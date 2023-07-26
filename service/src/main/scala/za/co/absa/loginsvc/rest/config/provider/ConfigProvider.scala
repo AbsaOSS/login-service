@@ -16,6 +16,7 @@
 
 package za.co.absa.loginsvc.rest.config.provider
 
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import pureconfig._
@@ -32,6 +33,10 @@ class ConfigProvider(@Value("${spring.config.location}") yamlContent: String)
     with AuthConfigProvider {
 
   private val yamlConfig: YamlConfigSource = YamlConfigSource.file(yamlContent)
+  private val logger = LoggerFactory.getLogger(classOf[ConfigProvider])
+
+  if(yamlConfig.value().isRight) logger.info(s"Config File successfully loaded from $yamlContent")
+  else throw ConfigValidationException(s"Config File could not be loaded from $yamlContent")
 
   //GitConfig needs to be initialized at startup
   getGitConfig

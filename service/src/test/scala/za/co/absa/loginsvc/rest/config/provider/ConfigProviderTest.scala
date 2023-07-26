@@ -26,18 +26,18 @@ class ConfigProviderTest extends AnyFlatSpec with Matchers  {
   private val configProvider : ConfigProvider = new ConfigProvider("service/src/test/resources/application.yaml")
 
   "The baseConfig properties" should "Match" in {
-    var baseConfig: BaseConfig = configProvider.getBaseConfig
+    val baseConfig: BaseConfig = configProvider.getBaseConfig
     assert(baseConfig.someKey == "BETA")
   }
 
   "The jwtConfig properties" should "Match" in {
-    var jwtConfig: JwtConfig  = configProvider.getJWTConfig
+    val jwtConfig: JwtConfig  = configProvider.getJWTConfig
     assert(jwtConfig.algName == "RS256" &&
     jwtConfig.expTime == 4)
   }
 
   "The ldapConfig properties" should "Match" in {
-    var activeDirectoryLDAPConfig: ActiveDirectoryLDAPConfig = configProvider.getLdapConfig
+    val activeDirectoryLDAPConfig: ActiveDirectoryLDAPConfig = configProvider.getLdapConfig
     assert(activeDirectoryLDAPConfig.url == "ldaps://some.domain.com:636/" &&
       activeDirectoryLDAPConfig.domain  == "some.domain.com" &&
       activeDirectoryLDAPConfig.searchFilter  == "(samaccountname={1})" &&
@@ -45,7 +45,7 @@ class ConfigProviderTest extends AnyFlatSpec with Matchers  {
   }
 
   "The usersConfig properties" should "Match" in {
-    var usersConfig: UsersConfig = configProvider.getUsersConfig
+    val usersConfig: UsersConfig = configProvider.getUsersConfig
     assert(usersConfig.knownUsers(0).groups(0) == "group1" &&
       usersConfig.knownUsers(0).email.isEmpty &&
       usersConfig.knownUsers(0).password == "password1" &&
