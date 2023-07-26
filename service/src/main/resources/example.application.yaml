@@ -28,8 +28,7 @@ loginsvc:
           known-users:
             - username: "user1"
               password: "password1"
-              groups:
-                - #Need to have at least an empty group
+              groups: []
             - username: "TestUser"
               password: "password123"
               email: "test@abs.com"
