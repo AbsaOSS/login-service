@@ -21,7 +21,7 @@ If you are looking to build and run locally, just supply the following argument:
 ```
 or set the following Environment Variable:
 ```
-spring.config.location=service/src/main/resources/example.application.yaml
+"SPRING_CONFIG_LOCATION=service/src/main/resources/example.application.yaml"
 ```
 and you will be up and running.
 This will run the application using the provided example config for usage in local tests/development.

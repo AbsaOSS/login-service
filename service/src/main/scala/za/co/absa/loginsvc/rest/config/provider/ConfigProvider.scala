@@ -28,15 +28,15 @@ import za.co.absa.loginsvc.rest.config.validation.ConfigValidationException
 import za.co.absa.loginsvc.rest.config.{BaseConfig, JwtConfig}
 
 @Component
-class ConfigProvider(@Value("${spring.config.location}") yamlContent: String)
+class ConfigProvider(@Value("${spring.config.location}") yamlPath: String)
   extends JwtConfigProvider
     with AuthConfigProvider {
 
-  private val yamlConfig: YamlConfigSource = YamlConfigSource.file(yamlContent)
   private val logger = LoggerFactory.getLogger(classOf[ConfigProvider])
+  private val yamlConfig: YamlConfigSource = YamlConfigSource.file(yamlPath)
 
-  if(yamlConfig.value().isRight) logger.info(s"Config File successfully loaded from $yamlContent")
-  else throw ConfigValidationException(s"Config File could not be loaded from $yamlContent")
+  if(yamlConfig.value().isRight) logger.info(s"Config File successfully loaded from $yamlPath")
+  else throw ConfigValidationException(s"Config File could not be loaded from $yamlPath")
 
   //GitConfig needs to be initialized at startup
   getGitConfig
@@ -67,7 +67,6 @@ class ConfigProvider(@Value("${spring.config.location}") yamlContent: String)
 
   def getUsersConfig : UsersConfig = {
     val userConfigOption = createConfigClass[UsersConfig]("loginsvc.rest.auth.provider.users")
-
     if (userConfigOption.nonEmpty) {
       val userConfig = userConfigOption.get
       userConfig.throwErrors()

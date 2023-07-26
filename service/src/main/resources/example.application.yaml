@@ -29,7 +29,7 @@ loginsvc:
             - username: "user1"
               password: "password1"
               groups:
-                - "group1"
+                - #Need to have at least an empty group
             - username: "TestUser"
               password: "password123"
               email: "test@abs.com"
