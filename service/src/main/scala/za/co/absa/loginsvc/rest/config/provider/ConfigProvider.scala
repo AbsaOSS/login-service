@@ -80,6 +80,12 @@ class ConfigProvider(@Value("${spring.config.location}") yamlPath: String)
       getOrElse(GitConfig(generateGitProperties = false, generateGitPropertiesFile = false))
   }
 
-  private def createConfigClass[A](nameSpace : String)(implicit reader: ConfigReader[A]) : Option[A] =
-    this.yamlConfig.at(nameSpace).load[A].toOption
+  private def createConfigClass[A](nameSpace : String)(implicit reader: ConfigReader[A]) : Option[A] = {
+    val configProperty : ConfigSource = this.yamlConfig.at(nameSpace)
+    val configClass : Option[A] = configProperty.load[A].toOption
+    if(configProperty.value().isRight && configClass.isEmpty)
+      throw ConfigValidationException(s"Config properties $nameSpace found but could not be parsed, please check if correct")
+
+    configClass
+  }
 }
