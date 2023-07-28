@@ -16,11 +16,8 @@
 
 package za.co.absa.loginsvc.rest.config.auth
 
-import org.springframework.boot.context.properties.{ConfigurationProperties, ConstructorBinding}
 import za.co.absa.loginsvc.rest.config.validation.ConfigValidationResult.{ConfigValidationError, ConfigValidationSuccess}
 import za.co.absa.loginsvc.rest.config.validation.{ConfigValidatable, ConfigValidationException, ConfigValidationResult}
-
-import javax.annotation.PostConstruct
 
 
 /**
@@ -30,11 +27,13 @@ import javax.annotation.PostConstruct
  * @param url URL to AD LDAP, ex. "ldaps://some.domain.com:636/"
  * @param searchFilter LDAP filter used when searching for groups, ex. "(samaccountname={1})"
  */
-@ConstructorBinding
-@ConfigurationProperties(prefix = "loginsvc.rest.auth.provider.ldap")
 case class ActiveDirectoryLDAPConfig(domain: String, url: String, searchFilter: String, order: Int)
   extends ConfigValidatable with DynamicAuthOrder
 {
+
+  def throwErrors(): Unit =
+    this.validate().throwOnErrors()
+
   override def validate(): ConfigValidationResult = {
 
     if(order > 0)
@@ -56,10 +55,5 @@ case class ActiveDirectoryLDAPConfig(domain: String, url: String, searchFilter: 
       results.foldLeft[ConfigValidationResult](ConfigValidationSuccess)(ConfigValidationResult.merge)
     }
     else ConfigValidationSuccess
-  }
-
-  @PostConstruct
-  def init(): Unit = {
-    this.validate().throwOnErrors()
   }
 }

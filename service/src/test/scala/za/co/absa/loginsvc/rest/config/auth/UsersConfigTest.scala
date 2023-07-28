@@ -23,7 +23,7 @@ import za.co.absa.loginsvc.rest.config.validation.ConfigValidationResult.{Config
 
 class UsersConfigTest extends AnyFlatSpec with Matchers {
 
-  private val userCfg = UserConfig("user1", "password1", "mail@here.tld", Array("group1", "group2"))
+  private val userCfg = UserConfig("user1", "password1", Option("mail@here.tld"), Array("group1", "group2"))
 
   "UserConfig" should "validate expected filled content" in {
     userCfg.validate() shouldBe ConfigValidationSuccess
@@ -48,7 +48,7 @@ class UsersConfigTest extends AnyFlatSpec with Matchers {
   }
 
   it should "succeed missing email (it is optional)" in {
-    userCfg.copy(email = null).validate() shouldBe ConfigValidationSuccess
+    userCfg.copy(email = Option(null)).validate() shouldBe ConfigValidationSuccess
   }
 
   private val usersCfg = UsersConfig(knownUsers = Array(userCfg), 1)
@@ -67,13 +67,13 @@ class UsersConfigTest extends AnyFlatSpec with Matchers {
 
   it should "fail on duplicate knownUsers" in {
     val duplicateValidationResult = UsersConfig(knownUsers = Array(
-      UserConfig("sameUser", "password1", "mail@here.tld", Array("group1", "group2")),
-      UserConfig("sameUser", "password2", "anotherMail@here.tld", Array()),
+      UserConfig("sameUser", "password1", Option("mail@here.tld"), Array("group1", "group2")),
+      UserConfig("sameUser", "password2", Option("anotherMail@here.tld"), Array()),
 
-      UserConfig("sameUser2", "passwordX", "abc@def", Array()),
-      UserConfig("sameUser2", "passwordA", null, Array()),
+      UserConfig("sameUser2", "passwordX", Option("abc@def"), Array()),
+      UserConfig("sameUser2", "passwordA", Option(null), Array()),
 
-      UserConfig("okUser", "passwordO", "ooo@", Array())
+      UserConfig("okUser", "passwordO", Option("ooo@"), Array())
     ), 1).validate()
 
     duplicateValidationResult shouldBe a[ConfigValidationError]
@@ -86,12 +86,12 @@ class UsersConfigTest extends AnyFlatSpec with Matchers {
 
   it should "fail multiple errors" in {
     val multiErrorsResult = UsersConfig(knownUsers = Array(
-      UserConfig("sameUser", "password1", "mail@here.tld", Array("group1", "group2")),
-      UserConfig("sameUser", "password2", "anotherMail@here.tld", Array()),
+      UserConfig("sameUser", "password1", Option("mail@here.tld"), Array("group1", "group2")),
+      UserConfig("sameUser", "password2", Option("anotherMail@here.tld"), Array()),
 
-      UserConfig("userNoPass", null, "abc@def", Array()),
-      UserConfig("noMailIsFine", "password2", null, Array()),
-      UserConfig("userNoMissingGroups", "passwordO", "ooo@", null)
+      UserConfig("userNoPass", null, Option("abc@def"), Array()),
+      UserConfig("noMailIsFine", "password2", Option(null), Array()),
+      UserConfig("userNoMissingGroups", "passwordO", Option("ooo@"), null)
     ), 1).validate()
 
     multiErrorsResult shouldBe a[ConfigValidationError]

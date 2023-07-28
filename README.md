@@ -15,9 +15,16 @@ in a specific order precisely as described at
 Without having to study the whole documentation section, let us offer a few simple ways:
 
 ### Locally available `application.yaml`
-If you are looking to build and run locally, just copy and rename the `example.application.yaml` to 
-`application.yaml` (and make any changes to the example data) and you will be up and running.
-This will package the `application.yaml` to the resulting package, so this approach is only usage for local tests/development.
+If you are looking to build and run locally, just supply the following argument:
+```
+--spring.config.location=service/src/main/resources/example.application.yaml
+```
+or set the following Environment Variable:
+```
+"SPRING_CONFIG_LOCATION=service/src/main/resources/example.application.yaml"
+```
+and you will be up and running.
+This will run the application using the provided example config for usage in local tests/development.
 
 ### Supply argument `--spring.config.location=my/path/my.application.yaml`
 Externally-defined-`application.yaml` option that will not package (i.e. pollute) the resulting package.

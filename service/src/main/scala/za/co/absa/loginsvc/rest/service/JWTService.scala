@@ -21,7 +21,7 @@ import io.jsonwebtoken.{Jwts, SignatureAlgorithm}
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import za.co.absa.loginsvc.model.User
-import za.co.absa.loginsvc.rest.config.JwtConfig
+import za.co.absa.loginsvc.rest.config.provider.JwtConfigProvider
 
 import java.security.{KeyPair, PublicKey}
 import java.time.Instant
@@ -29,8 +29,9 @@ import java.time.temporal.ChronoUnit
 import java.util.Date
 
 @Service
-class JWTService @Autowired()(jwtConfig: JwtConfig) {
+class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider) {
 
+  private val jwtConfig = jwtConfigProvider.getJWTConfig
   private val rsaKeyPair: KeyPair = Keys.keyPairFor(SignatureAlgorithm.valueOf(jwtConfig.algName))
 
   def generateToken(user: User): String = {

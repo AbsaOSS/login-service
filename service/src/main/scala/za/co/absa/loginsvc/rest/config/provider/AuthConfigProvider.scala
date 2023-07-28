@@ -14,6 +14,11 @@
  * limitations under the License.
  */
 
-package za.co.absa.loginsvc.rest.config
+package za.co.absa.loginsvc.rest.config.provider
 
-case class BaseConfig(someKey: String)
+import za.co.absa.loginsvc.rest.config.auth._
+
+trait AuthConfigProvider {
+  def getLdapConfig : ActiveDirectoryLDAPConfig
+  def getUsersConfig : UsersConfig
+}

@@ -27,7 +27,7 @@ class ConfigUsersAuthenticationProviderTest extends AnyFlatSpec with Matchers {
 
   // testing config we are running against
   val testConfig: UsersConfig = UsersConfig(Array(
-    UserConfig("testuser", "testpassword", "testuser@example.com", Array())
+    UserConfig("testuser", "testpassword", Option("testuser@example.com"), Array())
   ), 1)
   val authProvider = new ConfigUsersAuthenticationProvider(testConfig)
 

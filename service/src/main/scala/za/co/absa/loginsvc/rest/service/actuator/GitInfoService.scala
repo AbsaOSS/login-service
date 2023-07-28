@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-package za.co.absa.loginsvc.rest.actuator
+package za.co.absa.loginsvc.rest.service.actuator
 
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.actuate.info.{Info, InfoContributor}
 import org.springframework.stereotype.Component
-import za.co.absa.loginsvc.rest.config.GitPropertiesGenerator
+import za.co.absa.loginsvc.rest.config.actuator.GitPropertiesGenerator
 
 @Component
 class GitInfoService(@Value("${management.info.git.enabled:false}")
                      gitInfoEnabled: Boolean,
-                     @Value("${logingw.rest.config.git-info.generate-git-properties:false}")
+                     @Value("${loginsvc.rest.config.git-info.generate-git-properties:false}")
                      gitGenerationEnabled: Boolean) extends InfoContributor {
 
   override def contribute(builder: Info.Builder): Unit = {

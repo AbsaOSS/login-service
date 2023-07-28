@@ -21,9 +21,10 @@ import org.scalatest.matchers.should.Matchers
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.actuate.info.InfoEndpoint
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.test.context.TestContextManager
+import org.springframework.test.context.{TestContextManager, TestPropertySource}
 
 @SpringBootTest
+@TestPropertySource(properties = Array("spring.config.location=service/src/test/resources/application.yaml"))
 class ActuatorInfoTest extends AnyFlatSpec with Matchers {
 
   @Autowired

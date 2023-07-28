@@ -28,7 +28,7 @@ loginsvc:
           known-users:
             - username: "user1"
               password: "password1"
-              groups:
+              groups: []
             - username: "TestUser"
               password: "password123"
               email: "test@abs.com"
