@@ -6,13 +6,13 @@ loginsvc:
       alg-name: "RS256"
     config:
       some-key: "BETA"
-      #Generates git.properties file for use on info endpoint.
+      # Generates git.properties file for use on info endpoint.
       git-info:
-        #Generate Git Information on each run of the application.
+        # Generate Git Information on each run of the application.
         generate-git-properties: true
-        #Generate git.properties file on application startup.
-        #Generate-git-properties must be true for this config to take effect.
-        #Once file has been generated, you may set these properties to false as the application will now read the details from the generated file on start-up.
+        # Generate git.properties file on application startup.
+        # Generate-git-properties must be true for this config to take effect.
+        # Once file has been generated, you may set these properties to false as the application will now read the details from the generated file on start-up.
         generate-git-properties-file: false
 
     # Rest Auth Config (AD)
@@ -61,20 +61,20 @@ springdoc:
 management:
   health:
     ldap:
-      #TODO: Enable Ldap check for actuator/health when fully Implemented - issue #34
+      # TODO: Enable Ldap check for actuator/health when fully Implemented - issue #34
       enabled: "false"
   # Expose information under Actuator/info
   info:
     # Exposes any property marked under "info" in the config
     env:
       enabled: "true"
-    #Exposes git related information from the git.properties file
+    # Exposes git related information from the git.properties file
     git:
       enabled: "true"
-    #Exposes Java runtime information
+    # Exposes Java runtime information
     java:
       enabled: "true"
-    #Exposes build information
+    # Exposes build information
     build:
       enabled: "true"
   endpoints:

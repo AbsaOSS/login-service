@@ -40,7 +40,7 @@ COPY $CONFIG /opt/application.yaml
 # deploy as root application in tomcat
 COPY ${LS_PREFIX}/target/scala-2.12/*.war /usr/local/tomcat/webapps/ROOT.war
 
-ENV SPRING_CONFIG_ADDITIONAL-LOCATION=/opt/application.yaml
+ENV SPRING_CONFIG_LOCATION=/opt/application.yaml
 
 ENV http_proxy=$BUILD_PROXY
 ENV https_proxy=$BUILD_PROXY
