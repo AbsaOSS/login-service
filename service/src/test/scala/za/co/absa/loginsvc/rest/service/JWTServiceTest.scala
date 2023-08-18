@@ -32,6 +32,7 @@ class JWTServiceTest extends AnyFlatSpec {
   private val userWithoutEmailAndGroups: User = User(
     name = "testUser",
     email = None,
+    displayName = None,
     groups = Seq.empty
   )
 

@@ -17,11 +17,13 @@
 package za.co.absa.loginsvc.rest.service
 
 import io.jsonwebtoken.security.Keys
-import io.jsonwebtoken.{Jwts, SignatureAlgorithm}
+import io.jsonwebtoken.{JwtBuilder, Jwts, SignatureAlgorithm}
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import za.co.absa.loginsvc.model.User
 import za.co.absa.loginsvc.rest.config.provider.JwtConfigProvider
+import za.co.absa.loginsvc.rest.service.JWTService.JwtBuilderExt
+import za.co.absa.loginsvc.utils.OptionExt
 
 import java.security.{KeyPair, PublicKey}
 import java.time.Instant
@@ -45,21 +47,26 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider) {
     // needs to be Java List/Array, otherwise incorrect claim is generated
     val groupsClaim = user.groups.asJava
 
-    val jwtBuilderWithoutEmail = Jwts
+    Jwts
       .builder()
       .setSubject(user.name)
       .setExpiration(expiration)
       .setIssuedAt(issuedAt)
       .claim("groups", groupsClaim)
-
-    user
-      .email
-      .map(jwtBuilderWithoutEmail.claim("email", _))
-      .getOrElse(jwtBuilderWithoutEmail)
+      .applyOrBypass(user.email, (builder, value: String) => builder.claim("email", value))
+      .applyOrBypass(user.displayName, (builder, value: String) => builder.claim("displayname", value))
       .signWith(rsaKeyPair.getPrivate)
       .compact()
   }
 
   def publicKey: PublicKey = rsaKeyPair.getPublic
 
+}
+
+object JWTService {
+  implicit class JwtBuilderExt(val jwtBuilder: JwtBuilder) extends AnyVal {
+    def applyOrBypass[T](opt: Option[T], fn: (JwtBuilder, T) => JwtBuilder): JwtBuilder = {
+      OptionExt.applyOrBypass(jwtBuilder, opt, fn)
+    }
+  }
 }

@@ -14,6 +14,25 @@
  * limitations under the License.
  */
 
-package za.co.absa.loginsvc.model
+package za.co.absa.loginsvc.utils
 
-case class User(name: String, email: Option[String], displayName: Option[String], groups: Seq[String])
+object OptionExt {
+
+  /**
+   * For `target`, either return as is (if `optValueToApply` is None) or apply fn `func`
+   * @param target
+   * @param optValueToApply
+   * @param func
+   * @tparam A
+   * @tparam B
+   * @return
+   */
+  def applyOrBypass[A, B](target: A, optValueToApply: Option[B], func: (A, B) => A): A = {
+    optValueToApply.map { valueToApply =>
+      func(target, valueToApply)
+    }.getOrElse {
+      target
+    }
+  }
+
+}

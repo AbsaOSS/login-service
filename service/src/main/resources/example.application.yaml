@@ -31,6 +31,7 @@ loginsvc:
               groups: []
             - username: "TestUser"
               password: "password123"
+              displayname: "Test User, A.C.E."
               email: "test@abs.com"
               groups:
                 - "groupA"
