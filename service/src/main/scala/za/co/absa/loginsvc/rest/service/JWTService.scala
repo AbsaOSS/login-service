@@ -53,8 +53,8 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider) {
       .setExpiration(expiration)
       .setIssuedAt(issuedAt)
       .claim("groups", groupsClaim)
-      .applyOrBypass(user.email, (builder, value: String) => builder.claim("email", value))
-      .applyOrBypass(user.displayName, (builder, value: String) => builder.claim("displayname", value))
+      .applyIfDefined(user.email, (builder, value: String) => builder.claim("email", value))
+      .applyIfDefined(user.displayName, (builder, value: String) => builder.claim("displayname", value))
       .signWith(rsaKeyPair.getPrivate)
       .compact()
   }
@@ -65,8 +65,8 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider) {
 
 object JWTService {
   implicit class JwtBuilderExt(val jwtBuilder: JwtBuilder) extends AnyVal {
-    def applyOrBypass[T](opt: Option[T], fn: (JwtBuilder, T) => JwtBuilder): JwtBuilder = {
-      OptionExt.applyOrBypass(jwtBuilder, opt, fn)
+    def applyIfDefined[T](opt: Option[T], fn: (JwtBuilder, T) => JwtBuilder): JwtBuilder = {
+      OptionExt.applyIfDefined(jwtBuilder, opt, fn)
     }
   }
 }

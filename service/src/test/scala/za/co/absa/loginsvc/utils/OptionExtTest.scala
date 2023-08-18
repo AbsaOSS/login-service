@@ -20,12 +20,12 @@ import org.scalatest.matchers.should.Matchers
 
 class OptionExtTest extends AnyFlatSpec with Matchers {
 
-  "OptionExt.applyOrBypass" should "apply fn correctly if defined" in {
-    OptionExt.applyOrBypass(1, Some(2), (a:Int, b: Int) => a + b) shouldBe 3
+  "OptionExt.applyIfDefined" should "apply fn correctly if defined" in {
+    OptionExt.applyIfDefined(1, Some(2), (a:Int, b: Int) => a + b) shouldBe 3
   }
 
-  "OptionExt.applyOrBypass" should "not apply fn if empty" in {
-    OptionExt.applyOrBypass(1, None, (a: Int, b: Int) => a + b) shouldBe 1
+  "OptionExt.applyIfDefined" should "not apply fn if empty" in {
+    OptionExt.applyIfDefined(1, None, (a: Int, b: Int) => a + b) shouldBe 1
   }
 
 }

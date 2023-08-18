@@ -27,7 +27,7 @@ object OptionExt {
    * @tparam B
    * @return
    */
-  def applyOrBypass[A, B](target: A, optValueToApply: Option[B], func: (A, B) => A): A = {
+  def applyIfDefined[A, B](target: A, optValueToApply: Option[B], func: (A, B) => A): A = {
     optValueToApply.map { valueToApply =>
       func(target, valueToApply)
     }.getOrElse {
