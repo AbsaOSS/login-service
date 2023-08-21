@@ -13,7 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package za.co.absa.loginsvc.utils
 
-package za.co.absa.loginsvc.model
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-case class User(name: String, email: Option[String], displayName: Option[String], groups: Seq[String])
+class OptionExtTest extends AnyFlatSpec with Matchers {
+
+  "OptionExt.applyIfDefined" should "apply fn correctly if defined" in {
+    OptionExt.applyIfDefined(1, Some(2), (a:Int, b: Int) => a + b) shouldBe 3
+  }
+
+  "OptionExt.applyIfDefined" should "not apply fn if empty" in {
+    OptionExt.applyIfDefined(1, None, (a: Int, b: Int) => a + b) shouldBe 1
+  }
+
+}

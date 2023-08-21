@@ -44,12 +44,20 @@ class ConfigProviderTest extends AnyFlatSpec with Matchers  {
       activeDirectoryLDAPConfig.order  == 1)
   }
 
-  "The usersConfig properties" should "Match" in {
+  "The usersConfig properties" should "be loaded correctly" in {
     val usersConfig: UsersConfig = configProvider.getUsersConfig
+    assert(usersConfig.order == 0)
+
     assert(usersConfig.knownUsers(0).groups(0) == "group1" &&
       usersConfig.knownUsers(0).email.isEmpty &&
+      usersConfig.knownUsers(0).displayname.isEmpty &&
       usersConfig.knownUsers(0).password == "password1" &&
-      usersConfig.knownUsers(0).username == "user1" &&
-      usersConfig.order == 0)
+      usersConfig.knownUsers(0).username == "user1")
+
+    assert(usersConfig.knownUsers(1).groups(0) == "group2" &&
+      usersConfig.knownUsers(1).email == Some("user@two.org") &&
+      usersConfig.knownUsers(1).displayname == Some("User Two") &&
+      usersConfig.knownUsers(1).password == "password2" &&
+      usersConfig.knownUsers(1).username == "user2")
   }
 }

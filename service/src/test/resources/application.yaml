@@ -23,6 +23,12 @@ loginsvc:
               password: "password1"
               groups:
                 - "group1"
+            - username: "user2"
+              password: "password2"
+              displayname: "User Two"
+              email: "user@two.org"
+              groups:
+                - "group2"
 
 # App Config
 spring:
