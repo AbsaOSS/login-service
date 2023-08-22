@@ -28,6 +28,8 @@ object Dependencies {
 
     val jjwt = "0.11.5"
 
+    val nimbusJoseJwt = "9.31"
+
     val scalatest = "3.2.15"
 
     val pureConfig = "0.17.2"
@@ -46,6 +48,8 @@ object Dependencies {
   lazy val jjwtApi = "io.jsonwebtoken" % "jjwt-api" % Versions.jjwt
   lazy val jjwtImpl = "io.jsonwebtoken" % "jjwt-impl" % Versions.jjwt % Runtime
   lazy val jjwtJackson = "io.jsonwebtoken" % "jjwt-jackson" % Versions.jjwt % Runtime
+
+  lazy val nimbusJoseJwt = "com.nimbusds" % "nimbus-jose-jwt" % Versions.nimbusJoseJwt
 
   lazy val pureConfig = "com.github.pureconfig" %% "pureconfig" % Versions.pureConfig
   lazy val pureConfigYaml = "com.github.pureconfig" %% "pureconfig-yaml" % Versions.pureConfig
@@ -77,6 +81,8 @@ object Dependencies {
     jjwtApi,
     jjwtImpl,
     jjwtJackson,
+
+    nimbusJoseJwt,
 
     pureConfig,
     pureConfigYaml,
