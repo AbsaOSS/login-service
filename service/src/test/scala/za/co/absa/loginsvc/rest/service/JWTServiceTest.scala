@@ -89,6 +89,17 @@ class JWTServiceTest extends AnyFlatSpec {
     }
   }
 
+  it should "return a JWT kid" in {
+    val jwt = jwtService.generateToken(userWithoutEmailAndGroups)
+    val parsedJWT = parseJWT(jwt)
+
+    assert(parsedJWT.isSuccess)
+    parsedJWT.foreach { jwt =>
+      val kid = jwt.getBody.get("kid")
+      assert(kid === "rsa-RS256-1")
+    }
+  }
+
   it should "turn groups into empty `groups` claim for user without groups" in {
     import scala.collection.JavaConverters._
 
