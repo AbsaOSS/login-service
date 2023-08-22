@@ -16,6 +16,8 @@
 
 package za.co.absa.loginsvc.rest.service
 
+import com.nimbusds.jose.JWSAlgorithm
+import com.nimbusds.jose.jwk.KeyUse
 import io.jsonwebtoken.{Claims, Jws, Jwts}
 import org.scalatest.flatspec.AnyFlatSpec
 import za.co.absa.loginsvc.model.User
@@ -115,4 +117,23 @@ class JWTServiceTest extends AnyFlatSpec {
     assert(actualGroups === userWithGroups.groups)
   }
 
+  behavior of "jwks"
+
+  it should "return a JWK that is equivalent to the `publicKey`" in {
+    import scala.collection.JavaConverters._
+
+    val publicKey = jwtService.publicKey
+    val jwks = jwtService.jwks
+    val rsaKey = jwks.getKeys.asScala.head.toRSAKey
+
+    assert(publicKey == rsaKey.toPublicKey)
+  }
+
+  it should "return a JWK with parameters" in {
+    import scala.collection.JavaConverters._
+
+    val jwk = jwtService.jwks.getKeys.asScala.head
+    assert(jwk.getAlgorithm == JWSAlgorithm.RS256)
+    assert(jwk.getKeyUse == KeyUse.SIGNATURE)
+  }
 }
