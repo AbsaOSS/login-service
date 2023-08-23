@@ -96,7 +96,7 @@ class JWTServiceTest extends AnyFlatSpec {
     assert(parsedJWT.isSuccess)
     parsedJWT.foreach { jwt =>
       val kid = jwt.getBody.get("kid")
-      assert(kid === "rsa-RS256-1")
+      assert(kid === jwtService.publicKeyThumbprint)
     }
   }
 
