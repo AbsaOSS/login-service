@@ -71,7 +71,7 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider) {
       case rsaKey: RSAPublicKey => new RSAKey.Builder(rsaKey)
         .keyUse(KeyUse.SIGNATURE)
         .algorithm(JWSAlgorithm.parse(jwtConfig.algName))
-        .keyID(kid)
+        .keyIDFromThumbprint
         .build()
       case _ => throw new IllegalArgumentException("Unsupported public key type")
     }
