@@ -16,6 +16,8 @@
 
 package za.co.absa.loginsvc.rest.service
 
+import com.nimbusds.jose.JWSAlgorithm
+import com.nimbusds.jose.jwk.{JWKSet, KeyUse, RSAKey}
 import io.jsonwebtoken.security.Keys
 import io.jsonwebtoken.{JwtBuilder, Jwts, SignatureAlgorithm}
 import org.springframework.beans.factory.annotation.Autowired
@@ -25,6 +27,7 @@ import za.co.absa.loginsvc.rest.config.provider.JwtConfigProvider
 import za.co.absa.loginsvc.rest.service.JWTService.JwtBuilderExt
 import za.co.absa.loginsvc.utils.OptionExt
 
+import java.security.interfaces.RSAPublicKey
 import java.security.{KeyPair, PublicKey}
 import java.time.Instant
 import java.time.temporal.ChronoUnit
@@ -52,6 +55,7 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider) {
       .setSubject(user.name)
       .setExpiration(expiration)
       .setIssuedAt(issuedAt)
+      .claim("kid", publicKeyThumbprint)
       .claim("groups", groupsClaim)
       .applyIfDefined(user.email, (builder, value: String) => builder.claim("email", value))
       .applyIfDefined(user.displayName, (builder, value: String) => builder.claim("displayname", value))
@@ -61,6 +65,23 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider) {
 
   def publicKey: PublicKey = rsaKeyPair.getPublic
 
+  private def rsaPublicKey: RSAKey = {
+    publicKey match {
+      case rsaKey: RSAPublicKey => new RSAKey.Builder(rsaKey)
+        .keyUse(KeyUse.SIGNATURE)
+        .algorithm(JWSAlgorithm.parse(jwtConfig.algName))
+        .keyIDFromThumbprint()
+        .build()
+      case _ => throw new IllegalArgumentException("Unsupported public key type")
+    }
+  }
+
+  def publicKeyThumbprint: String = rsaPublicKey.getKeyID
+
+  def jwks: JWKSet = {
+    val jwk = rsaPublicKey
+    new JWKSet(jwk).toPublicJWKSet
+  }
 }
 
 object JWTService {

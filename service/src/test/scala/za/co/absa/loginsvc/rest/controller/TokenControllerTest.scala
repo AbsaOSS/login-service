@@ -16,6 +16,7 @@
 
 package za.co.absa.loginsvc.rest.controller
 
+import com.nimbusds.jose.jwk.{JWKSet, RSAKey}
 import io.jsonwebtoken.SignatureAlgorithm
 import io.jsonwebtoken.security.Keys
 import org.mockito.ArgumentMatchers.any
@@ -30,6 +31,7 @@ import za.co.absa.loginsvc.model.User
 import za.co.absa.loginsvc.rest.{FakeAuthentication, SecurityConfig}
 import za.co.absa.loginsvc.rest.service.JWTService
 
+import java.security.interfaces.RSAPublicKey
 import java.util.Base64
 
 @Import(Array(classOf[SecurityConfig]))
@@ -95,4 +97,58 @@ class TokenControllerTest extends AnyFlatSpec with ControllerIntegrationTestBase
     )(FakeAuthentication.fakeAnonymousAuthentication)
   }
 
+  behavior of "getPublicKeyJwks"
+
+  it should "return a JWKS from JWTService when user is authenticated" in {
+    val publicKey = Keys.keyPairFor(SignatureAlgorithm.RS256).getPublic
+    val jwk = new RSAKey.Builder(publicKey.asInstanceOf[RSAPublicKey]).build()
+    val jwks = new JWKSet(jwk)
+
+    when(jwtService.jwks).thenReturn(jwks)
+
+    val expectedResponse = s"""
+         |{
+         |  "keys": [
+         |    {
+         |      "kty":"${jwk.getKeyType}",
+         |      "e":"${jwk.getPublicExponent}",
+         |      "n":"${jwk.getModulus}"
+         |    }
+         |  ]
+         |}
+         |""".stripMargin
+
+    assertOkAndResultBodyJsonEquals(
+      "/token/public-key-jwks",
+      Get(),
+      expectedResponse
+    )(FakeAuthentication.fakeUserAuthentication)
+  }
+
+  it should "return a JWKS from JWTService when user is not authenticated" in {
+    val publicKey = Keys.keyPairFor(SignatureAlgorithm.RS256).getPublic
+    val jwk = new RSAKey.Builder(publicKey.asInstanceOf[RSAPublicKey]).build()
+    val jwks = new JWKSet(jwk)
+
+    when(jwtService.jwks).thenReturn(jwks)
+
+    val expectedResponse =
+      s"""
+         |{
+         |  "keys": [
+         |    {
+         |      "kty":"${jwk.getKeyType}",
+         |      "e":"${jwk.getPublicExponent}",
+         |      "n":"${jwk.getModulus}"
+         |    }
+         |  ]
+         |}
+         |""".stripMargin
+
+    assertOkAndResultBodyJsonEquals(
+      "/token/public-key-jwks",
+      Get(),
+      expectedResponse
+    )(FakeAuthentication.fakeAnonymousAuthentication)
+  }
 }

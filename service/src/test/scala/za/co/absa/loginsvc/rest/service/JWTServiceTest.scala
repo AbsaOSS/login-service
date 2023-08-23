@@ -16,6 +16,8 @@
 
 package za.co.absa.loginsvc.rest.service
 
+import com.nimbusds.jose.JWSAlgorithm
+import com.nimbusds.jose.jwk.KeyUse
 import io.jsonwebtoken.{Claims, Jws, Jwts}
 import org.scalatest.flatspec.AnyFlatSpec
 import za.co.absa.loginsvc.model.User
@@ -89,6 +91,17 @@ class JWTServiceTest extends AnyFlatSpec {
     }
   }
 
+  it should "return a JWT kid" in {
+    val jwt = jwtService.generateToken(userWithoutEmailAndGroups)
+    val parsedJWT = parseJWT(jwt)
+
+    assert(parsedJWT.isSuccess)
+    parsedJWT.foreach { jwt =>
+      val kid = jwt.getBody.get("kid")
+      assert(kid === jwtService.publicKeyThumbprint)
+    }
+  }
+
   it should "turn groups into empty `groups` claim for user without groups" in {
     import scala.collection.JavaConverters._
 
@@ -115,4 +128,26 @@ class JWTServiceTest extends AnyFlatSpec {
     assert(actualGroups === userWithGroups.groups)
   }
 
+  behavior of "jwks"
+
+  it should "return a JWK that is equivalent to the `publicKey`" in {
+    import scala.collection.JavaConverters._
+
+    val publicKey = jwtService.publicKey
+    val jwks = jwtService.jwks
+    val rsaKey = jwks.getKeys.asScala.head.toRSAKey
+
+    assert(publicKey == rsaKey.toPublicKey)
+  }
+
+  it should "return a JWK with parameters" in {
+    import scala.collection.JavaConverters._
+
+    val keys = jwtService.jwks.getKeys.asScala
+    assert(keys.length == 1, "One JWK is expected to be generated now")
+
+    val jwk = keys.head
+    assert(jwk.getAlgorithm == JWSAlgorithm.RS256)
+    assert(jwk.getKeyUse == KeyUse.SIGNATURE)
+  }
 }
