@@ -132,7 +132,10 @@ class JWTServiceTest extends AnyFlatSpec {
   it should "return a JWK with parameters" in {
     import scala.collection.JavaConverters._
 
-    val jwk = jwtService.jwks.getKeys.asScala.head
+    val keys = jwtService.jwks.getKeys.asScala
+    assert(keys.length == 1, "One JWK is expected to be generated now")
+
+    val jwk = keys.head
     assert(jwk.getAlgorithm == JWSAlgorithm.RS256)
     assert(jwk.getKeyUse == KeyUse.SIGNATURE)
   }
