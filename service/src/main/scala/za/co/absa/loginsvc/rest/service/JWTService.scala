@@ -38,6 +38,7 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider) {
 
   private val jwtConfig = jwtConfigProvider.getJWTConfig
   private val rsaKeyPair: KeyPair = Keys.keyPairFor(SignatureAlgorithm.valueOf(jwtConfig.algName))
+  private val kid: String = publicKeyThumbprint
 
   def generateToken(user: User): String = {
     import scala.collection.JavaConverters._
@@ -55,6 +56,7 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider) {
       .setSubject(user.name)
       .setExpiration(expiration)
       .setIssuedAt(issuedAt)
+      .claim("kid", kid)
       .claim("groups", groupsClaim)
       .applyIfDefined(user.email, (builder, value: String) => builder.claim("email", value))
       .applyIfDefined(user.displayName, (builder, value: String) => builder.claim("displayname", value))
@@ -64,14 +66,21 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider) {
 
   def publicKey: PublicKey = rsaKeyPair.getPublic
 
-  def jwks: JWKSet = {
-    val jwk = publicKey match {
+  private def rsaPublicKey: RSAKey = {
+    publicKey match {
       case rsaKey: RSAPublicKey => new RSAKey.Builder(rsaKey)
         .keyUse(KeyUse.SIGNATURE)
         .algorithm(JWSAlgorithm.parse(jwtConfig.algName))
+        .keyID(kid)
         .build()
       case _ => throw new IllegalArgumentException("Unsupported public key type")
     }
+  }
+
+  def publicKeyThumbprint: String = rsaPublicKey.computeThumbprint().toString
+
+  def jwks: JWKSet = {
+    val jwk = rsaPublicKey
     new JWKSet(jwk).toPublicJWKSet
   }
 }
