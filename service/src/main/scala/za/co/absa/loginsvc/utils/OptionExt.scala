@@ -35,4 +35,10 @@ object OptionExt {
     }
   }
 
+  implicit class ImplicitOptionExt[OptType](val opt: Option[OptType]) extends AnyVal {
+    def applyIfDefined[TargetType](target: TargetType, fn: (TargetType, OptType) => TargetType): TargetType = {
+      OptionExt.applyIfDefined(target, opt, fn)
+    }
+  }
+
 }
