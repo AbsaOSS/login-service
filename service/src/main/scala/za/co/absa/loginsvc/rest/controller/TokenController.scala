@@ -17,12 +17,13 @@
 package za.co.absa.loginsvc.rest.controller
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.enums.ParameterIn
 import io.swagger.v3.oas.annotations.media.Schema.RequiredMode
 import io.swagger.v3.oas.annotations.media.{Content, ExampleObject, Schema}
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import io.swagger.v3.oas.annotations.tags.{Tag, Tags}
+import io.swagger.v3.oas.annotations.{Operation, Parameter}
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.{HttpStatus, MediaType}
 import org.springframework.security.core.Authentication
@@ -71,6 +72,8 @@ class TokenController @Autowired()(jwtService: JWTService) {
         ))
     )
   )
+  @Parameter(in = ParameterIn.QUERY, name = "groups-prefix", schema = new Schema(implementation = classOf[String]), example = "pam-",
+    description = "Prefix of groups only to be returned in JWT user object")
   @PostMapping(
     path = Array("/generate"),
     produces = Array(MediaType.APPLICATION_JSON_VALUE)
