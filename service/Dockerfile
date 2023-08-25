@@ -55,7 +55,7 @@ COPY $LDAP_SSL_CERT /opt/ldapcert.pem
 RUN echo yes | keytool -import -file /opt/ldapcert.pem -alias ldaps -keystore $JAVA_HOME/jre/lib/security/cacerts -storepass changeit
 
 COPY $LDAP_SSL_CERT2 /opt/ldapcert2.pem
-RUN echo yes | keytool -import -file /opt/ldapcert2.pem -alias ldaps -keystore $JAVA_HOME/jre/lib/security/cacerts -storepass changeit
+RUN echo yes | keytool -import -file /opt/ldapcert2.pem -alias ldaps2 -keystore $JAVA_HOME/jre/lib/security/cacerts -storepass changeit
 
 # uncomment and add packages you would need to install via yum if any
 #RUN yum -y update
