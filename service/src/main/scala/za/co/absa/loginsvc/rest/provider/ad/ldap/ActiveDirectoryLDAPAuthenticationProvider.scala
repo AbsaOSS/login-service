@@ -57,7 +57,7 @@ class ActiveDirectoryLDAPAuthenticationProvider(config: ActiveDirectoryLDAPConfi
     } catch {
       case bc: BadCredentialsException =>
         logger.error(s"Login of user $username: ${bc.getMessage}", bc)
-        throw bc // rethrow, just get short info to logs
+        throw new BadCredentialsException(bc.getMessage) // rethrow, but strip trace - no need to pollute logs
 
       case re: RuntimeException => // other exception
         logger.error(s"Login of user $username: ${re.getMessage}", re)
