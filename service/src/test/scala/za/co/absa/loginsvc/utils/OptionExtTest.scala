@@ -24,8 +24,18 @@ class OptionExtTest extends AnyFlatSpec with Matchers {
     OptionExt.applyIfDefined(1, Some(2), (a:Int, b: Int) => a + b) shouldBe 3
   }
 
-  "OptionExt.applyIfDefined" should "not apply fn if empty" in {
+  it should "not apply fn if empty" in {
     OptionExt.applyIfDefined(1, None, (a: Int, b: Int) => a + b) shouldBe 1
+  }
+
+  import OptionExt.ImplicitOptionExt
+
+  "OptionExt.ImplicitOptionExt" should "apply fn correctly if defined" in {
+    Some(2).applyIfDefined(1, (a: Int, b: Int) => a + b) shouldBe 3
+  }
+
+  it should "not apply fn if empty" in {
+    None.applyIfDefined(1, (a: Int, b: Int) => a + b) shouldBe 1
   }
 
 }
