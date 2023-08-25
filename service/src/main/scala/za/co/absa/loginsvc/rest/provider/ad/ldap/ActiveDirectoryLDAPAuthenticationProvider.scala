@@ -58,11 +58,10 @@ class ActiveDirectoryLDAPAuthenticationProvider(config: ActiveDirectoryLDAPConfi
       case re: RuntimeException =>
         logger.error(re.getMessage, re)
         re.printStackTrace()
-        throw re
+        throw re // retrow, just get info to logs
     }
 
     val fromBasePrincipal = fromBase.getPrincipal.asInstanceOf[UserDetailsWithExtras]
-
     val principal = User(
       fromBasePrincipal.getUsername,
       fromBasePrincipal.email,
@@ -70,8 +69,9 @@ class ActiveDirectoryLDAPAuthenticationProvider(config: ActiveDirectoryLDAPConfi
       fromBasePrincipal.getAuthorities.asScala.map(_.getAuthority).toSeq
     )
 
-    new UsernamePasswordAuthenticationToken(principal, fromBasePrincipal.getPassword, fromBasePrincipal.getAuthorities)
-
+    val token = new UsernamePasswordAuthenticationToken(principal, fromBasePrincipal.getPassword, fromBasePrincipal.getAuthorities)
+    logger.info(s"LDAP-based: Login of user $username - ok") // no throw until this point
+    token
   }
 
   override def supports(authentication: Class[_]): Boolean = baseImplementation.supports(authentication)
