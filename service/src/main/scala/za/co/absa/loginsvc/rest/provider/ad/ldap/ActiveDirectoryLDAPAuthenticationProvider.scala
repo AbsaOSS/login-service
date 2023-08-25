@@ -56,9 +56,8 @@ class ActiveDirectoryLDAPAuthenticationProvider(config: ActiveDirectoryLDAPConfi
        baseImplementation.authenticate(authentication)
     } catch {
       case re: RuntimeException =>
-        logger.error(re.getMessage, re)
-        re.printStackTrace()
-        throw re // retrow, just get info to logs
+        logger.error(s"Login of user $username: ${re.getMessage}", re)
+        throw re // rethrow, just get info to logs
     }
 
     val fromBasePrincipal = fromBase.getPrincipal.asInstanceOf[UserDetailsWithExtras]
