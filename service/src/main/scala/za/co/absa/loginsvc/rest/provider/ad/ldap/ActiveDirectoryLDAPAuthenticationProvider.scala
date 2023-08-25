@@ -18,7 +18,7 @@ package za.co.absa.loginsvc.rest.provider.ad.ldap
 
 import org.slf4j.LoggerFactory
 import org.springframework.ldap.core.DirContextOperations
-import org.springframework.security.authentication.{AuthenticationProvider, UsernamePasswordAuthenticationToken}
+import org.springframework.security.authentication.{AuthenticationProvider, BadCredentialsException, UsernamePasswordAuthenticationToken}
 import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.security.core.{Authentication, GrantedAuthority}
 import org.springframework.security.ldap.authentication.ad.{ActiveDirectoryLdapAuthenticationProvider => SpringSecurityActiveDirectoryLdapAuthenticationProvider}
@@ -55,8 +55,13 @@ class ActiveDirectoryLDAPAuthenticationProvider(config: ActiveDirectoryLDAPConfi
     val fromBase = try {
        baseImplementation.authenticate(authentication)
     } catch {
-      case re: RuntimeException =>
+      case bc: BadCredentialsException =>
+        logger.error(s"Login of user $username: ${bc.getMessage}", bc)
+        throw bc // rethrow, just get short info to logs
+
+      case re: RuntimeException => // other exception
         logger.error(s"Login of user $username: ${re.getMessage}", re)
+        re.printStackTrace()
         throw re // rethrow, just get info to logs
     }
 
