@@ -17,21 +17,23 @@
 package za.co.absa.loginsvc.rest.controller
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import io.swagger.v3.oas.annotations.Operation
-import io.swagger.v3.oas.annotations.media.{ArraySchema, Content, ExampleObject, Schema}
+import io.swagger.v3.oas.annotations.enums.ParameterIn
 import io.swagger.v3.oas.annotations.media.Schema.RequiredMode
-import io.swagger.v3.oas.annotations.responses.{ApiResponse, ApiResponses}
+import io.swagger.v3.oas.annotations.media.{Content, ExampleObject, Schema}
+import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import io.swagger.v3.oas.annotations.tags.{Tag, Tags}
+import io.swagger.v3.oas.annotations.{Operation, Parameter}
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.{HttpStatus, MediaType}
 import org.springframework.security.core.Authentication
 import org.springframework.web.bind.annotation._
 import za.co.absa.loginsvc.model.User
 import za.co.absa.loginsvc.rest.service.JWTService
+import za.co.absa.loginsvc.utils.OptionExt.ImplicitOptionExt
 
-import java.util.Base64
 import java.util.concurrent.CompletableFuture
+import java.util.{Base64, Optional}
 import scala.concurrent.Future
 
 
@@ -70,15 +72,24 @@ class TokenController @Autowired()(jwtService: JWTService) {
         ))
     )
   )
+  @Parameter(in = ParameterIn.QUERY, name = "groups-prefix", schema = new Schema(implementation = classOf[String]), example = "pam-",
+    description = "Prefix of groups only to be returned in JWT user object")
   @PostMapping(
     path = Array("/generate"),
     produces = Array(MediaType.APPLICATION_JSON_VALUE)
   )
   @ResponseStatus(HttpStatus.OK)
   @SecurityRequirement(name = "basicAuth")
-  def generateToken(authentication: Authentication): CompletableFuture[TokenWrapper] = {
-    val principal = authentication.getPrincipal.asInstanceOf[User]
-    val jwt = jwtService.generateToken(principal)
+  def generateToken(authentication: Authentication, @RequestParam("groups-prefix") optionalGroupsPrefix: Optional[String]): CompletableFuture[TokenWrapper] = {
+    val user = authentication.getPrincipal.asInstanceOf[User]
+    val groupsPrefix = optionalGroupsPrefix.toScalaOption
+
+    val filteredGroupsUser = groupsPrefix.applyIfDefined(user, { (user: User, prefix) =>
+      val filteredGroups = user.groups.filter(_.startsWith(prefix))
+      user.copy(groups = filteredGroups)
+    })
+
+    val jwt = jwtService.generateToken(filteredGroupsUser)
     Future.successful(TokenWrapper(jwt))
   }
 
