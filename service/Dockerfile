@@ -26,10 +26,8 @@ FROM $BASE_IMAGE as base
 ARG BUILD_PROXY
 # Override of the example application config is possible
 ARG CONFIG=./src/main/resources/example.application.yaml
-# todo do nicely -- issue #70
-# Provide path to LDAP cert in PEM format
-ARG LDAP_SSL_CERT
-ARG LDAP_SSL_CERT2
+# Provide path to the directory with LDAP certs in PEM format
+ARG LDAP_SSL_CERTS_PATH
 # ARG SSL_DNAME is defined below in the SSL-enabled image
 # In case you build the Dockerfile from another location than the default 'service' dir, provide a prefix to reach it
 ARG LS_PREFIX=.
@@ -49,13 +47,14 @@ ENV https_proxy=$BUILD_PROXY
 ENV HTTP_PROXY=$BUILD_PROXY
 ENV HTTPS_PROXY=$BUILD_PROXY
 
-# todo do this properly for multicert when Docker networking works correctly - LS issue #70
-# LDAP cert setup - include cert in cacerts to be trusted (JDK8 path version)
-COPY $LDAP_SSL_CERT /opt/ldapcert.pem
-RUN echo yes | keytool -import -file /opt/ldapcert.pem -alias ldaps -keystore $JAVA_HOME/jre/lib/security/cacerts -storepass changeit
 
-COPY $LDAP_SSL_CERT2 /opt/ldapcert2.pem
-RUN echo yes | keytool -import -file /opt/ldapcert2.pem -alias ldaps2 -keystore $JAVA_HOME/jre/lib/security/cacerts -storepass changeit
+RUN mkdir -p /opt/certs
+COPY $LDAP_SSL_CERTS_PATH /opt/certs/
+
+RUN for file in `ls /opt/certs/*.pem`; \
+do \
+    echo yes | keytool -import -file $file -alias ldaps$RANDOM -keystore $JAVA_HOME/jre/lib/security/cacerts -storepass changeit; \
+done
 
 # uncomment and add packages you would need to install via yum if any
 #RUN yum -y update
