@@ -23,6 +23,7 @@ import io.swagger.v3.oas.annotations.enums.SecuritySchemeType
 import io.swagger.v3.oas.annotations.info.{Info, License}
 import io.swagger.v3.oas.annotations.security.SecurityScheme
 import io.swagger.v3.oas.annotations.{ExternalDocumentation, OpenAPIDefinition}
+import io.swagger.v3.oas.annotations.servers.Server
 import org.springframework.boot.SpringApplication
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.builder.SpringApplicationBuilder
@@ -38,7 +39,8 @@ import org.springframework.context.annotation._
     title = "Login Service API",
     version = "0.1", // TODO load from config/package -- possibly part of Issue #5
     license = new License(name = "Apache 2.0", url = "https://www.apache.org/licenses/LICENSE-2.0.html")
-  )
+  ),
+  servers = Array(new Server(url = "/"))
 )
 @SecurityScheme(
   name = "basicAuth",
