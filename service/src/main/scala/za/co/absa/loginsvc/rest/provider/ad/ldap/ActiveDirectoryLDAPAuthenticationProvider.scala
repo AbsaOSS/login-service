@@ -16,14 +16,16 @@
 
 package za.co.absa.loginsvc.rest.provider.ad.ldap
 
+import org.slf4j.LoggerFactory
 import org.springframework.ldap.core.DirContextOperations
-import org.springframework.security.authentication.{AuthenticationProvider, UsernamePasswordAuthenticationToken}
+import org.springframework.security.authentication.{AuthenticationProvider, BadCredentialsException, UsernamePasswordAuthenticationToken}
 import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.security.core.{Authentication, GrantedAuthority}
 import org.springframework.security.ldap.authentication.ad.{ActiveDirectoryLdapAuthenticationProvider => SpringSecurityActiveDirectoryLdapAuthenticationProvider}
 import org.springframework.security.ldap.userdetails.LdapUserDetailsMapper
 import za.co.absa.loginsvc.model.User
 import za.co.absa.loginsvc.rest.config.auth.ActiveDirectoryLDAPConfig
+import za.co.absa.loginsvc.rest.provider.ConfigUsersAuthenticationProvider
 
 import java.util
 import scala.collection.JavaConverters._
@@ -34,6 +36,8 @@ import scala.collection.JavaConverters._
  * and conforms authenticated user to [[za.co.absa.loginsvc.model.User]] class.
  * */
 class ActiveDirectoryLDAPAuthenticationProvider(config: ActiveDirectoryLDAPConfig) extends AuthenticationProvider {
+  private val logger = LoggerFactory.getLogger(classOf[ActiveDirectoryLDAPAuthenticationProvider])
+  logger.debug(s"ActiveDirectoryLDAPAuthenticationProvider init")
 
   private val baseImplementation = {
     val impl = new SpringSecurityActiveDirectoryLdapAuthenticationProvider(config.domain, config.url)
@@ -45,9 +49,23 @@ class ActiveDirectoryLDAPAuthenticationProvider(config: ActiveDirectoryLDAPConfi
   }
 
   override def authenticate(authentication: Authentication): Authentication = {
-    val fromBase = baseImplementation.authenticate(authentication)
-    val fromBasePrincipal = fromBase.getPrincipal.asInstanceOf[UserDetailsWithExtras]
+    val username = authentication.getName
+    logger.info(s"Login of user $username via LDAP")
 
+    val fromBase = try {
+       baseImplementation.authenticate(authentication)
+    } catch {
+      case bc: BadCredentialsException =>
+        logger.error(s"Login of user $username: ${bc.getMessage}", bc)
+        throw new BadCredentialsException(bc.getMessage) // rethrow, but strip trace - no need to pollute logs
+
+      case re: RuntimeException => // other exception
+        logger.error(s"Login of user $username: ${re.getMessage}", re)
+        re.printStackTrace()
+        throw re // rethrow, just get info to logs
+    }
+
+    val fromBasePrincipal = fromBase.getPrincipal.asInstanceOf[UserDetailsWithExtras]
     val principal = User(
       fromBasePrincipal.getUsername,
       fromBasePrincipal.email,
@@ -55,7 +73,9 @@ class ActiveDirectoryLDAPAuthenticationProvider(config: ActiveDirectoryLDAPConfi
       fromBasePrincipal.getAuthorities.asScala.map(_.getAuthority).toSeq
     )
 
-    new UsernamePasswordAuthenticationToken(principal, fromBasePrincipal.getPassword, fromBasePrincipal.getAuthorities)
+    val token = new UsernamePasswordAuthenticationToken(principal, fromBasePrincipal.getPassword, fromBasePrincipal.getAuthorities)
+    logger.info(s"LDAP-based: Login of user $username - ok") // no throw until this point
+    token
   }
 
   override def supports(authentication: Class[_]): Boolean = baseImplementation.supports(authentication)
