@@ -38,16 +38,16 @@ class ConfigUsersAuthenticationProvider(usersConfig: UsersConfig) extends Authen
 
     usersConfig.knownUsersMap.get(username).map { usersConfig =>
       if (usersConfig.password == password) {
-        logger.info(s"user login: $username - ok")
+        logger.info(s"Config-based: user login: $username - ok")
         val principal = User(username, usersConfig.email, usersConfig.displayname, usersConfig.groups.toList)
         new UsernamePasswordAuthenticationToken(principal, password,
           usersConfig.groups.map(new SimpleGrantedAuthority(_)).toList.asJava)
       } else {
-        logger.error(s"user login: $username - bad pwd")
+        logger.error(s"Config-based: user login: $username - bad pwd")
         throw badCreds
       }
     }.getOrElse{
-      logger.error(s"user login: $username - user not found")
+      logger.error(s"Config-based: user login: $username - user not found")
       throw badCreds
     }
   }
