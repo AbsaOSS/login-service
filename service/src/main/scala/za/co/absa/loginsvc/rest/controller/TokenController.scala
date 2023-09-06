@@ -72,21 +72,21 @@ class TokenController @Autowired()(jwtService: JWTService) {
         ))
     )
   )
-  @Parameter(in = ParameterIn.QUERY, name = "groups-prefix", schema = new Schema(implementation = classOf[String]), example = "pam-",
-    description = "Prefix of groups only to be returned in JWT user object")
+  @Parameter(in = ParameterIn.QUERY, name = "group-prefixes", schema = new Schema(implementation = classOf[String]), example = "pam-,dehdl-",
+    description = "Prefixes of groups only to be returned in JWT user object (,-separated)")
   @PostMapping(
     path = Array("/generate"),
     produces = Array(MediaType.APPLICATION_JSON_VALUE)
   )
   @ResponseStatus(HttpStatus.OK)
   @SecurityRequirement(name = "basicAuth")
-  def generateToken(authentication: Authentication, @RequestParam("groups-prefix") optionalGroupsPrefix: Optional[String]): CompletableFuture[TokenWrapper] = {
+  def generateToken(authentication: Authentication, @RequestParam("group-prefixes") groupPrefixes: Optional[String]): CompletableFuture[TokenWrapper] = {
     val user = authentication.getPrincipal.asInstanceOf[User]
-    val groupsPrefix = optionalGroupsPrefix.toScalaOption
+    val groupPrefixesStrScala = groupPrefixes.toScalaOption
 
-    val filteredGroupsUser = groupsPrefix.applyIfDefined(user, { (user: User, prefix) =>
-      val filteredGroups = user.groups.filter(_.startsWith(prefix))
-      user.copy(groups = filteredGroups)
+    val filteredGroupsUser = groupPrefixesStrScala.applyIfDefined(user, { (user: User, prefixesStr) =>
+      val prefixes = prefixesStr.trim.split(',')
+      user.filterGroupsByPrefixes(prefixes.toSet)
     })
 
     val jwt = jwtService.generateToken(filteredGroupsUser)
