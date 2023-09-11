@@ -16,4 +16,10 @@
 
 package za.co.absa.loginsvc.model
 
-case class User(name: String, email: Option[String], displayName: Option[String], groups: Seq[String])
+case class User(name: String, email: Option[String], displayName: Option[String], groups: Seq[String]) {
+  def filterGroupsByPrefixes(prefixes: Set[String]): User = {
+    val filteredGroups = groups.filter(group => prefixes.exists(group.startsWith))
+
+    this.copy(groups = filteredGroups)
+  }
+}
