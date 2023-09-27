@@ -16,9 +16,7 @@
 
 package za.co.absa.loginsvc.rest.controller
 
-import com.fasterxml.jackson.annotation.JsonProperty
 import io.swagger.v3.oas.annotations.enums.ParameterIn
-import io.swagger.v3.oas.annotations.media.Schema.RequiredMode
 import io.swagger.v3.oas.annotations.media.{Content, ExampleObject, Schema}
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
@@ -29,6 +27,7 @@ import org.springframework.http.{HttpStatus, MediaType}
 import org.springframework.security.core.Authentication
 import org.springframework.web.bind.annotation._
 import za.co.absa.loginsvc.model.User
+import za.co.absa.loginsvc.rest.model.{PublicKey, Tokens}
 import za.co.absa.loginsvc.rest.service.JWTService
 import za.co.absa.loginsvc.utils.OptionExt.ImplicitOptionExt
 
@@ -36,18 +35,6 @@ import java.util.concurrent.CompletableFuture
 import java.util.{Base64, Optional}
 import scala.concurrent.Future
 
-
-case class TokenWrapper(
-  @JsonProperty("token")
-  @Schema(example = "abcd123.efgh456.ijkl789", requiredMode = RequiredMode.REQUIRED)
-  token: String
-) extends AnyVal
-
-case class PublicKeyWrapper(
-  @JsonProperty("key")
-  @Schema(example = "ABCDEFGH1234", requiredMode = RequiredMode.REQUIRED)
-  key: String
-) extends AnyVal
 
 @RestController
 @RequestMapping(Array("/token"))
@@ -57,13 +44,13 @@ class TokenController @Autowired()(jwtService: JWTService) {
 
   @Tags(Array(new Tag(name = "token")))
   @Operation(
-    summary = "Generates a JWT",
-    description = """Generates a JWT signed by the private key, verifiable by the public key available at /token/public-key. RSA256 is used.""",
+    summary = "Generates access and refresh JWTs",
+    description = """Generates access and refresh JWTs signed by the private key, verifiable by the public key available at /token/public-key. RSA256 is used.""",
     responses = Array(
-      new ApiResponse(responseCode = "200", description = "JWT is retrieved in the response body",
+      new ApiResponse(responseCode = "200", description = "JWTs are retrieved in the response body",
         content = Array(new Content(
-          schema = new Schema(implementation = classOf[TokenWrapper]),
-          examples = Array(new ExampleObject(value = "{\n  \"token\": \"abcd123.efgh456.ijkl789\"\n}")))
+          schema = new Schema(implementation = classOf[Tokens]),
+          examples = Array(new ExampleObject(value = "{\n  \"token\": \"abcd123.efgh456.ijkl789\",\n  \"refresh\": \"ab12.cd34.ef56\"\n}")))
         )
       ),
       new ApiResponse(responseCode = "401", description = "Auth error",
@@ -80,7 +67,7 @@ class TokenController @Autowired()(jwtService: JWTService) {
   )
   @ResponseStatus(HttpStatus.OK)
   @SecurityRequirement(name = "basicAuth")
-  def generateToken(authentication: Authentication, @RequestParam("group-prefixes") groupPrefixes: Optional[String]): CompletableFuture[TokenWrapper] = {
+  def generateToken(authentication: Authentication, @RequestParam("group-prefixes") groupPrefixes: Optional[String]): CompletableFuture[Tokens] = {
     val user = authentication.getPrincipal.asInstanceOf[User]
     val groupPrefixesStrScala = groupPrefixes.toScalaOption
 
@@ -89,8 +76,39 @@ class TokenController @Autowired()(jwtService: JWTService) {
       user.filterGroupsByPrefixes(prefixes.toSet)
     })
 
-    val jwt = jwtService.generateToken(filteredGroupsUser)
-    Future.successful(TokenWrapper(jwt))
+    val accessJwt = jwtService.generateAccessToken(filteredGroupsUser)
+    val refreshJwt = jwtService.generateRefreshToken(filteredGroupsUser)
+    Future.successful(Tokens(accessJwt, refreshJwt))
+  }
+
+  @Tags(Array(new Tag(name = "token")))
+  @Operation(
+    summary = "Refreshes access JWT",
+    // note: further implementation, perhaps in https://github.com/AbsaOSS/login-service/issues/76, may issue new refresh tokens
+    description = """Refreshed access JWT and (currently original) refresh JWTs signed by the private key, verifiable by the public key available at /token/public-key. RSA256 is used.""",
+    responses = Array(
+      new ApiResponse(responseCode = "200", description = "JWTs are retrieved in the response body",
+        content = Array(new Content(
+          schema = new Schema(implementation = classOf[Tokens]),
+          examples = Array(new ExampleObject(value = "{\n  \"token\": \"abcd123.efgh456.ijkl789\",\n  \"refresh\": \"ab12.cd34.ef56\"\n}")))
+        )
+      ),
+      new ApiResponse(responseCode = "401", description = "Auth error", // todo this is probably not correct, change as per error handlers
+        content = Array(new Content(
+          schema = new Schema(implementation = classOf[String]), examples = Array(new ExampleObject(value = "Error: response status is 401")))
+        ))
+    )
+  )
+  @PostMapping(
+    path = Array("/refresh"),
+    produces = Array(MediaType.APPLICATION_JSON_VALUE)
+  )
+  @ResponseStatus(HttpStatus.OK)
+  def refreshToken(@RequestBody tokens: Tokens): CompletableFuture[Tokens] = {
+    val refreshedAccessToken = jwtService.refreshToken(tokens)
+    Future.successful(Tokens(refreshedAccessToken, tokens.refresh))
+
+    // todo error handling of: io.jsonwebtoken.security.SignatureException, io.jsonwebtoken.ExpiredJwtException
   }
 
   @Tags(Array(new Tag(name = "token")))
@@ -100,7 +118,7 @@ class TokenController @Autowired()(jwtService: JWTService) {
     responses = Array(
       new ApiResponse(responseCode = "200", description = "Payload containing public key is returned",
         content = Array(new Content(
-          schema = new Schema(implementation = classOf[PublicKeyWrapper]),
+          schema = new Schema(implementation = classOf[PublicKey]),
           examples = Array(new ExampleObject(value = "{\n  \"key\": \"ABCDEFGH1234\"\n}")))
         )
       )
@@ -111,11 +129,11 @@ class TokenController @Autowired()(jwtService: JWTService) {
     produces = Array(MediaType.APPLICATION_JSON_VALUE)
   )
   @ResponseStatus(HttpStatus.OK)
-  def getPublicKey(): CompletableFuture[PublicKeyWrapper] = {
+  def getPublicKey(): CompletableFuture[PublicKey] = {
     val publicKey = jwtService.publicKey
     val publicKeyBase64 = Base64.getEncoder.encodeToString(publicKey.getEncoded)
 
-    Future.successful(PublicKeyWrapper(publicKeyBase64))
+    Future.successful(PublicKey(publicKeyBase64))
   }
 
   @Tags(Array(new Tag(name = "token")))

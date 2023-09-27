@@ -53,14 +53,14 @@ class JWTServiceTest extends AnyFlatSpec {
   behavior of "generateToken"
 
   it should "return a JWT that is verifiable by `publicKey`" in {
-    val jwt = jwtService.generateToken(userWithoutGroups)
+    val jwt = jwtService.generateAccessToken(userWithoutGroups)
     val parsedJWT = parseJWT(jwt)
 
     assert(parsedJWT.isSuccess)
   }
 
   it should "return a JWT with subject equal to User.name" in {
-    val jwt = jwtService.generateToken(userWithoutGroups)
+    val jwt = jwtService.generateAccessToken(userWithoutGroups)
     val parsedJWT = parseJWT(jwt)
     val actualSubject = parsedJWT
       .map(_.getBody.getSubject)
@@ -70,7 +70,7 @@ class JWTServiceTest extends AnyFlatSpec {
   }
 
   it should "return a JWT with email claim equal to User.email if it is not None" in {
-    val jwt = jwtService.generateToken(userWithoutGroups)
+    val jwt = jwtService.generateAccessToken(userWithoutGroups)
     val parsedJWT = parseJWT(jwt)
 
     val actualEmail = parsedJWT
@@ -81,7 +81,7 @@ class JWTServiceTest extends AnyFlatSpec {
   }
 
   it should "return a JWT without email claim if User.email is None" in {
-    val jwt = jwtService.generateToken(userWithoutEmailAndGroups)
+    val jwt = jwtService.generateAccessToken(userWithoutEmailAndGroups)
     val parsedJWT = parseJWT(jwt)
 
     assert(parsedJWT.isSuccess)
@@ -92,7 +92,7 @@ class JWTServiceTest extends AnyFlatSpec {
   }
 
   it should "return a JWT kid" in {
-    val jwt = jwtService.generateToken(userWithoutEmailAndGroups)
+    val jwt = jwtService.generateAccessToken(userWithoutEmailAndGroups)
     val parsedJWT = parseJWT(jwt)
 
     assert(parsedJWT.isSuccess)
@@ -105,7 +105,7 @@ class JWTServiceTest extends AnyFlatSpec {
   it should "turn groups into empty `groups` claim for user without groups" in {
     import scala.collection.JavaConverters._
 
-    val jwt = jwtService.generateToken(userWithoutGroups)
+    val jwt = jwtService.generateAccessToken(userWithoutGroups)
     val parsedJWT = parseJWT(jwt)
     val actualGroups = parsedJWT
       .map(_.getBody.get("groups", classOf[util.ArrayList[String]]))
@@ -118,7 +118,7 @@ class JWTServiceTest extends AnyFlatSpec {
   it should "turn groups into non-empty `groups` claim for user with groups" in {
     import scala.collection.JavaConverters._
 
-    val jwt = jwtService.generateToken(userWithGroups)
+    val jwt = jwtService.generateAccessToken(userWithGroups)
     val parsedJWT = parseJWT(jwt)
     val actualGroups = parsedJWT
       .map(_.getBody.get("groups", classOf[util.ArrayList[String]]))
