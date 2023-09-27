@@ -87,7 +87,7 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider) {
       .setSigningKey(rsaKeyPair.getPublic) // todo check fail on invalid key
       .setClock(() => Date.from(Instant.now().minus(jwtConfig.refreshExpTime.toJava))) // allowing expired access token - up to refresh token validity window
       .build()
-      .parseClaimsJws(tokens.token)
+      .parseClaimsJws(tokens.token) // checks requirements: type=access, signature, custom validity window
 
     val userFromOldAccessToken = extractUserFrom(oldAccessJws.getBody)
 
@@ -96,9 +96,9 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider) {
       .requireSubject(userFromOldAccessToken.name) // todo check fail on user not matching?
       .setSigningKey(rsaKeyPair.getPublic) // todo check fail on invalid key
       .build()
-      .parseClaimsJws(tokens.refresh) // this checks the username and validity, we do not need to parse any other claims
+      .parseClaimsJws(tokens.refresh) // checks username, validity, and signature.
 
-    generateAccessToken(userFromOldAccessToken)
+    generateAccessToken(userFromOldAccessToken) // same process as with normal generation
   }
 
   def publicKey: PublicKey = rsaKeyPair.getPublic
