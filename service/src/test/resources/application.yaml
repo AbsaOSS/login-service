@@ -2,7 +2,8 @@ loginsvc:
   rest:
     # Rest General Config
     jwt:
-      exp-time: 4
+      access-exp-time: 10min
+      refresh-exp-time: 10h
       alg-name: "RS256"
     config:
       some-key: "BETA"

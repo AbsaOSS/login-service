@@ -21,9 +21,11 @@ import org.scalatest.matchers.should.Matchers
 import za.co.absa.loginsvc.rest.config.validation.ConfigValidationException
 import za.co.absa.loginsvc.rest.config.validation.ConfigValidationResult.{ConfigValidationError, ConfigValidationSuccess}
 
+import scala.concurrent.duration._
+
 class JwtConfigTest extends AnyFlatSpec with Matchers {
 
-  val jwtConfig = JwtConfig("RS256", 2)
+  val jwtConfig = JwtConfig("RS256", 20.minutes, 2.hours)
 
   "JwtConfig" should "validate expected content" in {
     jwtConfig.validate() shouldBe ConfigValidationSuccess
@@ -34,10 +36,14 @@ class JwtConfigTest extends AnyFlatSpec with Matchers {
       ConfigValidationError(ConfigValidationException("Invalid algName 'ABC' was given."))
   }
 
-  it should "fail on non-negative expTime" in {
-    jwtConfig.copy(expTime = -7).validate() shouldBe
-      ConfigValidationError(ConfigValidationException("expTime must be positive (hours)"))
+  it should "fail on non-negative accessExpTime" in {
+    jwtConfig.copy(accessExpTime = -7.hours).validate() shouldBe
+      ConfigValidationError(ConfigValidationException("accessExpTime must be at least 5 seconds")) // 5s = test/resources/application.yaml
+  }
 
+  it should "fail on non-negative refreshExpTime" in {
+    jwtConfig.copy(refreshExpTime = -7.hours).validate() shouldBe
+      ConfigValidationError(ConfigValidationException("refreshExpTime must be at least 10 seconds")) // dtto
   }
 
 }

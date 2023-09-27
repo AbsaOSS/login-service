@@ -30,8 +30,9 @@ import za.co.absa.loginsvc.utils.OptionExt
 import java.security.interfaces.RSAPublicKey
 import java.security.{KeyPair, PublicKey}
 import java.time.Instant
-import java.time.temporal.ChronoUnit
 import java.util.Date
+
+import scala.compat.java8.DurationConverters._
 
 @Service
 class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider) {
@@ -42,9 +43,8 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider) {
   def generateToken(user: User): String = {
     import scala.collection.JavaConverters._
 
-
     val expiration = Date.from(
-      Instant.now().plus(jwtConfig.expTime, ChronoUnit.HOURS)
+      Instant.now().plus(jwtConfig.accessExpTime.toJava)
     )
     val issuedAt = Date.from(Instant.now())
     // needs to be Java List/Array, otherwise incorrect claim is generated

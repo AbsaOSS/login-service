@@ -17,13 +17,23 @@
 package za.co.absa.loginsvc.rest.config
 
 import io.jsonwebtoken.SignatureAlgorithm
+import za.co.absa.loginsvc.rest.config.JwtConfig.{minAccessExpTime, minRefreshExpTime}
 import za.co.absa.loginsvc.rest.config.validation.{ConfigValidatable, ConfigValidationException, ConfigValidationResult}
 import za.co.absa.loginsvc.rest.config.validation.ConfigValidationResult.{ConfigValidationError, ConfigValidationSuccess}
+
+import java.util.concurrent.TimeUnit
+import scala.concurrent.duration.FiniteDuration
 import scala.util.{Failure, Success, Try}
+
+object JwtConfig {
+  val minAccessExpTime: FiniteDuration = FiniteDuration(5, TimeUnit.SECONDS)
+  val minRefreshExpTime: FiniteDuration = FiniteDuration(10, TimeUnit.SECONDS)
+}
 
 case class JwtConfig(
   algName: String,
-  expTime: Int
+  accessExpTime: FiniteDuration,
+  refreshExpTime: FiniteDuration
 ) extends ConfigValidatable {
 
   def throwErrors(): Unit =
@@ -41,10 +51,14 @@ case class JwtConfig(
       case Failure(e) => throw e
     }
 
-    val expTimeResult = if (expTime < 1) {
-      ConfigValidationError(ConfigValidationException("expTime must be positive (hours)"))
+    val accessExpTimeResult = if (accessExpTime < minAccessExpTime) {
+      ConfigValidationError(ConfigValidationException(s"accessExpTime must be at least $minAccessExpTime"))
     } else ConfigValidationSuccess
 
-    algValidation.merge(expTimeResult)
+    val refreshExpTimeResult = if (refreshExpTime < minRefreshExpTime) {
+      ConfigValidationError(ConfigValidationException(s"refreshExpTime must be at least $minRefreshExpTime"))
+    } else ConfigValidationSuccess
+
+    algValidation.merge(accessExpTimeResult).merge(refreshExpTimeResult)
   }
 }
