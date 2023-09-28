@@ -2,8 +2,20 @@ loginsvc:
   rest:
     # Rest General Config
     jwt:
-      exp-time: 4
-      alg-name: "RS256"
+      generate-in-memory:
+        exp-time: 4
+        alg-name: "RS256"
+      #Instead of generating the key in memory
+      #The Below Config allows for the application to fetch keys from AWS Secrets Manager.
+      #Note that if both configurations are available, AWS will take preference.
+      #fetch-from-aws:
+        #secret-name: "secret"
+        #region: "region"
+        #private-aws-key: "privateKey"
+        #public-aws-key: "publicKey"
+        #exp-aws-key: "expiry"
+        #alg-aws-key: "alg"
+        #refresh-time: 30
     config:
       some-key: "BETA"
       # Generates git.properties file for use on info endpoint.

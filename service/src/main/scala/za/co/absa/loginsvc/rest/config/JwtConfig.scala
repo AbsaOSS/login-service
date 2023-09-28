@@ -22,9 +22,29 @@ import za.co.absa.loginsvc.rest.config.validation.ConfigValidationResult.{Config
 import scala.util.{Failure, Success, Try}
 
 case class JwtConfig(
-  algName: String,
-  expTime: Int
-) extends ConfigValidatable {
+                      generateInMemory: Option[GenerateKeysConfig],
+                      fetchFromAws: Option[FetchSecretConfig])
+  extends ConfigValidatable {
+
+  def throwErrors(): Unit =
+    this.validate().throwOnErrors()
+
+  override def validate(): ConfigValidationResult = {
+
+    if(generateInMemory.isEmpty && fetchFromAws.isEmpty)
+      {
+        ConfigValidationError(
+          ConfigValidationException(
+            "generateInMemory and fetchFromAws configs are missing. Please ensure that at least one is provided."))
+      }
+    else
+      ConfigValidationSuccess
+  }
+}
+case class GenerateKeysConfig(
+                               algName: String,
+                               expTime: Int)
+  extends ConfigValidatable {
 
   def throwErrors(): Unit =
     this.validate().throwOnErrors()
@@ -46,5 +66,60 @@ case class JwtConfig(
     } else ConfigValidationSuccess
 
     algValidation.merge(expTimeResult)
+  }
+}
+
+case class FetchSecretConfig(
+                              secretName: String,
+                              region: String,
+                              privateAwsKey: String,
+                              publicAwsKey: String,
+                              expAwsKey: String,
+                              algAwsKey: String,
+                              refreshTime: Int
+                             )
+  extends ConfigValidatable {
+  def throwErrors(): Unit =
+    this.validate().throwOnErrors()
+
+  override def validate(): ConfigValidationResult = {
+
+    val results = Seq(
+      Option(secretName)
+        .map(_ => ConfigValidationSuccess)
+        .getOrElse(ConfigValidationError(ConfigValidationException("secretName is empty"))),
+
+      Option(region)
+        .map(_ => ConfigValidationSuccess)
+        .getOrElse(ConfigValidationError(ConfigValidationException("region is empty"))),
+
+      Option(privateAwsKey)
+        .map(_ => ConfigValidationSuccess)
+        .getOrElse(ConfigValidationError(ConfigValidationException("privateAwsKey is empty"))),
+
+        Option (publicAwsKey)
+        .map(_ => ConfigValidationSuccess)
+        .getOrElse(ConfigValidationError(ConfigValidationException("publicAwsKey is empty"))),
+
+      Option (expAwsKey)
+          .map(_ => ConfigValidationSuccess)
+          .getOrElse(ConfigValidationError(ConfigValidationException("expAwsKey is empty"))),
+
+      Option(algAwsKey)
+        .map(_ => ConfigValidationSuccess)
+        .getOrElse(ConfigValidationError(ConfigValidationException("algAwsKey is empty"))),
+
+      Option (refreshTime)
+          .map(_ => ConfigValidationSuccess)
+          .getOrElse(ConfigValidationError(ConfigValidationException("refreshTime is empty")))
+    )
+
+    val resultsMerge = results.foldLeft[ConfigValidationResult](ConfigValidationSuccess)(ConfigValidationResult.merge)
+
+    val TimeResult = if (refreshTime < 1) {
+      ConfigValidationError(ConfigValidationException("refreshTime must be positive (hours)"))
+    } else ConfigValidationSuccess
+
+    resultsMerge.merge(TimeResult)
   }
 }

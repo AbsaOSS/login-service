@@ -93,6 +93,47 @@ Requires `ActiveDirectoryLDAPConfig(domain: String, url: String, searchFilter: S
    - For JDK11: Run `keytool -import -file ldapcert.pem -alias ldaps -keystore <path_to_jdk>/lib/security/cacerts -storepass <password>` (default password is *changeit*).
 5. Enter `yes` when prompted.
 
+## Key Provider
+The Application allows for the user to allow the application to generate a key in memory.
+This is useful for single deployments and testing, however, may present issues when trying to deploy multiple login-services for redundancy.
+To get around this, the application allows for you to generate your keys in AWS Secrets manager and the application will periodically fetch them.
+
+In order to setup for in-memory key generation, your config should look like so:
+```
+loginsvc:
+  rest:
+    jwt:
+      generate-in-memory:
+        exp-time: 4
+        alg-name: "RS256"
+```
+The important information to provide is exp-time which indicates how long a token is valid for
+and alg-name which indicates which algorithm is used to encode your keys.
+
+To setup for AWS Secrets Manager, your config should look like so:
+```
+loginsvc:
+  rest:
+    jwt:
+      fetch-from-aws:
+        secret-name: "secret"
+        region: "region"
+        private-aws-key: "privateKey"
+        public-aws-key: "publicKey"
+        exp-aws-key: "expiry"
+        alg-aws-key: "alg"
+        refresh-time: 30
+```
+You AWS Secret must have the following values:
+`PrivateKey`
+`PublicKey`
+`expiry time`
+`algorithm`
+
+You will provide the keys for these values in the config.
+
+Please note that if both configurations are available, then the AWS methodology will be used.
+
 ## How to generate Code coverage report
 ```
 sbt jacoco
