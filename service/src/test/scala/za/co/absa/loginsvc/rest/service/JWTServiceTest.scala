@@ -198,7 +198,7 @@ class JWTServiceTest extends AnyFlatSpec with Matchers {
   import scala.concurrent.duration._
 
   it should "refresh an expired access JWT token using a valid refresh one - common scenario" in {
-    val customJwtService = customTimedJwtService(3.second, 20.minutes)
+    val customJwtService = customTimedJwtService(3.seconds, 20.minutes)
 
     val accessJwt = customJwtService.generateAccessToken(userWithGroups)
     val refreshJwt = customJwtService.generateRefreshToken(userWithGroups)
@@ -225,7 +225,7 @@ class JWTServiceTest extends AnyFlatSpec with Matchers {
   }
 
   it should "refuse to refresh an access JWT token using an expired refresh token - day-after scenario" in {
-    val customJwtService = customTimedJwtService(1.second, 2.seconds)
+    val customJwtService = customTimedJwtService(1.seconds, 2.seconds)
 
     val accessJwt = customJwtService.generateAccessToken(userWithGroups)
     val refreshJwt = customJwtService.generateRefreshToken(userWithGroups)
