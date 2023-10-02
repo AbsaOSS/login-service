@@ -83,8 +83,8 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider) {
 
   def refreshToken(tokens: Tokens): String = {
     val oldAccessJws: Jws[Claims] = Jwts.parserBuilder()
-      .require("type", Tokens.TokenType.Access.toString) // todo check fail on type not matching?
-      .setSigningKey(rsaKeyPair.getPublic) // todo check fail on invalid key
+      .require("type", Tokens.TokenType.Access.toString)
+      .setSigningKey(rsaKeyPair.getPublic)
       .setClock(() => Date.from(Instant.now().minus(jwtConfig.refreshExpTime.toJava))) // allowing expired access token - up to refresh token validity window
       .build()
       .parseClaimsJws(tokens.token) // checks requirements: type=access, signature, custom validity window
@@ -92,9 +92,9 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider) {
     val userFromOldAccessToken = extractUserFrom(oldAccessJws.getBody)
 
     Jwts.parserBuilder()
-      .require("type", Tokens.TokenType.Refresh.toString) // todo check fail on type not matching?
-      .requireSubject(userFromOldAccessToken.name) // todo check fail on user not matching?
-      .setSigningKey(rsaKeyPair.getPublic) // todo check fail on invalid key
+      .require("type", Tokens.TokenType.Refresh.toString)
+      .requireSubject(userFromOldAccessToken.name)
+      .setSigningKey(rsaKeyPair.getPublic)
       .build()
       .parseClaimsJws(tokens.refresh) // checks username, validity, and signature.
 

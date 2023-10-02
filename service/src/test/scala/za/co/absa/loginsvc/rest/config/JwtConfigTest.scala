@@ -36,14 +36,14 @@ class JwtConfigTest extends AnyFlatSpec with Matchers {
       ConfigValidationError(ConfigValidationException("Invalid algName 'ABC' was given."))
   }
 
-  it should "fail on non-negative accessExpTime" in {
+  it should "fail on too small accessExpTime" in {
     jwtConfig.copy(accessExpTime = -7.hours).validate() shouldBe
-      ConfigValidationError(ConfigValidationException("accessExpTime must be at least 5 seconds")) // 5s = test/resources/application.yaml
+      ConfigValidationError(ConfigValidationException("accessExpTime must be at least 10 milliseconds")) // JwtConfig
   }
 
-  it should "fail on non-negative refreshExpTime" in {
+  it should "fail on too small refreshExpTime" in {
     jwtConfig.copy(refreshExpTime = -7.hours).validate() shouldBe
-      ConfigValidationError(ConfigValidationException("refreshExpTime must be at least 10 seconds")) // dtto
+      ConfigValidationError(ConfigValidationException("refreshExpTime must be at least 20 milliseconds")) // dtto
   }
 
 }

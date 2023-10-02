@@ -26,8 +26,8 @@ import scala.concurrent.duration.FiniteDuration
 import scala.util.{Failure, Success, Try}
 
 object JwtConfig {
-  val minAccessExpTime: FiniteDuration = FiniteDuration(5, TimeUnit.SECONDS)
-  val minRefreshExpTime: FiniteDuration = FiniteDuration(10, TimeUnit.SECONDS)
+  val minAccessExpTime: FiniteDuration = FiniteDuration(10, TimeUnit.MILLISECONDS)
+  val minRefreshExpTime: FiniteDuration = minAccessExpTime * 2
 }
 
 case class JwtConfig(

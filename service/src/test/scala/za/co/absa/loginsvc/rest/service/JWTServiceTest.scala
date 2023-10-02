@@ -18,15 +18,21 @@ package za.co.absa.loginsvc.rest.service
 
 import com.nimbusds.jose.JWSAlgorithm
 import com.nimbusds.jose.jwk.KeyUse
-import io.jsonwebtoken.{Claims, Jws, Jwts}
+import io.jsonwebtoken.{Claims, ExpiredJwtException, Jws, Jwts}
 import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import za.co.absa.loginsvc.model.User
-import za.co.absa.loginsvc.rest.config.provider.ConfigProvider
+import za.co.absa.loginsvc.rest.config.JwtConfig
+import za.co.absa.loginsvc.rest.config.provider.{ConfigProvider, JwtConfigProvider}
+import za.co.absa.loginsvc.rest.model.Tokens
 
+import java.security.PublicKey
 import java.util
-import scala.util.Try
+import scala.concurrent.duration.FiniteDuration
+import scala.util.{Failure, Success, Try}
+import scala.collection.JavaConverters._
 
-class JWTServiceTest extends AnyFlatSpec {
+class JWTServiceTest extends AnyFlatSpec with Matchers {
 
   private val testConfig : ConfigProvider = new ConfigProvider("service/src/test/resources/application.yaml")
   private val jwtService: JWTService = new JWTService(testConfig)
@@ -46,30 +52,35 @@ class JWTServiceTest extends AnyFlatSpec {
     groups = Seq("testGroup1", "testGroup2")
   )
 
-  private def parseJWT(jwt: String): Try[Jws[Claims]] = Try {
-    Jwts.parserBuilder().setSigningKey(jwtService.publicKey).build().parseClaimsJws(jwt)
+  private def parseJWT(jwt: String, publicKey: PublicKey = jwtService.publicKey): Try[Jws[Claims]] = Try {
+    Jwts.parserBuilder().setSigningKey(publicKey).build().parseClaimsJws(jwt)
   }
 
-  behavior of "generateToken"
+  behavior of "generateAccessToken"
 
-  it should "return a JWT that is verifiable by `publicKey`" in {
+  it should "return an access JWT that is verifiable by `publicKey`" in {
     val jwt = jwtService.generateAccessToken(userWithoutGroups)
     val parsedJWT = parseJWT(jwt)
 
     assert(parsedJWT.isSuccess)
   }
 
-  it should "return a JWT with subject equal to User.name" in {
+  it should "return an access JWT with subject equal to User.name and has type access" in {
     val jwt = jwtService.generateAccessToken(userWithoutGroups)
     val parsedJWT = parseJWT(jwt)
-    val actualSubject = parsedJWT
-      .map(_.getBody.getSubject)
-      .get
+    assert(parsedJWT.isSuccess)
 
-    assert(actualSubject === userWithoutGroups.name)
+    parsedJWT match {
+      case Success(validJwt) =>
+        validJwt.getBody.getSubject shouldBe userWithoutGroups.name
+        validJwt.getBody.get("type", classOf[String]) shouldBe "access"
+
+      case Failure(t) => fail("Invalid access JWT", t)
+    }
+
   }
 
-  it should "return a JWT with email claim equal to User.email if it is not None" in {
+  it should "return an access JWT with email claim equal to User.email if it is not None" in {
     val jwt = jwtService.generateAccessToken(userWithoutGroups)
     val parsedJWT = parseJWT(jwt)
 
@@ -80,7 +91,7 @@ class JWTServiceTest extends AnyFlatSpec {
     assert(userWithoutGroups.email contains actualEmail)
   }
 
-  it should "return a JWT without email claim if User.email is None" in {
+  it should "return an access JWT without email claim if User.email is None" in {
     val jwt = jwtService.generateAccessToken(userWithoutEmailAndGroups)
     val parsedJWT = parseJWT(jwt)
 
@@ -91,7 +102,7 @@ class JWTServiceTest extends AnyFlatSpec {
     }
   }
 
-  it should "return a JWT kid" in {
+  it should "return an access JWT kid" in {
     val jwt = jwtService.generateAccessToken(userWithoutEmailAndGroups)
     val parsedJWT = parseJWT(jwt)
 
@@ -126,6 +137,106 @@ class JWTServiceTest extends AnyFlatSpec {
       .asScala
 
     assert(actualGroups === userWithGroups.groups)
+  }
+
+  behavior of "generateRefreshToken"
+
+  it should "return a refresh JWT that is verifiable by `publicKey`" in {
+    val jwt = jwtService.generateRefreshToken(userWithoutGroups)
+    val parsedJWT = parseJWT(jwt)
+
+    assert(parsedJWT.isSuccess)
+  }
+
+  it should "return an refresh JWT with subject equal to User.name and has type refresh" in {
+    val jwt = jwtService.generateRefreshToken(userWithoutGroups)
+    val parsedJWT = parseJWT(jwt)
+    assert(parsedJWT.isSuccess)
+
+    parsedJWT match {
+      case Success(validJwt) =>
+        validJwt.getBody.getSubject shouldBe userWithoutGroups.name
+        validJwt.getBody.get("type", classOf[String]) shouldBe "refresh"
+
+      case Failure(t) => fail("Invalid refresh JWT", t)
+    }
+  }
+
+  behavior of "refreshToken"
+
+  it should "refresh a still-valid access JWT token using a valid refresh one - happy scenario" in {
+    val accessJwt = jwtService.generateAccessToken(userWithGroups)
+    val refreshJwt = jwtService.generateRefreshToken(userWithGroups)
+
+    val refreshedAccessJwt = jwtService.refreshToken(Tokens(accessJwt, refreshJwt))
+    val parsedRefreshedAccessJWT = parseJWT(refreshedAccessJwt)
+
+    parsedRefreshedAccessJWT match {
+      case Success(validJwt) =>
+        val jwtBody = validJwt.getBody
+
+        jwtBody.getSubject shouldBe userWithoutGroups.name
+        jwtBody.get("type", classOf[String]) shouldBe "access"
+        Option(jwtBody.get("email", classOf[String])) shouldBe userWithGroups.email
+        Option(jwtBody.get("displayname", classOf[String])) shouldBe userWithGroups.displayName
+        jwtBody.get("groups", classOf[java.util.List[String]]).asScala shouldBe userWithGroups.groups
+
+      case Failure(t) => fail(s"Invalid refreshed access JWT: $t", t)
+    }
+  }
+
+  def customTimedJwtService(accessExpTime: FiniteDuration, refreshExpTime: FiniteDuration): JWTService = {
+    val configP = new JwtConfigProvider {
+      override def getJWTConfig: JwtConfig = JwtConfig(
+        "RS256", accessExpTime, refreshExpTime
+      )
+    }
+
+    new JWTService(configP)
+  }
+
+  import scala.concurrent.duration._
+
+  it should "refresh an expired access JWT token using a valid refresh one - common scenario" in {
+    val customJwtService = customTimedJwtService(3.second, 20.minutes)
+
+    val accessJwt = customJwtService.generateAccessToken(userWithGroups)
+    val refreshJwt = customJwtService.generateRefreshToken(userWithGroups)
+
+    Thread.sleep(3 * 1000) // make sure that access is past due - as set above
+    parseJWT(accessJwt, customJwtService.publicKey).isFailure shouldBe true // expired
+
+    val refreshedAccessJwt = customJwtService.refreshToken(Tokens(accessJwt, refreshJwt))
+    val parsedRefreshedAccessJWT = parseJWT(refreshedAccessJwt, customJwtService.publicKey)
+    assert(parsedRefreshedAccessJWT.isSuccess)
+
+    parsedRefreshedAccessJWT match {
+      case Success(validJwt) =>
+        val jwtBody = validJwt.getBody
+
+        jwtBody.getSubject shouldBe userWithoutGroups.name
+        jwtBody.get("type", classOf[String]) shouldBe "access"
+        Option(jwtBody.get("email", classOf[String])) shouldBe userWithGroups.email
+        Option(jwtBody.get("displayname", classOf[String])) shouldBe userWithGroups.displayName
+        jwtBody.get("groups", classOf[java.util.List[String]]).asScala shouldBe userWithGroups.groups
+
+      case Failure(t) => fail(s"Invalid refreshed access JWT: $t", t)
+    }
+  }
+
+  it should "refuse to refresh an access JWT token using an expired refresh token - day-after scenario" in {
+    val customJwtService = customTimedJwtService(1.second, 2.seconds)
+
+    val accessJwt = customJwtService.generateAccessToken(userWithGroups)
+    val refreshJwt = customJwtService.generateRefreshToken(userWithGroups)
+
+    Thread.sleep(2 * 1000) // make sure that refresh is past due - as set above
+    parseJWT(refreshJwt, customJwtService.publicKey).isFailure shouldBe true // expired
+
+    an [ExpiredJwtException] should be thrownBy {
+      customJwtService.refreshToken(Tokens(accessJwt, refreshJwt))
+    }
+
   }
 
   behavior of "jwks"
