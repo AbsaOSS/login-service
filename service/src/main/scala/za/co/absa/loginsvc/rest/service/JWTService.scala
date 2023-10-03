@@ -58,8 +58,8 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider) {
       .setIssuedAt(issuedAt)
       .claim("kid", publicKeyThumbprint)
       .claim("groups", groupsClaim)
-      .applyIfDefined(user.email, (builder, value: String) => builder.claim("email", value))
-      .applyIfDefined(user.displayName, (builder, value: String) => builder.claim("displayname", value))
+      .applyIfDefined(user.email) { (builder, value: String) => builder.claim("email", value) }
+      .applyIfDefined(user.displayName) { (builder, value: String) => builder.claim("displayname", value) }
       .claim("type", Tokens.TokenType.Access.toString)
       .signWith(rsaKeyPair.getPrivate)
       .compact()

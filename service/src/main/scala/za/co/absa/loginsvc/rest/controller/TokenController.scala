@@ -71,10 +71,10 @@ class TokenController @Autowired()(jwtService: JWTService) {
     val user = authentication.getPrincipal.asInstanceOf[User]
     val groupPrefixesStrScala = groupPrefixes.toScalaOption
 
-    val filteredGroupsUser = user.applyIfDefined(groupPrefixesStrScala, { (user: User, prefixesStr: String) =>
+    val filteredGroupsUser = user.applyIfDefined(groupPrefixesStrScala) { (user: User, prefixesStr: String) =>
       val prefixes = prefixesStr.trim.split(',')
       user.filterGroupsByPrefixes(prefixes.toSet)
-    })
+    }
 
     val accessJwt = jwtService.generateAccessToken(filteredGroupsUser)
     val refreshJwt = jwtService.generateRefreshToken(filteredGroupsUser)
@@ -107,8 +107,6 @@ class TokenController @Autowired()(jwtService: JWTService) {
   def refreshToken(@RequestBody tokens: Tokens): CompletableFuture[Tokens] = {
     val refreshedAccessToken = jwtService.refreshToken(tokens)
     Future.successful(Tokens(refreshedAccessToken, tokens.refresh))
-
-    // todo error handling of: io.jsonwebtoken.security.SignatureException, io.jsonwebtoken.ExpiredJwtException
   }
 
   @Tags(Array(new Tag(name = "token")))

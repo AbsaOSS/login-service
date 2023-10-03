@@ -32,11 +32,11 @@ class OptionUtilsTest extends AnyFlatSpec with Matchers {
   import OptionUtils.ImplicitBuilderExt
 
   "ImplicitBuilderExt.applyIfDefined" should "apply fn correctly if defined" in {
-    1.applyIfDefined(Some(2), (a: Int, b: Int) => a + b) shouldBe 3
+    1.applyIfDefined(Some(2)) { (a: Int, b: Int) => a + b } shouldBe 3
   }
 
   it should "not apply fn if empty" in {
-    1.applyIfDefined(None, (a: Int, b: Int) => a + b) shouldBe 1
+    1.applyIfDefined(None) { (a: Int, b: Int) => a + b } shouldBe 1
   }
 
 }

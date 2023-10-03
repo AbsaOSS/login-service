@@ -87,10 +87,10 @@ trait ControllerIntegrationTestBase extends BeforeAndAfterAll with BeforeAndAfte
           case (acc, queryParam) => acc.queryParam(queryParam._1, queryParam._2)
         }
         case Post(optHeaders, optBody) => post(endpoint)
-          .applyIfDefined(optHeaders, (builder, headers: HttpHeaders) => builder.headers(headers))
-          .applyIfDefined(optBody, (builder, body: String) => {
+          .applyIfDefined(optHeaders) { (builder, headers: HttpHeaders) => builder.headers(headers) }
+          .applyIfDefined(optBody) { (builder, body: String) =>
             builder.contentType("application/json").content(body)
-          })
+          }
       }
     }
 

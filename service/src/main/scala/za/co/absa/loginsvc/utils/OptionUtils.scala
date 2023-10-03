@@ -45,7 +45,7 @@ object OptionUtils {
      * @tparam OptType
      * @return caller with the fn conditionally applied to
      */
-    def applyIfDefined[OptType](opt: Option[OptType], fn: (TargetType, OptType) => TargetType): TargetType = {
+    def applyIfDefined[OptType](opt: Option[OptType])(fn: (TargetType, OptType) => TargetType): TargetType = {
       OptionUtils.applyIfDefined(builder, opt, fn)
     }
   }
