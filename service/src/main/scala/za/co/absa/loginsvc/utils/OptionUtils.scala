@@ -16,10 +16,11 @@
 
 package za.co.absa.loginsvc.utils
 
-object OptionExt {
+object OptionUtils {
 
   /**
    * For `target`, either return as is (if `optValueToApply` is None) or apply fn `func`
+   *
    * @param target
    * @param optValueToApply
    * @param func
@@ -35,9 +36,17 @@ object OptionExt {
     }
   }
 
-  implicit class ImplicitOptionExt[OptType](val opt: Option[OptType]) extends AnyVal {
-    def applyIfDefined[TargetType](target: TargetType, fn: (TargetType, OptType) => TargetType): TargetType = {
-      OptionExt.applyIfDefined(target, opt, fn)
+  implicit class ImplicitBuilderExt[TargetType, OptType](val builder: TargetType) extends AnyVal {
+
+    /**
+     * Useful to conditionally apply value from Option if defined
+     * @param opt option that is the deciding factor
+     * @param fn function to apply to caller if opt is Some(value) -> value will be used in fn
+     * @tparam OptType
+     * @return caller with the fn conditionally applied to
+     */
+    def applyIfDefined[OptType](opt: Option[OptType], fn: (TargetType, OptType) => TargetType): TargetType = {
+      OptionUtils.applyIfDefined(builder, opt, fn)
     }
   }
 

@@ -29,7 +29,7 @@ import org.springframework.web.bind.annotation._
 import za.co.absa.loginsvc.model.User
 import za.co.absa.loginsvc.rest.model.{PublicKey, Tokens}
 import za.co.absa.loginsvc.rest.service.JWTService
-import za.co.absa.loginsvc.utils.OptionExt.ImplicitOptionExt
+import za.co.absa.loginsvc.utils.OptionUtils.ImplicitBuilderExt
 
 import java.util.concurrent.CompletableFuture
 import java.util.{Base64, Optional}
@@ -71,7 +71,7 @@ class TokenController @Autowired()(jwtService: JWTService) {
     val user = authentication.getPrincipal.asInstanceOf[User]
     val groupPrefixesStrScala = groupPrefixes.toScalaOption
 
-    val filteredGroupsUser = groupPrefixesStrScala.applyIfDefined(user, { (user: User, prefixesStr) =>
+    val filteredGroupsUser = user.applyIfDefined(groupPrefixesStrScala, { (user: User, prefixesStr: String) =>
       val prefixes = prefixesStr.trim.split(',')
       user.filterGroupsByPrefixes(prefixes.toSet)
     })

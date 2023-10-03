@@ -25,6 +25,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 import org.springframework.test.web.servlet.{MockMvc, ResultActions}
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.{asyncDispatch, get, post}
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.{content, request, status}
+import za.co.absa.loginsvc.utils.OptionUtils.ImplicitBuilderExt
 
 
 /**
@@ -75,7 +76,7 @@ trait ControllerIntegrationTestBase extends BeforeAndAfterAll with BeforeAndAfte
     // TODO add all other methods and enhance them with possible request body, headers, etc. when needed
     sealed trait RequestMethod
     case class Get(queryParams: Map[String, String] = Map.empty) extends RequestMethod
-    case class Post(headers: Option[HttpHeaders] = None) extends RequestMethod
+    case class Post(headers: Option[HttpHeaders] = None, body: Option[String] = None) extends RequestMethod
 
     private def requestMethodToMockHttpServletRequestBuilder(
                                                               requestMethod: RequestMethod,
@@ -85,12 +86,15 @@ trait ControllerIntegrationTestBase extends BeforeAndAfterAll with BeforeAndAfte
         case Get(queryParams) => queryParams.foldLeft(get(endpoint)) {
           case (acc, queryParam) => acc.queryParam(queryParam._1, queryParam._2)
         }
-        case Post(Some(headers)) => post(endpoint).headers(headers)
-        case Post(None) => post(endpoint)
+        case Post(optHeaders, optBody) => post(endpoint)
+          .applyIfDefined(optHeaders, (builder, headers: HttpHeaders) => builder.headers(headers))
+          .applyIfDefined(optBody, (builder, body: String) => {
+            builder.contentType("application/json").content(body)
+          })
       }
     }
 
-    def assertOkAndResultBodyJsonEquals(endpoint: String, requestMethod: RequestMethod, json: String)
+    def assertOkAndResultBodyJsonEquals(endpoint: String, requestMethod: RequestMethod, expectedJson: String)
                                        (implicit auth: Authentication): ResultActions = {
       val action = requestMethodToMockHttpServletRequestBuilder(requestMethod, endpoint)
 
@@ -102,7 +106,7 @@ trait ControllerIntegrationTestBase extends BeforeAndAfterAll with BeforeAndAfte
       mockMvc
         .perform(asyncDispatch(mvcResult))
         .andExpect(status().isOk())
-        .andExpect(content().json(json))
+        .andExpect(content().json(expectedJson))
     }
 
     def assertNotAuthenticatedFailure(endpoint: String, requestMethod: RequestMethod)

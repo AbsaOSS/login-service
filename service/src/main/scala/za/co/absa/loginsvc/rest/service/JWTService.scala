@@ -25,8 +25,8 @@ import org.springframework.stereotype.Service
 import za.co.absa.loginsvc.model.User
 import za.co.absa.loginsvc.rest.config.provider.JwtConfigProvider
 import za.co.absa.loginsvc.rest.model.Tokens
-import za.co.absa.loginsvc.rest.service.JWTService.{JwtBuilderExt, extractUserFrom}
-import za.co.absa.loginsvc.utils.OptionExt
+import za.co.absa.loginsvc.rest.service.JWTService.extractUserFrom
+import za.co.absa.loginsvc.utils.OptionUtils.ImplicitBuilderExt
 
 import java.security.interfaces.RSAPublicKey
 import java.security.{KeyPair, PublicKey}
@@ -123,12 +123,6 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider) {
 }
 
 object JWTService {
-  implicit class JwtBuilderExt(val jwtBuilder: JwtBuilder) extends AnyVal {
-    def applyIfDefined[T](opt: Option[T], fn: (JwtBuilder, T) => JwtBuilder): JwtBuilder = {
-      OptionExt.applyIfDefined(jwtBuilder, opt, fn)
-    }
-  }
-
 
   def extractUserFrom(claims: Claims): User = {
     val name = claims.getSubject
