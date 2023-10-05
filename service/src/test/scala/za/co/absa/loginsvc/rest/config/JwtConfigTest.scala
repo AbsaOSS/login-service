@@ -18,24 +18,30 @@ package za.co.absa.loginsvc.rest.config
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+import za.co.absa.loginsvc.rest.config.provider.JwtConfigProvider
 import za.co.absa.loginsvc.rest.config.validation.ConfigValidationException
 import za.co.absa.loginsvc.rest.config.validation.ConfigValidationResult.{ConfigValidationError, ConfigValidationSuccess}
 
 class JwtConfigTest extends AnyFlatSpec with Matchers {
 
-  val jwtConfig = JwtConfig("RS256", 2)
+  val jwtConfig: JwtConfig = JwtConfig(Option(GenerateKeysConfig("RS256", 2)), None)
+  val inMemoryConfig: GenerateKeysConfig = jwtConfig.generateInMemory.get
 
   "JwtConfig" should "validate expected content" in {
     jwtConfig.validate() shouldBe ConfigValidationSuccess
   }
 
+  "inMemoryConfig" should "validate expected content" in {
+    inMemoryConfig.validate() shouldBe ConfigValidationSuccess
+  }
+
   it should "fail on invalid algorithm" in {
-    jwtConfig.copy(algName = "ABC").validate() shouldBe
+    inMemoryConfig.copy(algName = "ABC").validate() shouldBe
       ConfigValidationError(ConfigValidationException("Invalid algName 'ABC' was given."))
   }
 
   it should "fail on non-negative expTime" in {
-    jwtConfig.copy(expTime = -7).validate() shouldBe
+    inMemoryConfig.copy(expTime = -7).validate() shouldBe
       ConfigValidationError(ConfigValidationException("expTime must be positive (hours)"))
 
   }

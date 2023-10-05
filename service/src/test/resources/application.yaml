@@ -2,8 +2,9 @@ loginsvc:
   rest:
     # Rest General Config
     jwt:
-      exp-time: 4
-      alg-name: "RS256"
+      generate-in-memory:
+        exp-time: 4
+        alg-name: "RS256"
     config:
       some-key: "BETA"
 
