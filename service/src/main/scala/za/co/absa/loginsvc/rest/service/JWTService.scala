@@ -156,7 +156,7 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider) {
 
   private def refreshSecrets(secretConfig: FetchSecretConfig): Unit = {
       val scheduler = Executors.newSingleThreadScheduledExecutor()
-      scheduler.scheduleAtFixedRate(() => {
+      val scheduledFuture = scheduler.scheduleAtFixedRate(() => {
         try this.config = fetchSecrets(secretConfig)
         catch {
           case e: Throwable =>
@@ -167,6 +167,24 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider) {
         secretConfig.refreshTime,
         TimeUnit.MINUTES
       )
+
+      Runtime.getRuntime.addShutdownHook(new Thread(() => {
+
+        scheduledFuture.cancel(false)
+        scheduler.shutdown()
+
+        try {
+          // Wait for up to 5 seconds for the scheduler to terminate
+          if (!scheduler.awaitTermination(5, TimeUnit.SECONDS)) {
+            // If it doesn't terminate, forcefully shut it down
+            scheduler.shutdownNow()
+          }
+        }
+        catch {
+          case e: InterruptedException =>
+            Thread.currentThread().interrupt()
+        }
+      }))
   }
 
   private case class keyConfig (keyPair: KeyPair, expTime: Int, algName: String)

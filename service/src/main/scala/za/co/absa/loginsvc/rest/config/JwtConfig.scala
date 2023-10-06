@@ -117,7 +117,7 @@ case class FetchSecretConfig(
     val resultsMerge = results.foldLeft[ConfigValidationResult](ConfigValidationSuccess)(ConfigValidationResult.merge)
 
     val TimeResult = if (refreshTime < 1) {
-      ConfigValidationError(ConfigValidationException("refreshTime must be positive (hours)"))
+      ConfigValidationError(ConfigValidationException("refreshTime must be positive (minutes)"))
     } else ConfigValidationSuccess
 
     resultsMerge.merge(TimeResult)

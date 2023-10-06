@@ -24,8 +24,12 @@ import za.co.absa.loginsvc.rest.config.validation.ConfigValidationResult.{Config
 
 class JwtConfigTest extends AnyFlatSpec with Matchers {
 
-  val jwtConfig: JwtConfig = JwtConfig(Option(GenerateKeysConfig("RS256", 2)), None)
+  val jwtConfig: JwtConfig = JwtConfig(
+    Option(GenerateKeysConfig("RS256", 2)),
+    Option(FetchSecretConfig("Secret", "region", "private", "public", "exp", "alg", 30))
+  )
   val inMemoryConfig: GenerateKeysConfig = jwtConfig.generateInMemory.get
+  val awsSecretConfig: FetchSecretConfig = jwtConfig.fetchFromAws.get
 
   "JwtConfig" should "validate expected content" in {
     jwtConfig.validate() shouldBe ConfigValidationSuccess
@@ -35,15 +39,28 @@ class JwtConfigTest extends AnyFlatSpec with Matchers {
     inMemoryConfig.validate() shouldBe ConfigValidationSuccess
   }
 
+  "awsSecretConfig" should "validate expected content" in {
+    awsSecretConfig.validate() shouldBe ConfigValidationSuccess
+  }
+
   it should "fail on invalid algorithm" in {
     inMemoryConfig.copy(algName = "ABC").validate() shouldBe
       ConfigValidationError(ConfigValidationException("Invalid algName 'ABC' was given."))
   }
 
-  it should "fail on non-negative expTime" in {
+  "inMemoryConfig" should "fail on non-negative expTime" in {
     inMemoryConfig.copy(expTime = -7).validate() shouldBe
       ConfigValidationError(ConfigValidationException("expTime must be positive (hours)"))
 
   }
 
+  "awsSecretConfig" should "fail on missing value" in {
+    awsSecretConfig.copy(secretName = null).validate() shouldBe
+      ConfigValidationError(ConfigValidationException("secretName is empty"))
+  }
+
+  "awsSecretConfig" should "fail on non-negative refreshTime" in {
+    awsSecretConfig.copy(refreshTime = -7).validate() shouldBe
+      ConfigValidationError(ConfigValidationException("refreshTime must be positive (minutes)"))
+  }
 }
