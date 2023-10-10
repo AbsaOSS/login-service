@@ -23,7 +23,7 @@ import za.co.absa.loginsvc.rest.config.BaseConfig
 import za.co.absa.loginsvc.rest.config.jwt.KeyConfig
 
 import java.util.concurrent.TimeUnit
-import scala.concurrent.duration.{Duration, FiniteDuration}
+import scala.concurrent.duration.FiniteDuration
 
 class ConfigProviderTest extends AnyFlatSpec with Matchers  {
 
@@ -38,7 +38,7 @@ class ConfigProviderTest extends AnyFlatSpec with Matchers  {
     val keyConfig: KeyConfig = configProvider.getJWTConfig
     assert(keyConfig.algName == "RS256" &&
       keyConfig.accessExpTime == FiniteDuration(15, TimeUnit.MINUTES) &&
-      keyConfig.refreshExpTime == FiniteDuration(30, TimeUnit.MINUTES)
+      keyConfig.refreshExpTime == FiniteDuration(9, TimeUnit.HOURS)
     )
   }
 
