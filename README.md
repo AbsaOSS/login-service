@@ -104,8 +104,9 @@ loginsvc:
   rest:
     jwt:
       generate-in-memory:
-        exp-time: 4
-        alg-name: "RS256"
+         access-exp-time: 15min
+         refresh-exp-time: 9h
+         alg-name: "RS256"
 ```
 The important information to provide is exp-time which indicates how long a token is valid for
 and alg-name which indicates which algorithm is used to encode your keys.
@@ -115,14 +116,14 @@ To setup for AWS Secrets Manager, your config should look like so:
 loginsvc:
   rest:
     jwt:
-      fetch-from-aws:
+      aws-secrets-manager:
         secret-name: "secret"
         region: "region"
         private-aws-key: "privateKey"
         public-aws-key: "publicKey"
-        exp-aws-key: "expiry"
-        alg-aws-key: "alg"
-        refresh-time: 30
+        access-exp-time: 15min
+        refresh-exp-time: 9h
+        alg-name: "RS256"
 ```
 You AWS Secret must have the following values:
 `PrivateKey`
@@ -132,7 +133,7 @@ You AWS Secret must have the following values:
 
 You will provide the keys for these values in the config.
 
-Please note that if both configurations are available, then the AWS methodology will be used.
+Please note that only one configuration can be used at a time.
 
 ## How to generate Code coverage report
 ```

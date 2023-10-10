@@ -16,8 +16,8 @@
 
 package za.co.absa.loginsvc.rest.config.provider
 
-import za.co.absa.loginsvc.rest.config.JwtConfig
+import za.co.absa.loginsvc.rest.config.jwt.KeyConfig
 
 trait JwtConfigProvider {
-  def getJWTConfig : JwtConfig
+  def getJWTConfig : KeyConfig
 }
