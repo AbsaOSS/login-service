@@ -4,6 +4,45 @@ AbsaOSS Common Login service using JWT Public key signatures
 ## Basic usecase schematics
 ![login-gw-basic-usecase2](https://user-images.githubusercontent.com/4457378/219037599-5674b63b-403c-4c02-8a54-a6e12dc01d47.png)
 
+### Usage & Integration
+To interact with the service, most notable endpoints are
+ - `/token/generate` to generate access & refresh token
+ - `/token/refresh` to obtain a new access token with a still-valid refresh token
+ - `/token/public-key` to obtain public key to verify tokens including their validity window
+
+Please, refer to the [API documentation](#api-documentation) below for details of the endpoints.
+
+#### Generate token
+Once you request your token at `/token/generate` endpoint, you will receive both an access token and a refresh token
+```json
+{
+  "token": "...",
+  "refresh": "..."
+}
+```
+Both tokens are signed by LS public key and carry the username (`sub`), `type` (`access`/`refresh`) and creation/expiry info (`iat`/`exp`). 
+
+#### refreshToken
+During the time the refresh token is valid, you may refresh the access token (expired or not) using the `/token/refresh` 
+endpoint - as the service does not facilitate any internal service access to LDAP, both tokens must be sent. 
+
+#### Validate token
+On the side of the integrator, in order to trust the access token, one should do the following actions:
+1. obtain the public-key from LS at `/token/public-key`
+2. verify that the access token is
+   1. valid against this public-key (e.g. using `jwtt` library or similar)
+   2. not expired
+   3. has `type=access` 
+
+
+## API documentation:
+Swagger doc site is available at `http://localhost:port/swagger-ui.html`
+(substitute `http://localhost:port` with any possible host and port you have deployed your package to.)
+### Need the OpenAPI 3 yaml file?
+It is available for download while running the service at `http://localhost:port/v3/api-docs.yaml` -
+gets generated from code (specifically from Spring annotations)
+
+
 ## Configuration
 The project requires a valid configuration file to run.
 An [example configuration](https://github.com/AbsaOSS/login-service/blob/master/service/src/main/resources/example.application.yaml)
@@ -49,12 +88,7 @@ sbt
 service / Tomcat / start
 ```
 
-## API documentation:
-Swagger doc site is available at `http://localhost:port/swagger-ui.html`
-(substitute `http://localhost:port` with any possible host and port you have deployed your package to.)
-### Need the OpenAPI 3 yaml file?
-It is available for download while running the service at `http://localhost:port/v3/api-docs.yaml` - 
-gets generated from code (specifically from Spring annotations) 
+
 
 ## Authentication Providers
 ### Enabling and Selecting Authentication Providers
