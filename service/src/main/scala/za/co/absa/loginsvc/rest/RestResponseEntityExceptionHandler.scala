@@ -27,8 +27,8 @@ class RestResponseEntityExceptionHandler {
   private val logger = LoggerFactory.getLogger(classOf[RestResponseEntityExceptionHandler])
 
   @ExceptionHandler(value = Array(
-    classOf[io.jsonwebtoken.security.SignatureException],
-    classOf[java.security.SignatureException],
+    classOf[io.jsonwebtoken.security.SignatureException], // e.g. signature does not match
+    classOf[java.security.SignatureException], // signature mismatch
     classOf[io.jsonwebtoken.ExpiredJwtException]
   ))
   def handleSignatureRelatedException(exception: Exception): ResponseEntity[RestMessage] = {

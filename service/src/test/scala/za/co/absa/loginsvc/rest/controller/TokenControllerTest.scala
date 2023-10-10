@@ -18,7 +18,7 @@ package za.co.absa.loginsvc.rest.controller
 
 import com.nimbusds.jose.jwk.{JWKSet, RSAKey}
 import io.jsonwebtoken.SignatureAlgorithm
-import io.jsonwebtoken.security.Keys
+import io.jsonwebtoken.security.{Keys, SignatureException}
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import org.scalatest.flatspec.AnyFlatSpec
@@ -29,13 +29,13 @@ import org.springframework.context.annotation.Import
 import org.springframework.test.web.servlet.MockMvc
 import za.co.absa.loginsvc.model.User
 import za.co.absa.loginsvc.rest.model.Tokens
-import za.co.absa.loginsvc.rest.{FakeAuthentication, SecurityConfig}
+import za.co.absa.loginsvc.rest.{FakeAuthentication, RestResponseEntityExceptionHandler, SecurityConfig}
 import za.co.absa.loginsvc.rest.service.JWTService
 
 import java.security.interfaces.RSAPublicKey
 import java.util.Base64
 
-@Import(Array(classOf[SecurityConfig]))
+@Import(Array(classOf[SecurityConfig], classOf[RestResponseEntityExceptionHandler]))
 @WebMvcTest(controllers = Array(classOf[TokenController]))
 class TokenControllerTest extends AnyFlatSpec with ControllerIntegrationTestBase {
   import AssertionsForEndpointWithCompletableFuture._
@@ -109,6 +109,19 @@ class TokenControllerTest extends AnyFlatSpec with ControllerIntegrationTestBase
       Post(body = Some(s"""{"token": "$fakeAccessJwt", "refresh": "$fakeRefreshJwt"}""")),
       s"""{"token": "$newFakeAccessJwt", "refresh": "$fakeRefreshJwt"}"""
     )(FakeAuthentication.fakeUserAuthentication)
+  }
+
+  it should "return 400 if bad tokens are supplied" in {
+
+    when(jwtService.refreshToken(Tokens(fakeAccessJwt, fakeRefreshJwt))).thenThrow(new SignatureException("sign fail desc"))
+
+    assertBadRequestAndResultBodyJsonEquals(
+      "/token/refresh",
+      Post(body = Some(s"""{"token": "$fakeAccessJwt", "refresh": "$fakeRefreshJwt"}""")),
+      s"""{
+         |    "message": "sign fail desc"
+         |}""".stripMargin
+    )(auth = None)
   }
 
   behavior of "getPublicKey"
