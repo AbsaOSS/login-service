@@ -26,7 +26,7 @@ case class Tokens(
   token: String,
   @JsonProperty("refresh")
   @Schema(example = "ab12.cd34.ef56", requiredMode = RequiredMode.NOT_REQUIRED)
-  refresh: String // todo Optional or not?
+  refresh: String
 )
 
 object Tokens {
