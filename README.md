@@ -1,7 +1,7 @@
 # login-service
 AbsaOSS Common Login service using JWT Public key signatures
 
-## Basic usecase schematics
+## Basic use-case schematics
 ![login-gw-basic-usecase2](https://user-images.githubusercontent.com/4457378/219037599-5674b63b-403c-4c02-8a54-a6e12dc01d47.png)
 
 ### Usage & Integration
@@ -22,11 +22,11 @@ Once you request your token at `/token/generate` endpoint, you will receive both
 ```
 Both tokens are signed by LS public key and carry the username (`sub`), `type` (`access`/`refresh`) and creation/expiry info (`iat`/`exp`). 
 
-#### refreshToken
+#### Refresh access token
 During the time the refresh token is valid, you may refresh the access token (expired or not) using the `/token/refresh` 
 endpoint - as the service does not facilitate any internal service access to LDAP, both tokens must be sent. 
 
-#### Validate token
+#### Validate access token
 On the side of the integrator, in order to trust the access token, one should do the following actions:
 1. obtain the public-key from LS at `/token/public-key`
 2. verify that the access token is
