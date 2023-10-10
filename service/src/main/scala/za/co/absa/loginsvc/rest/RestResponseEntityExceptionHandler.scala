@@ -17,7 +17,7 @@
 package za.co.absa.loginsvc.rest
 
 import org.slf4j.LoggerFactory
-import org.springframework.http.ResponseEntity
+import org.springframework.http.{HttpStatus, ResponseEntity}
 import org.springframework.web.bind.annotation.{ControllerAdvice, ExceptionHandler, RestController}
 import za.co.absa.loginsvc.rest.model.RestMessage
 
@@ -27,14 +27,23 @@ class RestResponseEntityExceptionHandler {
   private val logger = LoggerFactory.getLogger(classOf[RestResponseEntityExceptionHandler])
 
   @ExceptionHandler(value = Array(
+    // specific subtypes of classOf[io.jsonwebtoken.JwtException]
     classOf[io.jsonwebtoken.security.SignatureException], // e.g. signature does not match
-    classOf[java.security.SignatureException], // signature mismatch
+    classOf[io.jsonwebtoken.security.InvalidKeyException],
     classOf[io.jsonwebtoken.ExpiredJwtException]
   ))
-  def handleSignatureRelatedException(exception: Exception): ResponseEntity[RestMessage] = {
+  def handleInvalidSignatureException(exception: Exception): ResponseEntity[RestMessage] = {
     logger.error(exception.getMessage)
-    exception.printStackTrace()
+    ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(RestMessage(exception.getMessage))
+  }
 
+  @ExceptionHandler(value = Array(
+    classOf[java.security.SignatureException], // other signature exceptions, e.g signature mismatch, malformed, ...
+    classOf[io.jsonwebtoken.MalformedJwtException],
+    classOf[io.jsonwebtoken.JwtException] // default handler for JwtExceptions (more specific defined above => 401)
+  ))
+  def handleSignatureProblemException(exception: Exception): ResponseEntity[RestMessage] = {
+    logger.error(exception.getMessage)
     ResponseEntity.badRequest().body(RestMessage(exception.getMessage))
   }
 

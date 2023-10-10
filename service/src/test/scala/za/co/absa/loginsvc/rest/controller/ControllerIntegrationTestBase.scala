@@ -118,14 +118,14 @@ trait ControllerIntegrationTestBase extends BeforeAndAfterAll with BeforeAndAfte
         .andExpect(status().isUnauthorized())
     }
 
-    def assertBadRequestAndResultBodyJsonEquals(endpoint: String, requestMethod: RequestMethod, expectedJson: String)
+    def assertErrorStatusAndResultBodyJsonEquals(endpoint: String, requestMethod: RequestMethod, expectedStatus: Int, expectedJson: String)
       (auth: Option[Authentication] = None): ResultActions = {
       val action = requestMethodToMockHttpServletRequestBuilder(requestMethod, endpoint)
         .applyIfDefined(auth) { case (builder, definedAuth) => builder.`with`(authentication(definedAuth)) }
 
       mockMvc
         .perform(action)
-        .andExpect(status().isBadRequest())
+        .andExpect(status().is(expectedStatus))
         .andExpect(content().json(expectedJson))
     }
   }

@@ -18,7 +18,7 @@ package za.co.absa.loginsvc.rest.service
 
 import com.nimbusds.jose.JWSAlgorithm
 import com.nimbusds.jose.jwk.KeyUse
-import io.jsonwebtoken.{Claims, ExpiredJwtException, Jws, Jwts}
+import io.jsonwebtoken.{Claims, ExpiredJwtException, Jws, Jwts, MalformedJwtException}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import za.co.absa.loginsvc.model.User
@@ -34,7 +34,7 @@ import scala.collection.JavaConverters._
 
 class JWTServiceTest extends AnyFlatSpec with Matchers {
 
-  private val testConfig : ConfigProvider = new ConfigProvider("service/src/test/resources/application.yaml")
+  private val testConfig: ConfigProvider = new ConfigProvider("service/src/test/resources/application.yaml")
   private val jwtService: JWTService = new JWTService(testConfig)
 
   private val userWithoutEmailAndGroups: User = User(
@@ -185,6 +185,12 @@ class JWTServiceTest extends AnyFlatSpec with Matchers {
     }
   }
 
+  it should "fail with a unreadable tokens" in {
+    an[MalformedJwtException] should be thrownBy {
+      jwtService.refreshToken(Tokens("abc.def.ghi", "123.456.789"))
+    }
+  }
+
   def customTimedJwtService(accessExpTime: FiniteDuration, refreshExpTime: FiniteDuration): JWTService = {
     val configP = new JwtConfigProvider {
       override def getJWTConfig: JwtConfig = JwtConfig(
@@ -233,7 +239,7 @@ class JWTServiceTest extends AnyFlatSpec with Matchers {
     Thread.sleep(2 * 1000) // make sure that refresh is past due - as set above
     parseJWT(refreshJwt, customJwtService.publicKey).isFailure shouldBe true // expired
 
-    an [ExpiredJwtException] should be thrownBy {
+    an[ExpiredJwtException] should be thrownBy {
       customJwtService.refreshToken(Tokens(accessJwt, refreshJwt))
     }
 

@@ -93,10 +93,16 @@ class TokenController @Autowired()(jwtService: JWTService) {
           examples = Array(new ExampleObject(value = "{\n  \"token\": \"abcd123.efgh456.ijkl789\",\n  \"refresh\": \"ab12.cd34.ef56\"\n}")))
         )
       ),
-      new ApiResponse(responseCode = "401", description = "Auth error", // todo this is probably not correct, change as per error handlers
+      new ApiResponse(responseCode = "401", description = "Understood the supplied tokens, but cannot refresh with those", // specific JWT expcetions
         content = Array(new Content(
-          schema = new Schema(implementation = classOf[String]), examples = Array(new ExampleObject(value = "Error: response status is 401")))
-        ))
+          schema = new Schema(implementation = classOf[String]), examples = Array(new ExampleObject(value = "Error: Expired JWT")))
+        )
+      ),
+      new ApiResponse(responseCode = "400", description = "Supplied tokens are invalid", // other JWT exceptions
+        content = Array(new Content(
+          schema = new Schema(implementation = classOf[String]), examples = Array(new ExampleObject(value = "Error: Malformed JWT")))
+        )
+      ),
     )
   )
   @PostMapping(

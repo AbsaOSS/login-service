@@ -17,7 +17,7 @@
 package za.co.absa.loginsvc.rest.controller
 
 import com.nimbusds.jose.jwk.{JWKSet, RSAKey}
-import io.jsonwebtoken.SignatureAlgorithm
+import io.jsonwebtoken.{ExpiredJwtException, MalformedJwtException, SignatureAlgorithm}
 import io.jsonwebtoken.security.{Keys, SignatureException}
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
@@ -112,17 +112,32 @@ class TokenControllerTest extends AnyFlatSpec with ControllerIntegrationTestBase
   }
 
   it should "return 400 if bad tokens are supplied" in {
+    when(jwtService.refreshToken(Tokens(fakeAccessJwt, fakeRefreshJwt)))
+      .thenThrow(new MalformedJwtException("sign fail desc"))
 
-    when(jwtService.refreshToken(Tokens(fakeAccessJwt, fakeRefreshJwt))).thenThrow(new SignatureException("sign fail desc"))
-
-    assertBadRequestAndResultBodyJsonEquals(
+    assertErrorStatusAndResultBodyJsonEquals(
       "/token/refresh",
       Post(body = Some(s"""{"token": "$fakeAccessJwt", "refresh": "$fakeRefreshJwt"}""")),
-      s"""{
+      expectedStatus = 400,
+      expectedJson =
+        s"""{
          |    "message": "sign fail desc"
          |}""".stripMargin
     )(auth = None)
   }
+  it should "return 401 if invalid tokens are supplied" in {
+    when(jwtService.refreshToken(Tokens(fakeAccessJwt, fakeRefreshJwt))).thenThrow(new ExpiredJwtException(null, null, "expired jwt"))
+
+    assertErrorStatusAndResultBodyJsonEquals(
+      "/token/refresh",
+      Post(body = Some(s"""{"token": "$fakeAccessJwt", "refresh": "$fakeRefreshJwt"}""")),
+      expectedStatus = 401,
+      expectedJson =  s"""{
+         |    "message": "expired jwt"
+         |}""".stripMargin
+    )(auth = None)
+  }
+
 
   behavior of "getPublicKey"
 
