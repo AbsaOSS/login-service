@@ -29,9 +29,9 @@ endpoint - as the service does not facilitate any internal service access to LDA
 #### Validate access token
 On the side of the integrator, in order to trust the access token, one should do the following actions:
 1. obtain the public-key from LS at `/token/public-key`
-2. verify that the access token is
-   1. valid against this public-key (e.g. using `jwtt` library or similar)
-   2. not expired
+2. verify that the access token
+   1. is valid against this public-key (e.g. using `jwtt` library or similar)
+   2. is not expired
    3. has `type=access` 
 
 
