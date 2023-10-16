@@ -38,11 +38,12 @@ case class AwsSecretsManagerKeyConfig (secretName: String,
                                        publicAwsKey: String,
                                        algName: String,
                                        accessExpTime: FiniteDuration,
-                                       refreshExpTime: FiniteDuration)
+                                       pollTime: FiniteDuration)
   extends KeyConfig {
 
   private val logger = LoggerFactory.getLogger(classOf[AwsSecretsManagerKeyConfig])
 
+  override def refreshKeyTime : FiniteDuration = pollTime
   override def keyPair: KeyPair = {
 
     val default = DefaultCredentialsProvider.create
@@ -119,10 +120,10 @@ case class AwsSecretsManagerKeyConfig (secretName: String,
       ConfigValidationError(ConfigValidationException(s"accessExpTime must be at least $minAccessExpTime"))
     } else ConfigValidationSuccess
 
-    val refreshExpTimeResult = if (refreshExpTime < minRefreshExpTime) {
-      ConfigValidationError(ConfigValidationException(s"refreshExpTime must be at least $minRefreshExpTime"))
+    val pollTimeResult = if (pollTime < minRefreshKeyTime) {
+      ConfigValidationError(ConfigValidationException(s"pollTime must be at least $minRefreshKeyTime"))
     } else ConfigValidationSuccess
 
-    resultsMerge.merge(algValidation).merge(accessExpTimeResult).merge(refreshExpTimeResult)
+    resultsMerge.merge(algValidation).merge(accessExpTimeResult).merge(pollTimeResult)
   }
 }

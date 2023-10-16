@@ -96,10 +96,10 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider) {
         catch {
           case e: Throwable =>
             logger.error(s"Error occurred retrieving and decoding Keys from AWS " +
-              s"will attempt to retrieve Keys again in ${jwtConfig.refreshExpTime.toString()}", e)
+              s"will attempt to retrieve Keys again in ${jwtConfig.refreshKeyTime.toString()}", e)
         }
-      },jwtConfig.refreshExpTime.toMillis,
-        jwtConfig.refreshExpTime.toMillis,
+      },jwtConfig.refreshKeyTime.toMillis,
+        jwtConfig.refreshKeyTime.toMillis,
         TimeUnit.MILLISECONDS
       )
 

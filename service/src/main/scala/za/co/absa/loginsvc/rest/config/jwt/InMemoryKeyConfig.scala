@@ -27,9 +27,10 @@ import scala.concurrent.duration.FiniteDuration
 
 case class InMemoryKeyConfig (algName: String,
                               accessExpTime: FiniteDuration,
-                              refreshExpTime: FiniteDuration)
+                              rotationTime: FiniteDuration)
   extends KeyConfig {
 
+  override def refreshKeyTime : FiniteDuration = rotationTime
   override def keyPair: KeyPair = Keys.keyPairFor(SignatureAlgorithm.valueOf(algName))
 
   override def throwErrors(): Unit = this.validate().throwOnErrors()
@@ -49,10 +50,10 @@ case class InMemoryKeyConfig (algName: String,
       ConfigValidationError(ConfigValidationException(s"accessExpTime must be at least $minAccessExpTime"))
     } else ConfigValidationSuccess
 
-    val refreshExpTimeResult = if (refreshExpTime < minRefreshExpTime) {
-      ConfigValidationError(ConfigValidationException(s"refreshExpTime must be at least $minRefreshExpTime"))
+    val rotationTimeResult = if (refreshKeyTime < minRefreshKeyTime) {
+      ConfigValidationError(ConfigValidationException(s"rotationTime must be at least $minRefreshKeyTime"))
     } else ConfigValidationSuccess
 
-    algValidation.merge(accessExpTimeResult).merge(refreshExpTimeResult)
+    algValidation.merge(accessExpTimeResult).merge(rotationTimeResult)
   }
 }

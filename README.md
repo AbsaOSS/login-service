@@ -105,10 +105,11 @@ loginsvc:
     jwt:
       generate-in-memory:
          access-exp-time: 15min
-         refresh-exp-time: 9h
+         rotate-time: 9h
          alg-name: "RS256"
 ```
-The important information to provide is exp-time which indicates how long a token is valid for
+The important information to provide is access-exp-time which indicates how long a token is valid for,
+rotate-time which indicates how often Key pairs are regenerated and rotated
 and alg-name which indicates which algorithm is used to encode your keys.
 
 To setup for AWS Secrets Manager, your config should look like so:
@@ -122,16 +123,18 @@ loginsvc:
         private-aws-key: "privateKey"
         public-aws-key: "publicKey"
         access-exp-time: 15min
-        refresh-exp-time: 9h
+        poll-time: 30min
         alg-name: "RS256"
 ```
 You AWS Secret must have the following values:
 `PrivateKey`
 `PublicKey`
-`expiry time`
-`algorithm`
 
 You will provide the keys for these values in the config.
+
+Some important information to provide is access-exp-time which indicates how long a token is valid for,
+poll-time which indicates how often Key pairs are polled and fetched from AWS Secrets Manager
+and alg-name which indicates which algorithm is used to encode your keys.
 
 Please note that only one configuration can be used at a time.
 

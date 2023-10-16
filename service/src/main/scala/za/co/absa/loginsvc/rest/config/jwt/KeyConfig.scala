@@ -25,10 +25,10 @@ import scala.concurrent.duration.FiniteDuration
 trait KeyConfig extends ConfigValidatable {
   def algName: String
   def accessExpTime: FiniteDuration
-  def refreshExpTime: FiniteDuration
+  def refreshKeyTime: FiniteDuration
   def keyPair: KeyPair
   def throwErrors(): Unit
 
   val minAccessExpTime: FiniteDuration = FiniteDuration(10, TimeUnit.MILLISECONDS)
-  val minRefreshExpTime: FiniteDuration = minAccessExpTime * 2
+  val minRefreshKeyTime: FiniteDuration = FiniteDuration(5, TimeUnit.MINUTES)
 }
