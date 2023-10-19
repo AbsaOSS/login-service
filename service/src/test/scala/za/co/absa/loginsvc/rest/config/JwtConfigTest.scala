@@ -69,12 +69,12 @@ class JwtConfigTest extends AnyFlatSpec with Matchers {
 
   "inMemoryKeyConfig" should "fail on non-negative refreshExpTime" in {
     inMemoryKeyConfig.copy(rotationTime = Option(FiniteDuration(5, TimeUnit.MILLISECONDS))).validate() shouldBe
-      ConfigValidationError(ConfigValidationException(s"rotationTime must be at least ${inMemoryKeyConfig.minRefreshKeyTime}"))
+      ConfigValidationError(ConfigValidationException(s"refreshKeyTime must be at least ${inMemoryKeyConfig.minRefreshKeyTime}"))
   }
 
   "awsSecretsManagerKeyConfig" should "fail on non-negative refreshExpTime" in {
     awsSecretsManagerKeyConfig.copy(pollTime = Option(FiniteDuration(5, TimeUnit.MILLISECONDS))).validate() shouldBe
-      ConfigValidationError(ConfigValidationException(s"pollTime must be at least ${inMemoryKeyConfig.minRefreshKeyTime}"))
+      ConfigValidationError(ConfigValidationException(s"refreshKeyTime must be at least ${inMemoryKeyConfig.minRefreshKeyTime}"))
   }
 
   "awsSecretsManagerKeyConfig" should "fail on missing value" in {
