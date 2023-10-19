@@ -34,17 +34,17 @@ import scala.util.{Failure, Success, Try}
 
 case class AwsSecretsManagerKeyConfig (secretName: String,
                                        region: String,
-                                       privateAwsKey: String,
-                                       publicAwsKey: String,
+                                       privateKeyFieldName: String,
+                                       publicKeyFieldName: String,
                                        algName: String,
                                        accessExpTime: FiniteDuration,
-                                       pollTime: FiniteDuration)
+                                       pollTime: Option[FiniteDuration])
   extends KeyConfig {
 
   private val logger = LoggerFactory.getLogger(classOf[AwsSecretsManagerKeyConfig])
 
-  override def refreshKeyTime : FiniteDuration = pollTime
-  override def keyPair: KeyPair = {
+  override def refreshKeyTime : Option[FiniteDuration] = pollTime
+  override def keyPair(): KeyPair = {
 
     val default = DefaultCredentialsProvider.create
 
@@ -64,18 +64,18 @@ case class AwsSecretsManagerKeyConfig (secretName: String,
 
       val publicKeySpec: X509EncodedKeySpec = new X509EncodedKeySpec(
         Base64.getDecoder.decode(
-          rootNode.get(publicAwsKey).asText()
+          rootNode.get(publicKeyFieldName).asText()
         )
       )
       val privateKeySpec: PKCS8EncodedKeySpec = new PKCS8EncodedKeySpec(
         Base64.getDecoder.decode(
-          rootNode.get(privateAwsKey).asText()
+          rootNode.get(privateKeyFieldName).asText()
         )
       )
 
       logger.info("Key Data successfully retrieved and parsed from AWS Secrets Manager")
 
-      val keyFactory: KeyFactory = KeyFactory.getInstance("RSA")
+      val keyFactory: KeyFactory = KeyFactory.getInstance(jwtAlgorithmToCryptoAlgorithm)
       new KeyPair(keyFactory.generatePublic(publicKeySpec), keyFactory.generatePrivate(privateKeySpec))
     }
     catch {
@@ -85,9 +85,12 @@ case class AwsSecretsManagerKeyConfig (secretName: String,
     }
   }
   override def throwErrors(): Unit = this.validate().throwOnErrors()
+
   override def validate(): ConfigValidationResult = {
 
-    val results = Seq(
+    val defaultResults = defaultValidation
+
+    val awsSecretsResults = Seq(
       Option(secretName)
         .map(_ => ConfigValidationSuccess)
         .getOrElse(ConfigValidationError(ConfigValidationException("secretName is empty"))),
@@ -96,34 +99,17 @@ case class AwsSecretsManagerKeyConfig (secretName: String,
         .map(_ => ConfigValidationSuccess)
         .getOrElse(ConfigValidationError(ConfigValidationException("region is empty"))),
 
-      Option(privateAwsKey)
+      Option(privateKeyFieldName)
         .map(_ => ConfigValidationSuccess)
         .getOrElse(ConfigValidationError(ConfigValidationException("privateAwsKey is empty"))),
 
-      Option(publicAwsKey)
+      Option(publicKeyFieldName)
         .map(_ => ConfigValidationSuccess)
         .getOrElse(ConfigValidationError(ConfigValidationException("publicAwsKey is empty"))),
     )
 
-    val resultsMerge = results.foldLeft[ConfigValidationResult](ConfigValidationSuccess)(ConfigValidationResult.merge)
+    val awsSecretsResultsMerge = awsSecretsResults.foldLeft[ConfigValidationResult](ConfigValidationSuccess)(ConfigValidationResult.merge)
 
-    val algValidation = Try {
-      SignatureAlgorithm.valueOf(algName)
-    } match {
-      case Success(_) => ConfigValidationSuccess
-      case Failure(e: IllegalArgumentException) if e.getMessage.contains("No enum constant") =>
-        ConfigValidationError(ConfigValidationException(s"Invalid algName '$algName' was given."))
-      case Failure(e) => throw e
-    }
-
-    val accessExpTimeResult = if (accessExpTime < minAccessExpTime) {
-      ConfigValidationError(ConfigValidationException(s"accessExpTime must be at least $minAccessExpTime"))
-    } else ConfigValidationSuccess
-
-    val pollTimeResult = if (pollTime < minRefreshKeyTime) {
-      ConfigValidationError(ConfigValidationException(s"pollTime must be at least $minRefreshKeyTime"))
-    } else ConfigValidationSuccess
-
-    resultsMerge.merge(algValidation).merge(accessExpTimeResult).merge(pollTimeResult)
+    awsSecretsResultsMerge.merge(defaultResults)
   }
 }

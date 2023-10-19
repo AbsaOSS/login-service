@@ -108,9 +108,10 @@ loginsvc:
          rotate-time: 9h
          alg-name: "RS256"
 ```
-The important information to provide is access-exp-time which indicates how long a token is valid for,
-rotate-time which indicates how often Key pairs are regenerated and rotated
-and alg-name which indicates which algorithm is used to encode your keys.
+There are a few important configuration values to be provided:
+- `access-exp-time` which indicates how long a token is valid for,
+- Optional property: `rotate-time` which indicates how often Key pairs are rotated. Rotation will be disabled if missing.
+- `alg-name` which indicates which algorithm is used to encode your keys.
 
 To setup for AWS Secrets Manager, your config should look like so:
 ```
@@ -120,8 +121,8 @@ loginsvc:
       aws-secrets-manager:
         secret-name: "secret"
         region: "region"
-        private-aws-key: "privateKey"
-        public-aws-key: "publicKey"
+        private-key-field-name: "privateKey"
+        public-key-field-name: "publicKey"
         access-exp-time: 15min
         poll-time: 30min
         alg-name: "RS256"
@@ -132,11 +133,11 @@ You AWS Secret must have the following values:
 
 You will provide the keys for these values in the config.
 
-Some important information to provide is access-exp-time which indicates how long a token is valid for,
-poll-time which indicates how often Key pairs are polled and fetched from AWS Secrets Manager
-and alg-name which indicates which algorithm is used to encode your keys.
-
-Please note that only one configuration can be used at a time.
+There are a few important configuration values to be provided:
+- `access-exp-time` which indicates how long a token is valid for,
+- Optional property:`poll-time` which indicates how often key pairs (`private-key-field-name` and `public-key-field-name`) are polled and fetched from AWS Secrets Manager. Polling will be disabled if missing.
+- `alg-name` which indicates which algorithm is used to encode your keys.
+  Please note that only one configuration option (`loginsvc.rest.jwt.{aws-secrets-manager|generate-in-memory}`) can be used at a time.
 
 ## How to generate Code coverage report
 ```

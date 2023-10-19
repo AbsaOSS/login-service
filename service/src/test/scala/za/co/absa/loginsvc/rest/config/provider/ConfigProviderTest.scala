@@ -38,7 +38,7 @@ class ConfigProviderTest extends AnyFlatSpec with Matchers  {
     val keyConfig: KeyConfig = configProvider.getJWTConfig
     assert(keyConfig.algName == "RS256" &&
       keyConfig.accessExpTime == FiniteDuration(15, TimeUnit.MINUTES) &&
-      keyConfig.refreshKeyTime == FiniteDuration(9, TimeUnit.HOURS)
+      keyConfig.refreshKeyTime.get == FiniteDuration(9, TimeUnit.HOURS)
     )
   }
 
@@ -61,8 +61,8 @@ class ConfigProviderTest extends AnyFlatSpec with Matchers  {
       usersConfig.knownUsers(0).username == "user1")
 
     assert(usersConfig.knownUsers(1).groups(0) == "group2" &&
-      usersConfig.knownUsers(1).email.contains("user@two.org") &&
-      usersConfig.knownUsers(1).displayname.contains("User Two") &&
+      usersConfig.knownUsers(1).email == Some("user@two.org") &&
+      usersConfig.knownUsers(1).displayname == Some("User Two") &&
       usersConfig.knownUsers(1).password == "password2" &&
       usersConfig.knownUsers(1).username == "user2")
   }

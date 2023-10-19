@@ -34,6 +34,7 @@ import java.util.concurrent.{Executors, TimeUnit}
 import java.util.Date
 import scala.collection.JavaConverters._
 import scala.compat.java8.DurationConverters._
+import scala.concurrent.duration.FiniteDuration
 
 @Service
 class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider) {
@@ -41,9 +42,14 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider) {
   private val logger = LoggerFactory.getLogger(classOf[JWTService])
 
   private val jwtConfig = jwtConfigProvider.getJWTConfig
-  @volatile private var keyPair: KeyPair = jwtConfig.keyPair
+  @volatile private var keyPair: KeyPair = jwtConfig.keyPair()
 
-  refreshSecrets()
+  if(jwtConfig.refreshKeyTime.nonEmpty)
+    {
+      val refreshTime = jwtConfig.refreshKeyTime.get
+      scheduleSecretsRefresh(refreshTime)
+    }
+
 
   def generateToken(user: User): String = {
     logger.info(s"Generating Token for user: ${user.name}")
@@ -88,18 +94,22 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider) {
     new JWKSet(jwk).toPublicJWKSet
   }
 
-  private def refreshSecrets(): Unit = {
+  private def scheduleSecretsRefresh(refreshTime : FiniteDuration): Unit = {
       val scheduler = Executors.newSingleThreadScheduledExecutor()
       val scheduledFuture = scheduler.scheduleAtFixedRate(() => {
-        logger.info("Refreshing Keys")
-        try keyPair = jwtConfig.keyPair
+        logger.info("Attempting to Refresh for new Keys")
+        try {
+          val newKeyPair = jwtConfig.keyPair()
+          logger.info("Keys have been Refreshed")
+          keyPair = newKeyPair
+        }
         catch {
           case e: Throwable =>
             logger.error(s"Error occurred retrieving and decoding Keys from AWS " +
-              s"will attempt to retrieve Keys again in ${jwtConfig.refreshKeyTime.toString()}", e)
+              s"will attempt to retrieve Keys again in ${refreshTime.toString()}", e)
         }
-      },jwtConfig.refreshKeyTime.toMillis,
-        jwtConfig.refreshKeyTime.toMillis,
+      },refreshTime.toMillis,
+        refreshTime.toMillis,
         TimeUnit.MILLISECONDS
       )
 

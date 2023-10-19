@@ -16,18 +16,57 @@
 
 package za.co.absa.loginsvc.rest.config.jwt
 
-import za.co.absa.loginsvc.rest.config.validation.ConfigValidatable
+import io.jsonwebtoken.SignatureAlgorithm
+import za.co.absa.loginsvc.rest.config.validation.ConfigValidationResult.{ConfigValidationError, ConfigValidationSuccess}
+import za.co.absa.loginsvc.rest.config.validation.{ConfigValidatable, ConfigValidationException, ConfigValidationResult}
 
 import java.security.KeyPair
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.FiniteDuration
+import scala.util.{Failure, Success, Try}
 
 trait KeyConfig extends ConfigValidatable {
   def algName: String
   def accessExpTime: FiniteDuration
-  def refreshKeyTime: FiniteDuration
-  def keyPair: KeyPair
+  def refreshKeyTime: Option[FiniteDuration]
+  def keyPair(): KeyPair
   def throwErrors(): Unit
+
+  final def jwtAlgorithmToCryptoAlgorithm : String = {
+
+    val algorithmMap: Map[String, String] = Map(
+      "RS" -> "RSA",
+      "ES" -> "ECDSA"
+    )
+
+    algorithmMap.getOrElse(algName.take(2), {
+      throw new IllegalArgumentException(s"Unsupported JWT algorithm: $algName")
+    })
+  }
+
+  final def defaultValidation : ConfigValidationResult = {
+
+    val algValidation = Try {
+      SignatureAlgorithm.valueOf(algName)
+    } match {
+      case Success(_) => ConfigValidationSuccess
+      case Failure(e: IllegalArgumentException) if e.getMessage.contains("No enum constant") =>
+        ConfigValidationError(ConfigValidationException(s"Invalid algName '$algName' was given."))
+      case Failure(e) => throw e
+    }
+
+    val accessExpTimeResult = if (accessExpTime < minAccessExpTime) {
+      ConfigValidationError(ConfigValidationException(s"accessExpTime must be at least $minAccessExpTime"))
+    } else ConfigValidationSuccess
+
+    val refreshKeyTimeResult = if (refreshKeyTime.nonEmpty && refreshKeyTime.get < minRefreshKeyTime) {
+      ConfigValidationError(ConfigValidationException(s"refreshKeyTime must be at least $minRefreshKeyTime"))
+    } else ConfigValidationSuccess
+
+    algValidation.merge(accessExpTimeResult).merge(refreshKeyTimeResult)
+  }
+
+  override def validate(): ConfigValidationResult = defaultValidation
 
   val minAccessExpTime: FiniteDuration = FiniteDuration(10, TimeUnit.MILLISECONDS)
   val minRefreshKeyTime: FiniteDuration = FiniteDuration(5, TimeUnit.MINUTES)
