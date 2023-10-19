@@ -29,7 +29,7 @@ class JwtConfigTest extends AnyFlatSpec with Matchers {
 
   val inMemoryKeyConfig: InMemoryKeyConfig = InMemoryKeyConfig("RS256",
     FiniteDuration(15, TimeUnit.MINUTES),
-    FiniteDuration(30, TimeUnit.MINUTES))
+    Option(FiniteDuration(30, TimeUnit.MINUTES)))
 
   val awsSecretsManagerKeyConfig: AwsSecretsManagerKeyConfig = AwsSecretsManagerKeyConfig("Secret",
     "region",
@@ -37,7 +37,7 @@ class JwtConfigTest extends AnyFlatSpec with Matchers {
     "public",
     "RS256",
     FiniteDuration(15, TimeUnit.MINUTES),
-    FiniteDuration(30, TimeUnit.MINUTES))
+    Option(FiniteDuration(30, TimeUnit.MINUTES)))
 
   "inMemoryKeyConfig" should "validate expected content" in {
     inMemoryKeyConfig.validate() shouldBe ConfigValidationSuccess
@@ -68,12 +68,12 @@ class JwtConfigTest extends AnyFlatSpec with Matchers {
   }
 
   "inMemoryKeyConfig" should "fail on non-negative refreshExpTime" in {
-    inMemoryKeyConfig.copy(rotationTime = FiniteDuration(5, TimeUnit.MILLISECONDS)).validate() shouldBe
+    inMemoryKeyConfig.copy(rotationTime = Option(FiniteDuration(5, TimeUnit.MILLISECONDS))).validate() shouldBe
       ConfigValidationError(ConfigValidationException(s"rotationTime must be at least ${inMemoryKeyConfig.minRefreshKeyTime}"))
   }
 
   "awsSecretsManagerKeyConfig" should "fail on non-negative refreshExpTime" in {
-    awsSecretsManagerKeyConfig.copy(pollTime = FiniteDuration(5, TimeUnit.MILLISECONDS)).validate() shouldBe
+    awsSecretsManagerKeyConfig.copy(pollTime = Option(FiniteDuration(5, TimeUnit.MILLISECONDS))).validate() shouldBe
       ConfigValidationError(ConfigValidationException(s"pollTime must be at least ${inMemoryKeyConfig.minRefreshKeyTime}"))
   }
 
