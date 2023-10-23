@@ -38,7 +38,7 @@ class ConfigProviderTest extends AnyFlatSpec with Matchers  {
     val keyConfig: KeyConfig = configProvider.getJWTConfig
     assert(keyConfig.algName == "RS256" &&
       keyConfig.accessExpTime == FiniteDuration(15, TimeUnit.MINUTES) &&
-      keyConfig.refreshKeyTime.get == FiniteDuration(9, TimeUnit.HOURS)
+      keyConfig.refreshKeyTime.get == FiniteDuration(5, TimeUnit.SECONDS)
     )
   }
 
