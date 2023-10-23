@@ -4,7 +4,7 @@ loginsvc:
     jwt:
       generate-in-memory:
         access-exp-time: 15min
-        rotation-time: 9h
+        rotation-time: 5sec
         alg-name: "RS256"
     config:
       some-key: "BETA"

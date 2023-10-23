@@ -88,8 +88,6 @@ case class AwsSecretsManagerKeyConfig (secretName: String,
 
   override def validate(): ConfigValidationResult = {
 
-    val defaultResults = defaultValidation
-
     val awsSecretsResults = Seq(
       Option(secretName)
         .map(_ => ConfigValidationSuccess)
@@ -101,15 +99,15 @@ case class AwsSecretsManagerKeyConfig (secretName: String,
 
       Option(privateKeyFieldName)
         .map(_ => ConfigValidationSuccess)
-        .getOrElse(ConfigValidationError(ConfigValidationException("privateAwsKey is empty"))),
+        .getOrElse(ConfigValidationError(ConfigValidationException("privateKeyFieldName is empty"))),
 
       Option(publicKeyFieldName)
         .map(_ => ConfigValidationSuccess)
-        .getOrElse(ConfigValidationError(ConfigValidationException("publicAwsKey is empty"))),
+        .getOrElse(ConfigValidationError(ConfigValidationException("publicKeyFieldName is empty"))),
     )
 
     val awsSecretsResultsMerge = awsSecretsResults.foldLeft[ConfigValidationResult](ConfigValidationSuccess)(ConfigValidationResult.merge)
 
-    awsSecretsResultsMerge.merge(defaultResults)
+    super.validate().merge(awsSecretsResultsMerge)
   }
 }

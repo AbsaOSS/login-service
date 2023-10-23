@@ -18,7 +18,7 @@ package za.co.absa.loginsvc.rest.config
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import za.co.absa.loginsvc.rest.config.jwt.{AwsSecretsManagerKeyConfig, InMemoryKeyConfig}
+import za.co.absa.loginsvc.rest.config.jwt.{AwsSecretsManagerKeyConfig, InMemoryKeyConfig, KeyConfig}
 import za.co.absa.loginsvc.rest.config.validation.ConfigValidationException
 import za.co.absa.loginsvc.rest.config.validation.ConfigValidationResult.{ConfigValidationError, ConfigValidationSuccess}
 
@@ -59,22 +59,22 @@ class JwtConfigTest extends AnyFlatSpec with Matchers {
 
   "inMemoryKeyConfig" should "fail on non-negative accessExpTime" in {
     inMemoryKeyConfig.copy(accessExpTime = FiniteDuration(5, TimeUnit.MILLISECONDS)).validate() shouldBe
-      ConfigValidationError(ConfigValidationException(s"accessExpTime must be at least ${inMemoryKeyConfig.minAccessExpTime}"))
+      ConfigValidationError(ConfigValidationException(s"accessExpTime must be at least ${KeyConfig.minAccessExpTime}"))
   }
 
   "awsSecretsManagerKeyConfig" should "fail on non-negative accessExpTime" in {
     awsSecretsManagerKeyConfig.copy(accessExpTime = FiniteDuration(5, TimeUnit.MILLISECONDS)).validate() shouldBe
-      ConfigValidationError(ConfigValidationException(s"accessExpTime must be at least ${inMemoryKeyConfig.minAccessExpTime}"))
+      ConfigValidationError(ConfigValidationException(s"accessExpTime must be at least ${KeyConfig.minAccessExpTime}"))
   }
 
   "inMemoryKeyConfig" should "fail on non-negative refreshExpTime" in {
     inMemoryKeyConfig.copy(rotationTime = Option(FiniteDuration(5, TimeUnit.MILLISECONDS))).validate() shouldBe
-      ConfigValidationError(ConfigValidationException(s"refreshKeyTime must be at least ${inMemoryKeyConfig.minRefreshKeyTime}"))
+      ConfigValidationError(ConfigValidationException(s"refreshKeyTime must be at least ${KeyConfig.minRefreshKeyTime}"))
   }
 
   "awsSecretsManagerKeyConfig" should "fail on non-negative refreshExpTime" in {
     awsSecretsManagerKeyConfig.copy(pollTime = Option(FiniteDuration(5, TimeUnit.MILLISECONDS))).validate() shouldBe
-      ConfigValidationError(ConfigValidationException(s"refreshKeyTime must be at least ${inMemoryKeyConfig.minRefreshKeyTime}"))
+      ConfigValidationError(ConfigValidationException(s"refreshKeyTime must be at least ${KeyConfig.minRefreshKeyTime}"))
   }
 
   "awsSecretsManagerKeyConfig" should "fail on missing value" in {

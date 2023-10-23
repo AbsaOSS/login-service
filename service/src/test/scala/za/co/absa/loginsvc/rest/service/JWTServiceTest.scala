@@ -150,4 +150,16 @@ class JWTServiceTest extends AnyFlatSpec {
     assert(jwk.getAlgorithm == JWSAlgorithm.RS256)
     assert(jwk.getKeyUse == KeyUse.SIGNATURE)
   }
+
+  it should "rotate an public and private keys after 5 seconds" in {
+    val initToken = jwtService.generateToken(userWithoutGroups)
+    val initPublicKey = jwtService.publicKey
+
+    Thread.sleep(5 * 1000)
+    val refreshedToken = jwtService.generateToken(userWithoutGroups)
+
+    assert(parseJWT(initToken).isFailure)
+    assert(parseJWT(refreshedToken).isSuccess)
+    assert(initPublicKey != jwtService.publicKey)
+  }
 }

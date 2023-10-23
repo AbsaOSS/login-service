@@ -127,17 +127,20 @@ loginsvc:
         poll-time: 30min
         alg-name: "RS256"
 ```
-You AWS Secret must have the following values:
-`PrivateKey`
-`PublicKey`
-
-You will provide the keys for these values in the config.
+Your AWS Secret must have at least 2 fields which correspond to the above properties:
+```
+private-key-field-name: "privateKey"
+public-key-field-name: "publicKey"
+```
+with `"privateKey"` and `"publicKey"` indicating the field-name of those secrets.
+Replace the above example values with the field-names you used in AWS Secrets Manager.
 
 There are a few important configuration values to be provided:
 - `access-exp-time` which indicates how long a token is valid for,
 - Optional property:`poll-time` which indicates how often key pairs (`private-key-field-name` and `public-key-field-name`) are polled and fetched from AWS Secrets Manager. Polling will be disabled if missing.
 - `alg-name` which indicates which algorithm is used to encode your keys.
-  Please note that only one configuration option (`loginsvc.rest.jwt.{aws-secrets-manager|generate-in-memory}`) can be used at a time.
+  
+Please note that only one configuration option (`loginsvc.rest.jwt.{aws-secrets-manager|generate-in-memory}`) can be used at a time.
 
 ## How to generate Code coverage report
 ```

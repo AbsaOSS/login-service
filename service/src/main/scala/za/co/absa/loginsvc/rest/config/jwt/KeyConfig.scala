@@ -44,7 +44,7 @@ trait KeyConfig extends ConfigValidatable {
     })
   }
 
-  final def defaultValidation : ConfigValidationResult = {
+  override def validate(): ConfigValidationResult = {
 
     val algValidation = Try {
       SignatureAlgorithm.valueOf(algName)
@@ -55,19 +55,19 @@ trait KeyConfig extends ConfigValidatable {
       case Failure(e) => throw e
     }
 
-    val accessExpTimeResult = if (accessExpTime < minAccessExpTime) {
-      ConfigValidationError(ConfigValidationException(s"accessExpTime must be at least $minAccessExpTime"))
+    val accessExpTimeResult = if (accessExpTime < KeyConfig.minAccessExpTime) {
+      ConfigValidationError(ConfigValidationException(s"accessExpTime must be at least ${KeyConfig.minAccessExpTime}"))
     } else ConfigValidationSuccess
 
-    val refreshKeyTimeResult = if (refreshKeyTime.nonEmpty && refreshKeyTime.get < minRefreshKeyTime) {
-      ConfigValidationError(ConfigValidationException(s"refreshKeyTime must be at least $minRefreshKeyTime"))
+    val refreshKeyTimeResult = if (refreshKeyTime.nonEmpty && refreshKeyTime.get < KeyConfig.minRefreshKeyTime) {
+      ConfigValidationError(ConfigValidationException(s"refreshKeyTime must be at least ${KeyConfig.minRefreshKeyTime}"))
     } else ConfigValidationSuccess
 
     algValidation.merge(accessExpTimeResult).merge(refreshKeyTimeResult)
   }
+}
 
-  override def validate(): ConfigValidationResult = defaultValidation
-
+object KeyConfig {
   val minAccessExpTime: FiniteDuration = FiniteDuration(10, TimeUnit.MILLISECONDS)
-  val minRefreshKeyTime: FiniteDuration = FiniteDuration(5, TimeUnit.MINUTES)
+  val minRefreshKeyTime: FiniteDuration = FiniteDuration(10, TimeUnit.MILLISECONDS)
 }
