@@ -19,7 +19,11 @@ package za.co.absa.loginsvc.rest.config.provider
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import za.co.absa.loginsvc.rest.config.auth.{ActiveDirectoryLDAPConfig, UsersConfig}
-import za.co.absa.loginsvc.rest.config.{BaseConfig, JwtConfig}
+import za.co.absa.loginsvc.rest.config.BaseConfig
+import za.co.absa.loginsvc.rest.config.jwt.KeyConfig
+
+import java.util.concurrent.TimeUnit
+import scala.concurrent.duration.FiniteDuration
 
 class ConfigProviderTest extends AnyFlatSpec with Matchers  {
 
@@ -31,9 +35,11 @@ class ConfigProviderTest extends AnyFlatSpec with Matchers  {
   }
 
   "The jwtConfig properties" should "Match" in {
-    val jwtConfig: JwtConfig  = configProvider.getJWTConfig
-    assert(jwtConfig.algName == "RS256" &&
-    jwtConfig.expTime == 4)
+    val keyConfig: KeyConfig = configProvider.getJWTConfig
+    assert(keyConfig.algName == "RS256" &&
+      keyConfig.accessExpTime == FiniteDuration(15, TimeUnit.MINUTES) &&
+      keyConfig.refreshKeyTime.get == FiniteDuration(5, TimeUnit.SECONDS)
+    )
   }
 
   "The ldapConfig properties" should "Match" in {

@@ -93,6 +93,55 @@ Requires `ActiveDirectoryLDAPConfig(domain: String, url: String, searchFilter: S
    - For JDK11: Run `keytool -import -file ldapcert.pem -alias ldaps -keystore <path_to_jdk>/lib/security/cacerts -storepass <password>` (default password is *changeit*).
 5. Enter `yes` when prompted.
 
+## Key Provider
+The Application allows for the user to allow the application to generate a key in memory.
+This is useful for single deployments and testing, however, may present issues when trying to deploy multiple login-services for redundancy.
+To get around this, the application allows for you to generate your keys in AWS Secrets manager and the application will periodically fetch them.
+
+In order to setup for in-memory key generation, your config should look like so:
+```
+loginsvc:
+  rest:
+    jwt:
+      generate-in-memory:
+         access-exp-time: 15min
+         rotate-time: 9h
+         alg-name: "RS256"
+```
+There are a few important configuration values to be provided:
+- `access-exp-time` which indicates how long a token is valid for,
+- Optional property: `rotate-time` which indicates how often Key pairs are rotated. Rotation will be disabled if missing.
+- `alg-name` which indicates which algorithm is used to encode your keys.
+
+To setup for AWS Secrets Manager, your config should look like so:
+```
+loginsvc:
+  rest:
+    jwt:
+      aws-secrets-manager:
+        secret-name: "secret"
+        region: "region"
+        private-key-field-name: "privateKey"
+        public-key-field-name: "publicKey"
+        access-exp-time: 15min
+        poll-time: 30min
+        alg-name: "RS256"
+```
+Your AWS Secret must have at least 2 fields which correspond to the above properties:
+```
+private-key-field-name: "privateKey"
+public-key-field-name: "publicKey"
+```
+with `"privateKey"` and `"publicKey"` indicating the field-name of those secrets.
+Replace the above example values with the field-names you used in AWS Secrets Manager.
+
+There are a few important configuration values to be provided:
+- `access-exp-time` which indicates how long a token is valid for,
+- Optional property:`poll-time` which indicates how often key pairs (`private-key-field-name` and `public-key-field-name`) are polled and fetched from AWS Secrets Manager. Polling will be disabled if missing.
+- `alg-name` which indicates which algorithm is used to encode your keys.
+  
+Please note that only one configuration option (`loginsvc.rest.jwt.{aws-secrets-manager|generate-in-memory}`) can be used at a time.
+
 ## How to generate Code coverage report
 ```
 sbt jacoco

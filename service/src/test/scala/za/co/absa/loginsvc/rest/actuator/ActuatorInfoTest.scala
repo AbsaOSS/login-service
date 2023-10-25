@@ -25,13 +25,10 @@ import org.springframework.test.context.{TestContextManager, TestPropertySource}
 
 @SpringBootTest
 @TestPropertySource(properties = Array("spring.config.location=service/src/test/resources/application.yaml"))
-class ActuatorInfoTest extends AnyFlatSpec with Matchers {
+class ActuatorInfoTest extends AnyFlatSpec with Matchers with ActuatorTestBase {
 
   @Autowired
   private var infoService: InfoEndpoint = _
-
-  // Makes the above autowired work
-  new TestContextManager(this.getClass).prepareTestInstance(this)
 
   "The info Endpoint" should "return the correct test value" in {
     val info = infoService.info()

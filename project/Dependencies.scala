@@ -54,6 +54,8 @@ object Dependencies {
   lazy val pureConfig = "com.github.pureconfig" %% "pureconfig" % Versions.pureConfig
   lazy val pureConfigYaml = "com.github.pureconfig" %% "pureconfig-yaml" % Versions.pureConfig
 
+  lazy val awsSecrets = "software.amazon.awssdk" % "secretsmanager" % "2.20.68"
+
   lazy val servletApi = "javax.servlet" % "javax.servlet-api" % "3.0.1" % Provided
 
   // this is UI + swagger annotations together, just annotathons should be in "io.swagger.core.v3":"swagger-annotations":"2.2.8"+
@@ -86,6 +88,8 @@ object Dependencies {
 
     pureConfig,
     pureConfigYaml,
+
+    awsSecrets,
 
     springDoc,
 

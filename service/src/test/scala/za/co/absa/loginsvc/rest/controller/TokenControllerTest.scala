@@ -36,7 +36,8 @@ import java.util.Base64
 
 @Import(Array(classOf[SecurityConfig]))
 @WebMvcTest(controllers = Array(classOf[TokenController]))
-class TokenControllerTest extends AnyFlatSpec with ControllerIntegrationTestBase {
+class TokenControllerTest extends AnyFlatSpec
+  with ControllerIntegrationTestBase {
   import AssertionsForEndpointWithCompletableFuture._
 
   @Autowired
@@ -45,6 +46,10 @@ class TokenControllerTest extends AnyFlatSpec with ControllerIntegrationTestBase
   @MockBean
   private var jwtService: JWTService = _
 
+  override def afterAll(): Unit = {
+    super.afterAll()
+    jwtService.close()
+  }
 
   behavior of "generateToken"
 

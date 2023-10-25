@@ -24,8 +24,9 @@ import pureconfig.generic.auto._
 import pureconfig.module.yaml._
 import za.co.absa.loginsvc.rest.config.actuator.GitConfig
 import za.co.absa.loginsvc.rest.config.auth._
+import za.co.absa.loginsvc.rest.config.jwt.{AwsSecretsManagerKeyConfig, InMemoryKeyConfig, KeyConfig}
 import za.co.absa.loginsvc.rest.config.validation.ConfigValidationException
-import za.co.absa.loginsvc.rest.config.{BaseConfig, JwtConfig}
+import za.co.absa.loginsvc.rest.config.BaseConfig
 
 @Component
 class ConfigProvider(@Value("${spring.config.location}") yamlPath: String)
@@ -46,12 +47,23 @@ class ConfigProvider(@Value("${spring.config.location}") yamlPath: String)
       getOrElse(BaseConfig(""))
   }
 
-  def getJWTConfig : JwtConfig = {
-    val jwtConfig = createConfigClass[JwtConfig]("loginsvc.rest.jwt").
-      getOrElse(throw ConfigValidationException("Error with JWT Config properties"))
-    jwtConfig.throwErrors()
+  def getJWTConfig : KeyConfig = {
+    val inMemoryKeyConfig: Option[InMemoryKeyConfig] = createConfigClass[InMemoryKeyConfig]("loginsvc.rest.jwt.generate-in-memory")
+    val awsSecretsManagerKeyConfig: Option[AwsSecretsManagerKeyConfig] = createConfigClass[AwsSecretsManagerKeyConfig]("loginsvc.rest.jwt.aws-secrets-manager")
 
-    jwtConfig
+    (inMemoryKeyConfig, awsSecretsManagerKeyConfig) match {
+      case (Some(_), Some(_)) =>
+        throw ConfigValidationException("Both inMemoryKeyConfig and awsSecretsManagerKeyConfig exist. Please choose only one.")
+
+      case (None, None) =>
+        throw ConfigValidationException("Neither inMemoryKeyConfig nor awsSecretsManagerKeyConfig exists. One of them should exist.")
+
+      case _ =>
+        val keyConfig: KeyConfig = inMemoryKeyConfig.orElse(awsSecretsManagerKeyConfig).get
+        keyConfig.throwErrors()
+
+        keyConfig
+    }
   }
 
   def getLdapConfig : ActiveDirectoryLDAPConfig = {
