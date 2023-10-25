@@ -20,16 +20,17 @@ import com.nimbusds.jose.JWSAlgorithm
 import com.nimbusds.jose.jwk.KeyUse
 import io.jsonwebtoken.{Claims, Jws, Jwts}
 import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.BeforeAndAfterEach
 import za.co.absa.loginsvc.model.User
 import za.co.absa.loginsvc.rest.config.provider.ConfigProvider
 
 import java.util
 import scala.util.Try
 
-class JWTServiceTest extends AnyFlatSpec {
+class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach {
 
   private val testConfig : ConfigProvider = new ConfigProvider("service/src/test/resources/application.yaml")
-  private val jwtService: JWTService = new JWTService(testConfig)
+  private var jwtService: JWTService = _
 
   private val userWithoutEmailAndGroups: User = User(
     name = "testUser",
@@ -48,6 +49,14 @@ class JWTServiceTest extends AnyFlatSpec {
 
   private def parseJWT(jwt: String): Try[Jws[Claims]] = Try {
     Jwts.parserBuilder().setSigningKey(jwtService.publicKey).build().parseClaimsJws(jwt)
+  }
+
+  override def beforeEach(): Unit = {
+    jwtService = new JWTService(testConfig)
+  }
+
+  override def afterEach(): Unit = {
+    jwtService.close()
   }
 
   behavior of "generateToken"
@@ -155,7 +164,7 @@ class JWTServiceTest extends AnyFlatSpec {
     val initToken = jwtService.generateToken(userWithoutGroups)
     val initPublicKey = jwtService.publicKey
 
-    Thread.sleep(5 * 1000)
+    Thread.sleep(6 * 1000)
     val refreshedToken = jwtService.generateToken(userWithoutGroups)
 
     assert(parseJWT(initToken).isFailure)

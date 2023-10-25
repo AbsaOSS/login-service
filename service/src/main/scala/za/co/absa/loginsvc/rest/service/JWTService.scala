@@ -40,6 +40,7 @@ import scala.concurrent.duration.FiniteDuration
 class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider) {
 
   private val logger = LoggerFactory.getLogger(classOf[JWTService])
+  private val scheduler = Executors.newSingleThreadScheduledExecutor()
 
   private val jwtConfig = jwtConfigProvider.getJWTConfig
   @volatile private var keyPair: KeyPair = jwtConfig.keyPair()
@@ -49,7 +50,6 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider) {
       val refreshTime = jwtConfig.refreshKeyTime.get
       scheduleSecretsRefresh(refreshTime)
     }
-
 
   def generateToken(user: User): String = {
     logger.info(s"Generating Token for user: ${user.name}")
@@ -76,6 +76,29 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider) {
 
   def publicKey: PublicKey = keyPair.getPublic
 
+  def publicKeyThumbprint: String = rsaPublicKey.getKeyID
+
+  def jwks: JWKSet = {
+    val jwk = rsaPublicKey
+    new JWKSet(jwk).toPublicJWKSet
+  }
+
+  def close() : Unit = {
+    scheduler.shutdown()
+
+    try {
+      // Wait for up to 5 seconds for the scheduler to terminate
+      if (!scheduler.awaitTermination(5, TimeUnit.SECONDS)) {
+        // If it doesn't terminate, forcefully shut it down
+        scheduler.shutdownNow()
+      }
+    }
+    catch {
+      case _: InterruptedException =>
+        Thread.currentThread().interrupt()
+    }
+  }
+
   private def rsaPublicKey: RSAKey = {
     publicKey match {
       case rsaKey: RSAPublicKey => new RSAKey.Builder(rsaKey)
@@ -87,15 +110,7 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider) {
     }
   }
 
-  def publicKeyThumbprint: String = rsaPublicKey.getKeyID
-
-  def jwks: JWKSet = {
-    val jwk = rsaPublicKey
-    new JWKSet(jwk).toPublicJWKSet
-  }
-
   private def scheduleSecretsRefresh(refreshTime : FiniteDuration): Unit = {
-      val scheduler = Executors.newSingleThreadScheduledExecutor()
       val scheduledFuture = scheduler.scheduleAtFixedRate(() => {
         logger.info("Attempting to Refresh for new Keys")
         try {
@@ -116,19 +131,7 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider) {
       Runtime.getRuntime.addShutdownHook(new Thread(() => {
 
         scheduledFuture.cancel(false)
-        scheduler.shutdown()
-
-        try {
-          // Wait for up to 5 seconds for the scheduler to terminate
-          if (!scheduler.awaitTermination(5, TimeUnit.SECONDS)) {
-            // If it doesn't terminate, forcefully shut it down
-            scheduler.shutdownNow()
-          }
-        }
-        catch {
-          case _: InterruptedException =>
-            Thread.currentThread().interrupt()
-        }
+        this.close()
       }))
   }
 }
