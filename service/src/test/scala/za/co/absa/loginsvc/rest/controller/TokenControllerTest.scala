@@ -22,7 +22,6 @@ import io.jsonwebtoken.security.Keys
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.BeforeAndAfterAll
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.boot.test.mock.mockito.MockBean
@@ -38,8 +37,7 @@ import java.util.Base64
 @Import(Array(classOf[SecurityConfig]))
 @WebMvcTest(controllers = Array(classOf[TokenController]))
 class TokenControllerTest extends AnyFlatSpec
-  with ControllerIntegrationTestBase
-  with BeforeAndAfterAll {
+  with ControllerIntegrationTestBase {
   import AssertionsForEndpointWithCompletableFuture._
 
   @Autowired
