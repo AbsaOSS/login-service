@@ -25,13 +25,10 @@ import org.springframework.test.context.{TestContextManager, TestPropertySource}
 
 @SpringBootTest
 @TestPropertySource(properties = Array("spring.config.location=service/src/test/resources/application.yaml"))
-class ActuatorHealthTest extends AnyFlatSpec with Matchers {
+class ActuatorHealthTest extends AnyFlatSpec with Matchers with ActuatorTestBase {
 
   @Autowired
   private var healthService: HealthEndpoint = _
-
-  // Makes the above autowired work
-  new TestContextManager(this.getClass).prepareTestInstance(this)
 
   "The Overall HealthEndpoint Status" should "return UP" in {
     val health = healthService.health()
