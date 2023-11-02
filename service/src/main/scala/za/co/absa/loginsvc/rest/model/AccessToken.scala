@@ -16,20 +16,27 @@
 
 package za.co.absa.loginsvc.rest.model
 
-import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.annotation.{JsonIgnore, JsonProperty}
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.media.Schema.RequiredMode
 
-case class Tokens(
+case class AccessToken(
   @JsonProperty("token")
   @Schema(example = "abcd123.efgh456.ijkl789", requiredMode = RequiredMode.REQUIRED)
-  token: String,
+  token: String
+) extends Token
+
+case class RefreshToken(
   @JsonProperty("refresh")
   @Schema(example = "ab12.cd34.ef56", requiredMode = RequiredMode.NOT_REQUIRED)
-  refresh: String
-)
+  token: String,
+) extends Token
 
-object Tokens {
+trait Token {
+  def token: String
+}
+
+object Token {
   object TokenType extends Enumeration {
     val Access = Value("access")
     val Refresh = Value("refresh")

@@ -23,22 +23,27 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import io.swagger.v3.oas.annotations.tags.{Tag, Tags}
 import io.swagger.v3.oas.annotations.{Operation, Parameter}
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.http.{HttpStatus, MediaType}
+import org.springframework.http.{HttpHeaders, HttpStatus, MediaType, ResponseCookie, ResponseEntity}
 import org.springframework.security.core.Authentication
 import org.springframework.web.bind.annotation._
 import za.co.absa.loginsvc.model.User
-import za.co.absa.loginsvc.rest.model.{PublicKey, Tokens}
+import za.co.absa.loginsvc.rest.controller.TokenController.{RefreshCookieName, extractRefreshTokenFromRequest, refreshResponseCookieFromRefreshToken, responseEntityWithRefreshCookieHeader}
+import za.co.absa.loginsvc.rest.model.{AccessToken, PublicKey, RefreshToken}
 import za.co.absa.loginsvc.rest.service.JWTService
 import za.co.absa.loginsvc.utils.OptionUtils.ImplicitBuilderExt
 
 import java.util.concurrent.CompletableFuture
 import java.util.{Base64, Optional}
+import javax.servlet.http.{Cookie, HttpServletRequest}
 import scala.concurrent.Future
+import scala.concurrent.duration.FiniteDuration
 
 
 @RestController
 @RequestMapping(Array("/token"))
 class TokenController @Autowired()(jwtService: JWTService) {
+
+  private val refreshExpDuration: FiniteDuration = jwtService.getConfiguredRefreshExpDuration
 
   import za.co.absa.loginsvc.utils.implicits._
 
@@ -49,8 +54,8 @@ class TokenController @Autowired()(jwtService: JWTService) {
     responses = Array(
       new ApiResponse(responseCode = "200", description = "JWTs are retrieved in the response body",
         content = Array(new Content(
-          schema = new Schema(implementation = classOf[Tokens]),
-          examples = Array(new ExampleObject(value = "{\n  \"token\": \"abcd123.efgh456.ijkl789\",\n  \"refresh\": \"ab12.cd34.ef56\"\n}")))
+          schema = new Schema(implementation = classOf[AccessToken]),
+          examples = Array(new ExampleObject(value = "{\n  \"token\": \"abcd123.efgh456.ijkl789\"}")))
         )
       ),
       new ApiResponse(responseCode = "401", description = "Auth error",
@@ -65,9 +70,8 @@ class TokenController @Autowired()(jwtService: JWTService) {
     path = Array("/generate"),
     produces = Array(MediaType.APPLICATION_JSON_VALUE)
   )
-  @ResponseStatus(HttpStatus.OK)
   @SecurityRequirement(name = "basicAuth")
-  def generateToken(authentication: Authentication, @RequestParam("group-prefixes") groupPrefixes: Optional[String]): CompletableFuture[Tokens] = {
+  def generateToken(authentication: Authentication, @RequestParam("group-prefixes") groupPrefixes: Optional[String]): CompletableFuture[ResponseEntity[AccessToken]] = {
     val user = authentication.getPrincipal.asInstanceOf[User]
     val groupPrefixesStrScala = groupPrefixes.toScalaOption
 
@@ -78,7 +82,12 @@ class TokenController @Autowired()(jwtService: JWTService) {
 
     val accessJwt = jwtService.generateAccessToken(filteredGroupsUser)
     val refreshJwt = jwtService.generateRefreshToken(filteredGroupsUser)
-    Future.successful(Tokens(accessJwt, refreshJwt))
+
+    Future.successful(
+      responseEntityWithRefreshCookieHeader(refreshJwt, refreshExpDuration) {
+        accessJwt
+      }
+    )
   }
 
   @Tags(Array(new Tag(name = "token")))
@@ -89,8 +98,8 @@ class TokenController @Autowired()(jwtService: JWTService) {
     responses = Array(
       new ApiResponse(responseCode = "200", description = "JWTs are retrieved in the response body",
         content = Array(new Content(
-          schema = new Schema(implementation = classOf[Tokens]),
-          examples = Array(new ExampleObject(value = "{\n  \"token\": \"abcd123.efgh456.ijkl789\",\n  \"refresh\": \"ab12.cd34.ef56\"\n}")))
+          schema = new Schema(implementation = classOf[AccessToken]),
+          examples = Array(new ExampleObject(value = "{\n  \"token\": \"abcd123.efgh456.ijkl789\"}")))
         )
       ),
       new ApiResponse(responseCode = "401", description = "Understood the supplied tokens, but cannot refresh with those", // specific JWT expcetions
@@ -110,9 +119,22 @@ class TokenController @Autowired()(jwtService: JWTService) {
     produces = Array(MediaType.APPLICATION_JSON_VALUE)
   )
   @ResponseStatus(HttpStatus.OK)
-  def refreshToken(@RequestBody tokens: Tokens): CompletableFuture[Tokens] = {
-    val refreshedAccessToken = jwtService.refreshToken(tokens)
-    Future.successful(Tokens(refreshedAccessToken, tokens.refresh))
+  def refreshToken(@RequestBody accessToken: AccessToken, request: HttpServletRequest): CompletableFuture[ResponseEntity[AccessToken]] = {
+
+    val response: Future[ResponseEntity[AccessToken]] = extractRefreshTokenFromRequest(request).map { refreshToken =>
+      val (refreshedAccessToken, refreshedRefreshToken) = jwtService.refreshTokens(accessToken, refreshToken)
+
+      Future.successful(
+        responseEntityWithRefreshCookieHeader(refreshedRefreshToken, refreshExpDuration) {
+          refreshedAccessToken
+        }
+      )
+
+    }.getOrElse(
+      Future.failed(new IllegalArgumentException("The expected refresh header not found, cannot refresh access token!"))
+    )
+
+    response
   }
 
   @Tags(Array(new Tag(name = "token")))
@@ -145,8 +167,8 @@ class TokenController @Autowired()(jwtService: JWTService) {
     summary = "Gives payload with the RSA256 public key in JWKS format",
     description = "Returns the same information as /token/public-key, but as a JSON Web Key Set",
     responses = Array(
-    new ApiResponse(responseCode = "200", description = "Success", content = Array(new Content(examples = Array(new ExampleObject(value = """{"keys":[{"kty": "EC","crv": "P-256","x": "MKBCTNIcKUSDii11ySs3526iDZ8AiTo7Tu6KPAqv7D4","y": "4Etl6SRW2YiLUrN5vfvVHuhp7x8PxltmWWlbbM4IFyM","use": "enc","kid": "1"},{"kty": "RSA","n": "0vx7agoebGcQSuuPiLJXZptN9nndrQmbXEps2aiAFbWhM78LhWx4cbbfAAtVT86zwu1RK7aPFFxuhDR1L6tSoc_BJECPebWKRXjBZCiFV4n3oknjhMstn64tZ_2W-5JsGY4Hc5n9yBXArwl93lqt7_RN5w6Cf0h4QyQ5v-65YGjQR0_FDW2QvzqY368QQMicAtaSqzs8KJZgnYb9c7d0zgdAZHzu6qMQvRL5hajrn1n91CbOpbISD08qNLyrdkt-bFTWhAI4vMQFh6WeZu0fM4lFd2NcRwr3XPksINHaQ-G_xBniIqbw0Ls1jF44-csFCur-kEgU8awapJzKnqDKgw","e": "AQAB","alg": "RS256","kid": "2011-04-29"}]}"""))))),
-  ))
+      new ApiResponse(responseCode = "200", description = "Success", content = Array(new Content(examples = Array(new ExampleObject(value = """{"keys":[{"kty": "EC","crv": "P-256","x": "MKBCTNIcKUSDii11ySs3526iDZ8AiTo7Tu6KPAqv7D4","y": "4Etl6SRW2YiLUrN5vfvVHuhp7x8PxltmWWlbbM4IFyM","use": "enc","kid": "1"},{"kty": "RSA","n": "0vx7agoebGcQSuuPiLJXZptN9nndrQmbXEps2aiAFbWhM78LhWx4cbbfAAtVT86zwu1RK7aPFFxuhDR1L6tSoc_BJECPebWKRXjBZCiFV4n3oknjhMstn64tZ_2W-5JsGY4Hc5n9yBXArwl93lqt7_RN5w6Cf0h4QyQ5v-65YGjQR0_FDW2QvzqY368QQMicAtaSqzs8KJZgnYb9c7d0zgdAZHzu6qMQvRL5hajrn1n91CbOpbISD08qNLyrdkt-bFTWhAI4vMQFh6WeZu0fM4lFd2NcRwr3XPksINHaQ-G_xBniIqbw0Ls1jF44-csFCur-kEgU8awapJzKnqDKgw","e": "AQAB","alg": "RS256","kid": "2011-04-29"}]}"""))))),
+    ))
   @GetMapping(
     path = Array("/public-key-jwks"),
     produces = Array(MediaType.APPLICATION_JSON_VALUE)
@@ -158,4 +180,35 @@ class TokenController @Autowired()(jwtService: JWTService) {
     import scala.collection.JavaConverters._
     Future.successful(jwks.toJSONObject(true).asScala.toMap)
   }
+}
+
+object TokenController {
+  val RefreshCookieName = "refresh"
+
+  def extractRefreshTokenFromRequest(request: HttpServletRequest): Option[RefreshToken] = {
+    Option(request.getCookies()) // getCookies returns null if there are no cookies
+      .getOrElse(Array.empty[Cookie])
+      .find(_.getName == RefreshCookieName)
+      .map(_.getValue)
+      .map(RefreshToken)
+  }
+
+  def responseEntityWithRefreshCookieHeader[T](refreshToken: RefreshToken, refreshExpDuration: FiniteDuration)(body: T): ResponseEntity[T] = {
+    val refreshCookie: ResponseCookie = refreshResponseCookieFromRefreshToken(refreshToken, refreshExpDuration)
+
+    ResponseEntity
+      .ok()
+      .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
+      .body(body)
+  }
+
+  def refreshResponseCookieFromRefreshToken(refreshToken: RefreshToken, refreshExpiryHint: FiniteDuration): ResponseCookie = {
+   ResponseCookie.from(RefreshCookieName, refreshToken.token)
+      .httpOnly(true)
+      .secure(true)
+      .path("/")
+      .maxAge(refreshExpiryHint.toSeconds)
+      .build()
+  }
+
 }
