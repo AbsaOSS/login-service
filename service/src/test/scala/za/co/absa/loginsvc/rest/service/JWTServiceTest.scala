@@ -24,7 +24,7 @@ import org.scalatest.matchers.should.Matchers
 import za.co.absa.loginsvc.model.User
 import za.co.absa.loginsvc.rest.config.JwtConfig
 import za.co.absa.loginsvc.rest.config.provider.{ConfigProvider, JwtConfigProvider}
-import za.co.absa.loginsvc.rest.model.Tokens
+import za.co.absa.loginsvc.rest.model.{AccessToken, Token, RefreshToken}
 
 import java.security.PublicKey
 import java.util
@@ -52,8 +52,8 @@ class JWTServiceTest extends AnyFlatSpec with Matchers {
     groups = Seq("testGroup1", "testGroup2")
   )
 
-  private def parseJWT(jwt: String, publicKey: PublicKey = jwtService.publicKey): Try[Jws[Claims]] = Try {
-    Jwts.parserBuilder().setSigningKey(publicKey).build().parseClaimsJws(jwt)
+  private def parseJWT(jwt: Token, publicKey: PublicKey = jwtService.publicKey): Try[Jws[Claims]] = Try {
+    Jwts.parserBuilder().setSigningKey(publicKey).build().parseClaimsJws(jwt.token)
   }
 
   behavior of "generateAccessToken"
@@ -168,7 +168,7 @@ class JWTServiceTest extends AnyFlatSpec with Matchers {
     val accessJwt = jwtService.generateAccessToken(userWithGroups)
     val refreshJwt = jwtService.generateRefreshToken(userWithGroups)
 
-    val refreshedAccessJwt = jwtService.refreshToken(Tokens(accessJwt, refreshJwt))
+    val (refreshedAccessJwt, _) = jwtService.refreshTokens(accessJwt, refreshJwt)
     val parsedRefreshedAccessJWT = parseJWT(refreshedAccessJwt)
 
     parsedRefreshedAccessJWT match {
@@ -187,7 +187,7 @@ class JWTServiceTest extends AnyFlatSpec with Matchers {
 
   it should "fail with a unreadable tokens" in {
     an[MalformedJwtException] should be thrownBy {
-      jwtService.refreshToken(Tokens("abc.def.ghi", "123.456.789"))
+      jwtService.refreshTokens(AccessToken("abc.def.ghi"), RefreshToken("123.456.789"))
     }
   }
 
@@ -212,7 +212,7 @@ class JWTServiceTest extends AnyFlatSpec with Matchers {
     Thread.sleep(3 * 1000) // make sure that access is past due - as set above
     parseJWT(accessJwt, customJwtService.publicKey).isFailure shouldBe true // expired
 
-    val refreshedAccessJwt = customJwtService.refreshToken(Tokens(accessJwt, refreshJwt))
+    val (refreshedAccessJwt, _) = customJwtService.refreshTokens(accessJwt, refreshJwt)
     val parsedRefreshedAccessJWT = parseJWT(refreshedAccessJwt, customJwtService.publicKey)
     assert(parsedRefreshedAccessJWT.isSuccess)
 
@@ -240,7 +240,7 @@ class JWTServiceTest extends AnyFlatSpec with Matchers {
     parseJWT(refreshJwt, customJwtService.publicKey).isFailure shouldBe true // expired
 
     an[ExpiredJwtException] should be thrownBy {
-      customJwtService.refreshToken(Tokens(accessJwt, refreshJwt))
+      customJwtService.refreshTokens(accessJwt, refreshJwt)
     }
 
   }

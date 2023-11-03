@@ -43,7 +43,7 @@ import scala.concurrent.duration.FiniteDuration
 @RequestMapping(Array("/token"))
 class TokenController @Autowired()(jwtService: JWTService) {
 
-  private val refreshExpDuration: FiniteDuration = jwtService.getConfiguredRefreshExpDuration
+  private lazy val refreshExpDuration: FiniteDuration = jwtService.getConfiguredRefreshExpDuration
 
   import za.co.absa.loginsvc.utils.implicits._
 
