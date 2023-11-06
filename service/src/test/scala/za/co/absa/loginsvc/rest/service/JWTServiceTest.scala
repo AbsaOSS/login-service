@@ -23,9 +23,9 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.matchers.should.Matchers
 import za.co.absa.loginsvc.model.User
-import za.co.absa.loginsvc.rest.config.JwtConfig
+import za.co.absa.loginsvc.rest.config.jwt.{InMemoryKeyConfig, KeyConfig}
 import za.co.absa.loginsvc.rest.config.provider.{ConfigProvider, JwtConfigProvider}
-import za.co.absa.loginsvc.rest.model.{AccessToken, Token, RefreshToken}
+import za.co.absa.loginsvc.rest.model.{AccessToken, RefreshToken, Token}
 
 import java.security.PublicKey
 import java.util
@@ -202,8 +202,8 @@ class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
 
   def customTimedJwtService(accessExpTime: FiniteDuration, refreshExpTime: FiniteDuration): JWTService = {
     val configP = new JwtConfigProvider {
-      override def getJWTConfig: JwtConfig = JwtConfig(
-        "RS256", accessExpTime, refreshExpTime
+      override def getJwtKeyConfig: KeyConfig = InMemoryKeyConfig(
+        "RS256", accessExpTime, refreshExpTime, None
       )
     }
 
@@ -278,11 +278,11 @@ class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
   }
 
   it should "rotate an public and private keys after 5 seconds" in {
-    val initToken = jwtService.generateToken(userWithoutGroups)
+    val initToken = jwtService.generateAccessToken(userWithoutGroups)
     val initPublicKey = jwtService.publicKey
 
     Thread.sleep(6 * 1000)
-    val refreshedToken = jwtService.generateToken(userWithoutGroups)
+    val refreshedToken = jwtService.generateAccessToken(userWithoutGroups)
 
     assert(parseJWT(initToken).isFailure)
     assert(parseJWT(refreshedToken).isSuccess)

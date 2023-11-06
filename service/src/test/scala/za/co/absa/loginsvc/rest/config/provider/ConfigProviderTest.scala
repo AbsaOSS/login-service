@@ -38,11 +38,11 @@ class ConfigProviderTest extends AnyFlatSpec with Matchers  {
   }
 
   "The jwtConfig properties" should "Match" in {
-    val keyConfig: KeyConfig = configProvider.getJWTConfig
+    val keyConfig: KeyConfig = configProvider.getJwtKeyConfig
     assert(keyConfig.algName == "RS256" &&
       keyConfig.accessExpTime == FiniteDuration(15, TimeUnit.MINUTES) &&
-      keyConfig.refreshKeyTime.get == FiniteDuration(5, TimeUnit.SECONDS) &&
-      jwtConfig.refreshExpTime == FiniteDuration(10, TimeUnit.HOURS)
+      keyConfig.refreshExpTime == FiniteDuration(10, TimeUnit.HOURS) &&
+      keyConfig.keyRotationTime.get == FiniteDuration(5, TimeUnit.SECONDS)
     )
   }
 

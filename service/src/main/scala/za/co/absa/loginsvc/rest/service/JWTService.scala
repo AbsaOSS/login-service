@@ -46,16 +46,16 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider) {
   private val logger = LoggerFactory.getLogger(classOf[JWTService])
   private val scheduler = Executors.newSingleThreadScheduledExecutor()
 
-  private val jwtConfig = jwtConfigProvider.getJWTConfig
+  private val jwtConfig = jwtConfigProvider.getJwtKeyConfig
   @volatile private var keyPair: KeyPair = jwtConfig.keyPair()
 
-  if(jwtConfig.refreshKeyTime.nonEmpty)
+  if(jwtConfig.keyRotationTime.nonEmpty)
     {
-      val refreshTime = jwtConfig.refreshKeyTime.get
+      val refreshTime = jwtConfig.keyRotationTime.get
       scheduleSecretsRefresh(refreshTime)
     }
 
-  def generateToken(user: User): AccessToken = {
+  def generateAccessToken(user: User): AccessToken = {
     logger.info(s"Generating Token for user: ${user.name}")
     import scala.collection.JavaConverters._
 
@@ -73,8 +73,8 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider) {
       .setIssuedAt(issuedAt)
       .claim("kid", publicKeyThumbprint)
       .claim("groups", groupsClaim)
-      .applyIfDefined(user.email, (builder, value: String) => builder.claim("email", value))
-      .applyIfDefined(user.displayName, (builder, value: String) => builder.claim("displayname", value))
+      .applyIfDefined(user.email)((builder, value: String) => builder.claim("email", value))
+      .applyIfDefined(user.displayName)((builder, value: String) => builder.claim("displayname", value))
       .claim("type", Token.TokenType.Access.toString)
       .signWith(keyPair.getPrivate)
       .compact()
@@ -95,7 +95,7 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider) {
       .setExpiration(expiration)
       .setIssuedAt(issuedAt)
       .claim("type", Token.TokenType.Refresh.toString)
-      .signWith(rsaKeyPair.getPrivate)
+      .signWith(keyPair.getPrivate)
       .compact()
 
     RefreshToken(tokenContent)
@@ -104,7 +104,7 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider) {
   def refreshTokens(accessToken: AccessToken, refreshToken: RefreshToken): (AccessToken, RefreshToken) = {
     val oldAccessJws: Jws[Claims] = Jwts.parserBuilder()
       .require("type", Token.TokenType.Access.toString)
-      .setSigningKey(rsaKeyPair.getPublic)
+      .setSigningKey(keyPair.getPublic)
       .setClock(() => Date.from(Instant.now().minus(jwtConfig.refreshExpTime.toJava))) // allowing expired access token - up to refresh token validity window
       .build()
       .parseClaimsJws(accessToken.token) // checks requirements: type=access, signature, custom validity window
@@ -114,7 +114,7 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider) {
     Jwts.parserBuilder()
       .require("type", Token.TokenType.Refresh.toString)
       .requireSubject(userFromOldAccessToken.name)
-      .setSigningKey(rsaKeyPair.getPublic)
+      .setSigningKey(keyPair.getPublic)
       .build()
       .parseClaimsJws(refreshToken.token) // checks username, validity, and signature.
 
@@ -190,19 +190,12 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider) {
 }
 
 object JWTService {
-  // todo remove? not used?
-  implicit class JwtBuilderExt(val jwtBuilder: JwtBuilder) extends AnyVal {
-    def applyIfDefined[T](opt: Option[T], fn: (JwtBuilder, T) => JwtBuilder): JwtBuilder = {
-      OptionExt.applyIfDefined(jwtBuilder, opt, fn)
-    }
+  def extractUserFrom(claims: Claims): User = {
+    val name = claims.getSubject
+    val groups = claims.get("groups", classOf[java.util.List[String]]).asScala
+    val email = Option(claims.get("email", classOf[String]))
+    val displayName = Option(claims.get("displayname", classOf[String]))
 
-    def extractUserFrom(claims: Claims): User = {
-      val name = claims.getSubject
-      val groups = claims.get("groups", classOf[java.util.List[String]]).asScala
-      val email = Option(claims.get("email", classOf[String]))
-      val displayName = Option(claims.get("displayname", classOf[String]))
-
-      User(name, email, displayName, groups)
-    }
+    User(name, email, displayName, groups)
   }
 }

@@ -17,7 +17,6 @@
 package za.co.absa.loginsvc.rest.config.jwt
 
 import com.fasterxml.jackson.databind.{JsonNode, ObjectMapper}
-import io.jsonwebtoken.SignatureAlgorithm
 import org.slf4j.LoggerFactory
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
 import software.amazon.awssdk.regions.Region
@@ -30,20 +29,22 @@ import java.security.{KeyFactory, KeyPair}
 import java.security.spec.{PKCS8EncodedKeySpec, X509EncodedKeySpec}
 import java.util.Base64
 import scala.concurrent.duration.FiniteDuration
-import scala.util.{Failure, Success, Try}
 
-case class AwsSecretsManagerKeyConfig (secretName: String,
-                                       region: String,
-                                       privateKeyFieldName: String,
-                                       publicKeyFieldName: String,
-                                       algName: String,
-                                       accessExpTime: FiniteDuration,
-                                       pollTime: Option[FiniteDuration])
-  extends KeyConfig {
+
+case class AwsSecretsManagerKeyConfig(
+  secretName: String,
+  region: String,
+  privateKeyFieldName: String,
+  publicKeyFieldName: String,
+  algName: String,
+  accessExpTime: FiniteDuration,
+  refreshExpTime: FiniteDuration,
+  pollTime: Option[FiniteDuration]
+) extends KeyConfig {
 
   private val logger = LoggerFactory.getLogger(classOf[AwsSecretsManagerKeyConfig])
 
-  override def refreshKeyTime : Option[FiniteDuration] = pollTime
+  override def keyRotationTime : Option[FiniteDuration] = pollTime
   override def keyPair(): KeyPair = {
 
     val default = DefaultCredentialsProvider.create

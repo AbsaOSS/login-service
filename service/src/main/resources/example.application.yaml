@@ -6,7 +6,7 @@ loginsvc:
       generate-in-memory:
         access-exp-time: 15min
         refresh-exp-time: 9h
-        rotation-time: 9h
+        key-rotation-time: 9h
         alg-name: "RS256"
       #Instead of generating the key in memory
       #The Below Config allows for the application to fetch keys from AWS Secrets Manager.
@@ -16,6 +16,7 @@ loginsvc:
         #private-key-field-name: "privateKey"
         #public-key-field-name: "publicKey"
         #access-exp-time: 15min
+        #refresh-exp-time: 9h
         #poll-time: 5min
         #alg-name: "RS256"
     config:

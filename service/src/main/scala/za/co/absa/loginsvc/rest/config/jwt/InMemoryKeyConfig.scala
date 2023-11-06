@@ -19,25 +19,25 @@ package za.co.absa.loginsvc.rest.config.jwt
 import io.jsonwebtoken.SignatureAlgorithm
 import io.jsonwebtoken.security.Keys
 import org.slf4j.LoggerFactory
-import za.co.absa.loginsvc.rest.config.validation.ConfigValidationResult.{ConfigValidationError, ConfigValidationSuccess}
-import za.co.absa.loginsvc.rest.config.validation.{ConfigValidationException, ConfigValidationResult}
 
-import scala.util.{Failure, Success, Try}
 import java.security.KeyPair
 import scala.concurrent.duration.FiniteDuration
 
-case class InMemoryKeyConfig (algName: String,
-                              accessExpTime: FiniteDuration,
-                              rotationTime: Option[FiniteDuration])
-  extends KeyConfig {
+case class InMemoryKeyConfig(
+  algName: String,
+  accessExpTime: FiniteDuration,
+  refreshExpTime: FiniteDuration,
+  keyRotationTime: Option[FiniteDuration]
+) extends KeyConfig {
 
   private val logger = LoggerFactory.getLogger(classOf[InMemoryKeyConfig])
 
-  override def refreshKeyTime : Option[FiniteDuration] = rotationTime
   override def keyPair(): KeyPair = {
-    logger.info("Generating new keys")
+    logger.info(s"Generating new keys - every ${keyRotationTime.getOrElse("?")}")
     Keys.keyPairFor(SignatureAlgorithm.valueOf(algName))
   }
 
   override def throwErrors(): Unit = this.validate().throwOnErrors()
+
 }
+
