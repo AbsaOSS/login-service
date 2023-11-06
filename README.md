@@ -6,20 +6,21 @@ AbsaOSS Common Login service using JWT Public key signatures
 
 ### Usage & Integration
 To interact with the service, most notable endpoints are
- - `/token/generate` to generate access & refresh token
+ - `/token/generate` to generate access & refresh tokens
  - `/token/refresh` to obtain a new access token with a still-valid refresh token
  - `/token/public-key` to obtain public key to verify tokens including their validity window
 
 Please, refer to the [API documentation](#api-documentation) below for details of the endpoints.
 
-#### Generate token
-Once you request your token at `/token/generate` endpoint, you will receive both an access token and a refresh token
+#### Generate tokens
+Once you request your token at `/token/generate` endpoint, you will receive both an access token (in body)
 ```json
 {
-  "token": "...",
-  "refresh": "..."
+  "token": "..."
 }
 ```
+and a refresh token (in Cookie named `refresh`).
+
 Both tokens are signed by LS public key and carry the username (`sub`), `type` (`access`/`refresh`) and creation/expiry info (`iat`/`exp`). 
 
 #### Refresh access token
@@ -139,12 +140,14 @@ loginsvc:
     jwt:
       generate-in-memory:
          access-exp-time: 15min
-         rotate-time: 9h
+         refresh-exp-time: 9h
+         key-rotation-time: 9h
          alg-name: "RS256"
 ```
 There are a few important configuration values to be provided:
-- `access-exp-time` which indicates how long a token is valid for,
-- Optional property: `rotate-time` which indicates how often Key pairs are rotated. Rotation will be disabled if missing.
+- `access-exp-time` which indicates how long an access token is valid for,
+- `refresh-exp-time` which indicates how long a refresh token is valid for,
+- Optional property: `key-rotation-time` which indicates how often Key pairs are rotated. Rotation will be disabled if missing.
 - `alg-name` which indicates which algorithm is used to encode your keys.
 
 To setup for AWS Secrets Manager, your config should look like so:
@@ -158,6 +161,7 @@ loginsvc:
         private-key-field-name: "privateKey"
         public-key-field-name: "publicKey"
         access-exp-time: 15min
+        key-rotation-time: 9h
         poll-time: 30min
         alg-name: "RS256"
 ```
@@ -170,7 +174,8 @@ with `"privateKey"` and `"publicKey"` indicating the field-name of those secrets
 Replace the above example values with the field-names you used in AWS Secrets Manager.
 
 There are a few important configuration values to be provided:
-- `access-exp-time` which indicates how long a token is valid for,
+- `access-exp-time` which indicates how long an access token is valid for,
+- `refresh-exp-time` which indicates how long a refresh token is valid for,
 - Optional property:`poll-time` which indicates how often key pairs (`private-key-field-name` and `public-key-field-name`) are polled and fetched from AWS Secrets Manager. Polling will be disabled if missing.
 - `alg-name` which indicates which algorithm is used to encode your keys.
   

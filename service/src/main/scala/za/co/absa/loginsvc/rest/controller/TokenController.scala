@@ -52,7 +52,7 @@ class TokenController @Autowired()(jwtService: JWTService) {
     summary = "Generates access and refresh JWTs",
     description = """Generates access and refresh JWTs signed by the private key, verifiable by the public key available at /token/public-key. RSA256 is used.""",
     responses = Array(
-      new ApiResponse(responseCode = "200", description = "JWTs are retrieved in the response body",
+      new ApiResponse(responseCode = "200", description = "Access JWT is retrieved in the response body, the refresh JWT in Cookie 'refresh'.",
         content = Array(new Content(
           schema = new Schema(implementation = classOf[AccessToken]),
           examples = Array(new ExampleObject(value = "{\n  \"token\": \"abcd123.efgh456.ijkl789\"}")))
@@ -94,9 +94,9 @@ class TokenController @Autowired()(jwtService: JWTService) {
   @Operation(
     summary = "Refreshes access JWT",
     // note: further implementation, perhaps in https://github.com/AbsaOSS/login-service/issues/76, may issue new refresh tokens
-    description = """Refreshed access JWT and (currently original) refresh JWTs signed by the private key, verifiable by the public key available at /token/public-key. RSA256 is used.""",
+    description = """Refreshed access JWT and (currently original) refresh JWTs signed by the private key, verifiable by the public key available at /token/public-key. RSA256 is used. Make sure that the refresh token is present in Cookies (refresh=ab.123.cd).""",
     responses = Array(
-      new ApiResponse(responseCode = "200", description = "JWTs are retrieved in the response body",
+      new ApiResponse(responseCode = "200", description = "Access JWT is retrieved in the response body, updated refresh JWT in Cookie 'refresh'.",
         content = Array(new Content(
           schema = new Schema(implementation = classOf[AccessToken]),
           examples = Array(new ExampleObject(value = "{\n  \"token\": \"abcd123.efgh456.ijkl789\"}")))
