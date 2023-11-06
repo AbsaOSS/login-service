@@ -18,32 +18,72 @@ package za.co.absa.loginsvc.rest.config
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+import za.co.absa.loginsvc.rest.config.jwt.{AwsSecretsManagerKeyConfig, InMemoryKeyConfig, KeyConfig}
 import za.co.absa.loginsvc.rest.config.validation.ConfigValidationException
 import za.co.absa.loginsvc.rest.config.validation.ConfigValidationResult.{ConfigValidationError, ConfigValidationSuccess}
 
 import scala.concurrent.duration._
 
+import java.util.concurrent.TimeUnit
+import scala.concurrent.duration.FiniteDuration
+
 class JwtConfigTest extends AnyFlatSpec with Matchers {
 
-  val jwtConfig = JwtConfig("RS256", 20.minutes, 2.hours)
+  val inMemoryKeyConfig: InMemoryKeyConfig = InMemoryKeyConfig("RS256",
+    15.munites,
+    2.hours,
+    Option(30.minutes))
 
-  "JwtConfig" should "validate expected content" in {
-    jwtConfig.validate() shouldBe ConfigValidationSuccess
+  val awsSecretsManagerKeyConfig: AwsSecretsManagerKeyConfig = AwsSecretsManagerKeyConfig("Secret",
+    "region",
+    "private",
+    "public",
+    "RS256",
+    FiniteDuration(15, TimeUnit.MINUTES),
+    Option(FiniteDuration(30, TimeUnit.MINUTES)))
+
+  "inMemoryKeyConfig" should "validate expected content" in {
+    inMemoryKeyConfig.validate() shouldBe ConfigValidationSuccess
   }
 
-  it should "fail on invalid algorithm" in {
-    jwtConfig.copy(algName = "ABC").validate() shouldBe
+  "awsSecretsManagerKeyConfig" should "validate expected content" in {
+    awsSecretsManagerKeyConfig.validate() shouldBe ConfigValidationSuccess
+  }
+
+  "inMemoryKeyConfig" should "fail on invalid algorithm" in {
+    inMemoryKeyConfig.copy(algName = "ABC").validate() shouldBe
       ConfigValidationError(ConfigValidationException("Invalid algName 'ABC' was given."))
   }
 
-  it should "fail on too small accessExpTime" in {
-    jwtConfig.copy(accessExpTime = -7.hours).validate() shouldBe
-      ConfigValidationError(ConfigValidationException("accessExpTime must be at least 10 milliseconds")) // JwtConfig
+  "inMemoryKeyConfig" should "fail on non-negative accessExpTime" in {
+    inMemoryKeyConfig.copy(accessExpTime = FiniteDuration(5, TimeUnit.MILLISECONDS)).validate() shouldBe
+      ConfigValidationError(ConfigValidationException(s"accessExpTime must be at least ${KeyConfig.minAccessExpTime}"))
   }
 
-  it should "fail on too small refreshExpTime" in {
-    jwtConfig.copy(refreshExpTime = -7.hours).validate() shouldBe
-      ConfigValidationError(ConfigValidationException("refreshExpTime must be at least 20 milliseconds")) // dtto
+  "inMemoryKeyConfig" should "fail on non-negative refreshExpTime" in {
+    inMemoryKeyConfig.copy(rotationTime = Option(FiniteDuration(5, TimeUnit.MILLISECONDS))).validate() shouldBe
+      ConfigValidationError(ConfigValidationException(s"refreshKeyTime must be at least ${KeyConfig.minRefreshKeyTime}"))
   }
 
+  // todo the third value check?
+
+  "awsSecretsManagerKeyConfig" should "fail on invalid algorithm" in {
+    awsSecretsManagerKeyConfig.copy(algName = "ABC").validate() shouldBe
+      ConfigValidationError(ConfigValidationException("Invalid algName 'ABC' was given."))
+  }
+
+  "awsSecretsManagerKeyConfig" should "fail on non-negative accessExpTime" in {
+    awsSecretsManagerKeyConfig.copy(accessExpTime = FiniteDuration(5, TimeUnit.MILLISECONDS)).validate() shouldBe
+      ConfigValidationError(ConfigValidationException(s"accessExpTime must be at least ${KeyConfig.minAccessExpTime}"))
+  }
+
+  "awsSecretsManagerKeyConfig" should "fail on non-negative refreshExpTime" in {
+    awsSecretsManagerKeyConfig.copy(pollTime = Option(FiniteDuration(5, TimeUnit.MILLISECONDS))).validate() shouldBe
+      ConfigValidationError(ConfigValidationException(s"refreshKeyTime must be at least ${KeyConfig.minRefreshKeyTime}"))
+  }
+
+  "awsSecretsManagerKeyConfig" should "fail on missing value" in {
+    awsSecretsManagerKeyConfig.copy(secretName = null).validate() shouldBe
+      ConfigValidationError(ConfigValidationException("secretName is empty"))
+  }
 }

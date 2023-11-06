@@ -19,7 +19,9 @@ package za.co.absa.loginsvc.rest.service
 import com.nimbusds.jose.JWSAlgorithm
 import com.nimbusds.jose.jwk.{JWKSet, KeyUse, RSAKey}
 import io.jsonwebtoken.security.Keys
+import io.jsonwebtoken.{JwtBuilder, Jwts, SignatureAlgorithm}
 import io.jsonwebtoken._
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import za.co.absa.loginsvc.model.User
@@ -31,6 +33,8 @@ import za.co.absa.loginsvc.utils.OptionUtils.ImplicitBuilderExt
 import java.security.interfaces.RSAPublicKey
 import java.security.{KeyPair, PublicKey}
 import java.time.Instant
+import java.time.temporal.ChronoUnit
+import java.util.concurrent.{Executors, TimeUnit}
 import java.util.Date
 import scala.collection.JavaConverters._
 import scala.compat.java8.DurationConverters._
@@ -39,10 +43,20 @@ import scala.concurrent.duration.FiniteDuration
 @Service
 class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider) {
 
-  private val jwtConfig = jwtConfigProvider.getJWTConfig
-  private val rsaKeyPair: KeyPair = Keys.keyPairFor(SignatureAlgorithm.valueOf(jwtConfig.algName))
+  private val logger = LoggerFactory.getLogger(classOf[JWTService])
+  private val scheduler = Executors.newSingleThreadScheduledExecutor()
 
-  def generateAccessToken(user: User): AccessToken = {
+  private val jwtConfig = jwtConfigProvider.getJWTConfig
+  @volatile private var keyPair: KeyPair = jwtConfig.keyPair()
+
+  if(jwtConfig.refreshKeyTime.nonEmpty)
+    {
+      val refreshTime = jwtConfig.refreshKeyTime.get
+      scheduleSecretsRefresh(refreshTime)
+    }
+
+  def generateToken(user: User): AccessToken = {
+    logger.info(s"Generating Token for user: ${user.name}")
     import scala.collection.JavaConverters._
 
     val expiration = Date.from(
@@ -59,10 +73,10 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider) {
       .setIssuedAt(issuedAt)
       .claim("kid", publicKeyThumbprint)
       .claim("groups", groupsClaim)
-      .applyIfDefined(user.email) { (builder, value: String) => builder.claim("email", value) }
-      .applyIfDefined(user.displayName) { (builder, value: String) => builder.claim("displayname", value) }
+      .applyIfDefined(user.email, (builder, value: String) => builder.claim("email", value))
+      .applyIfDefined(user.displayName, (builder, value: String) => builder.claim("displayname", value))
       .claim("type", Token.TokenType.Access.toString)
-      .signWith(rsaKeyPair.getPrivate)
+      .signWith(keyPair.getPrivate)
       .compact()
 
     AccessToken(tokenContent)
@@ -111,7 +125,30 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider) {
     (refreshedAccessToken, refreshToken)
   }
 
-  def publicKey: PublicKey = rsaKeyPair.getPublic
+  def publicKey: PublicKey = keyPair.getPublic
+
+  def publicKeyThumbprint: String = rsaPublicKey.getKeyID
+
+  def jwks: JWKSet = {
+    val jwk = rsaPublicKey
+    new JWKSet(jwk).toPublicJWKSet
+  }
+
+  def close() : Unit = {
+    scheduler.shutdown()
+
+    try {
+      // Wait for up to 5 seconds for the scheduler to terminate
+      if (!scheduler.awaitTermination(5, TimeUnit.SECONDS)) {
+        // If it doesn't terminate, forcefully shut it down
+        scheduler.shutdownNow()
+      }
+    }
+    catch {
+      case _: InterruptedException =>
+        Thread.currentThread().interrupt()
+    }
+  }
 
   private def rsaPublicKey: RSAKey = {
     publicKey match {
@@ -124,24 +161,48 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider) {
     }
   }
 
-  def publicKeyThumbprint: String = rsaPublicKey.getKeyID
+  private def scheduleSecretsRefresh(refreshTime : FiniteDuration): Unit = {
+      val scheduledFuture = scheduler.scheduleAtFixedRate(() => {
+        logger.info("Attempting to Refresh for new Keys")
+        try {
+          val newKeyPair = jwtConfig.keyPair()
+          logger.info("Keys have been Refreshed")
+          keyPair = newKeyPair
+        }
+        catch {
+          case e: Throwable =>
+            logger.error(s"Error occurred retrieving and decoding Keys from AWS " +
+              s"will attempt to retrieve Keys again in ${refreshTime.toString()}", e)
+        }
+      },refreshTime.toMillis,
+        refreshTime.toMillis,
+        TimeUnit.MILLISECONDS
+      )
 
-  def jwks: JWKSet = {
-    val jwk = rsaPublicKey
-    new JWKSet(jwk).toPublicJWKSet
+      Runtime.getRuntime.addShutdownHook(new Thread(() => {
+
+        scheduledFuture.cancel(false)
+        this.close()
+      }))
   }
 
   def getConfiguredRefreshExpDuration: FiniteDuration = jwtConfig.refreshExpTime
 }
 
 object JWTService {
+  // todo remove? not used?
+  implicit class JwtBuilderExt(val jwtBuilder: JwtBuilder) extends AnyVal {
+    def applyIfDefined[T](opt: Option[T], fn: (JwtBuilder, T) => JwtBuilder): JwtBuilder = {
+      OptionExt.applyIfDefined(jwtBuilder, opt, fn)
+    }
 
-  def extractUserFrom(claims: Claims): User = {
-    val name = claims.getSubject
-    val groups = claims.get("groups", classOf[java.util.List[String]]).asScala
-    val email = Option(claims.get("email", classOf[String]))
-    val displayName = Option(claims.get("displayname", classOf[String]))
+    def extractUserFrom(claims: Claims): User = {
+      val name = claims.getSubject
+      val groups = claims.get("groups", classOf[java.util.List[String]]).asScala
+      val email = Option(claims.get("email", classOf[String]))
+      val displayName = Option(claims.get("displayname", classOf[String]))
 
-    User(name, email, displayName, groups)
+      User(name, email, displayName, groups)
+    }
   }
 }

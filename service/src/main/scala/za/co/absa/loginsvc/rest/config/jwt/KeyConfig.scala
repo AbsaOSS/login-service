@@ -14,32 +14,37 @@
  * limitations under the License.
  */
 
-package za.co.absa.loginsvc.rest.config
+package za.co.absa.loginsvc.rest.config.jwt
 
 import io.jsonwebtoken.SignatureAlgorithm
 import za.co.absa.loginsvc.rest.config.JwtConfig.{minAccessExpTime, minRefreshExpTime}
 import za.co.absa.loginsvc.rest.config.validation.{ConfigValidatable, ConfigValidationException, ConfigValidationResult}
 import za.co.absa.loginsvc.rest.config.validation.ConfigValidationResult.{ConfigValidationError, ConfigValidationSuccess}
 
+import java.security.KeyPair
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.FiniteDuration
 import scala.util.{Failure, Success, Try}
 
-object JwtConfig {
-  val minAccessExpTime: FiniteDuration = FiniteDuration(10, TimeUnit.MILLISECONDS)
-  val minRefreshExpTime: FiniteDuration = minAccessExpTime * 2
-}
+trait KeyConfig extends ConfigValidatable {
+  def algName: String
+  def accessExpTime: FiniteDuration
+  def refreshKeyTime: Option[FiniteDuration]
+  def keyPair(): KeyPair
+  def throwErrors(): Unit
 
-case class JwtConfig(
-  algName: String,
-  accessExpTime: FiniteDuration,
-  refreshExpTime: FiniteDuration
-) extends ConfigValidatable {
+  final def jwtAlgorithmToCryptoAlgorithm : String = {
 
-  def throwErrors(): Unit =
-    this.validate().throwOnErrors()
+    val algorithmMap: Map[String, String] = Map(
+      "RS" -> "RSA",
+      "ES" -> "ECDSA"
+    )
 
-  /** May throw ConfigValidationException or IllegalArgumentException */
+    algorithmMap.getOrElse(algName.take(2), {
+      throw new IllegalArgumentException(s"Unsupported JWT algorithm: $algName")
+    })
+  }
+
   override def validate(): ConfigValidationResult = {
 
     val algValidation = Try {
@@ -51,14 +56,23 @@ case class JwtConfig(
       case Failure(e) => throw e
     }
 
-    val accessExpTimeResult = if (accessExpTime < minAccessExpTime) {
-      ConfigValidationError(ConfigValidationException(s"accessExpTime must be at least $minAccessExpTime"))
+    val accessExpTimeResult = if (accessExpTime < KeyConfig.minAccessExpTime) {
+      ConfigValidationError(ConfigValidationException(s"accessExpTime must be at least ${KeyConfig.minAccessExpTime}"))
+    } else ConfigValidationSuccess
+
+    val refreshKeyTimeResult = if (refreshKeyTime.nonEmpty && refreshKeyTime.get < KeyConfig.minRefreshKeyTime) {
+      ConfigValidationError(ConfigValidationException(s"refreshKeyTime must be at least ${KeyConfig.minRefreshKeyTime}"))
     } else ConfigValidationSuccess
 
     val refreshExpTimeResult = if (refreshExpTime < minRefreshExpTime) {
       ConfigValidationError(ConfigValidationException(s"refreshExpTime must be at least $minRefreshExpTime"))
     } else ConfigValidationSuccess
 
-    algValidation.merge(accessExpTimeResult).merge(refreshExpTimeResult)
+    algValidation.merge(accessExpTimeResult).merge(refreshKeyTimeResult).merge(refreshExpTimeResult)
   }
+}
+
+object KeyConfig {
+  val minAccessExpTime: FiniteDuration = FiniteDuration(10, TimeUnit.MILLISECONDS)
+  val minRefreshKeyTime: FiniteDuration = FiniteDuration(10, TimeUnit.MILLISECONDS)
 }

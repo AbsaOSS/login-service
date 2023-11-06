@@ -39,7 +39,8 @@ import scala.concurrent.duration._
 
 @Import(Array(classOf[SecurityConfig], classOf[RestResponseEntityExceptionHandler]))
 @WebMvcTest(controllers = Array(classOf[TokenController]))
-class TokenControllerTest extends AnyFlatSpec with ControllerIntegrationTestBase {
+class TokenControllerTest extends AnyFlatSpec
+  with ControllerIntegrationTestBase {
   import AssertionsForEndpointWithCompletableFuture._
 
   @Autowired
@@ -48,6 +49,10 @@ class TokenControllerTest extends AnyFlatSpec with ControllerIntegrationTestBase
   @MockBean
   private var jwtService: JWTService = _
 
+  override def afterAll(): Unit = {
+    super.afterAll()
+    jwtService.close()
+  }
 
   behavior of "generateToken"
 

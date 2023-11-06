@@ -20,6 +20,7 @@ import com.nimbusds.jose.JWSAlgorithm
 import com.nimbusds.jose.jwk.KeyUse
 import io.jsonwebtoken.{Claims, ExpiredJwtException, Jws, Jwts, MalformedJwtException}
 import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.BeforeAndAfterEach
 import org.scalatest.matchers.should.Matchers
 import za.co.absa.loginsvc.model.User
 import za.co.absa.loginsvc.rest.config.JwtConfig
@@ -32,10 +33,10 @@ import scala.concurrent.duration.FiniteDuration
 import scala.util.{Failure, Success, Try}
 import scala.collection.JavaConverters._
 
-class JWTServiceTest extends AnyFlatSpec with Matchers {
+class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
 
-  private val testConfig: ConfigProvider = new ConfigProvider("service/src/test/resources/application.yaml")
-  private val jwtService: JWTService = new JWTService(testConfig)
+  private val testConfig : ConfigProvider = new ConfigProvider("service/src/test/resources/application.yaml")
+  private var jwtService: JWTService = _
 
   private val userWithoutEmailAndGroups: User = User(
     name = "testUser",
@@ -56,7 +57,15 @@ class JWTServiceTest extends AnyFlatSpec with Matchers {
     Jwts.parserBuilder().setSigningKey(publicKey).build().parseClaimsJws(jwt.token)
   }
 
-  behavior of "generateAccessToken"
+  override def beforeEach(): Unit = {
+    jwtService = new JWTService(testConfig)
+  }
+
+  override def afterEach(): Unit = {
+    jwtService.close()
+  }
+
+  behavior of "generateToken"
 
   it should "return an access JWT that is verifiable by `publicKey`" in {
     val jwt = jwtService.generateAccessToken(userWithoutGroups)
@@ -266,5 +275,17 @@ class JWTServiceTest extends AnyFlatSpec with Matchers {
     val jwk = keys.head
     assert(jwk.getAlgorithm == JWSAlgorithm.RS256)
     assert(jwk.getKeyUse == KeyUse.SIGNATURE)
+  }
+
+  it should "rotate an public and private keys after 5 seconds" in {
+    val initToken = jwtService.generateToken(userWithoutGroups)
+    val initPublicKey = jwtService.publicKey
+
+    Thread.sleep(6 * 1000)
+    val refreshedToken = jwtService.generateToken(userWithoutGroups)
+
+    assert(parseJWT(initToken).isFailure)
+    assert(parseJWT(refreshedToken).isSuccess)
+    assert(initPublicKey != jwtService.publicKey)
   }
 }
