@@ -161,7 +161,7 @@ loginsvc:
         private-key-field-name: "privateKey"
         public-key-field-name: "publicKey"
         access-exp-time: 15min
-        key-rotation-time: 9h
+        refresh-exp-time: 9h
         poll-time: 30min
         alg-name: "RS256"
 ```
