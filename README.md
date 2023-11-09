@@ -1,8 +1,48 @@
 # login-service
 AbsaOSS Common Login service using JWT Public key signatures
 
-## Basic usecase schematics
+## Basic use-case schematics
 ![login-gw-basic-usecase2](https://user-images.githubusercontent.com/4457378/219037599-5674b63b-403c-4c02-8a54-a6e12dc01d47.png)
+
+### Usage & Integration
+To interact with the service, most notable endpoints are
+ - `/token/generate` to generate access & refresh tokens
+ - `/token/refresh` to obtain a new access token with a still-valid refresh token
+ - `/token/public-key` to obtain public key to verify tokens including their validity window
+
+Please, refer to the [API documentation](#api-documentation) below for details of the endpoints.
+
+#### Generate tokens
+Once you request your token at `/token/generate` endpoint, you will receive both an access token (in body)
+```json
+{
+  "token": "..."
+}
+```
+and a refresh token (in Cookie named `refresh`).
+
+Both tokens are signed by LS public key and carry the username (`sub`), `type` (`access`/`refresh`) and creation/expiry info (`iat`/`exp`). 
+
+#### Refresh access token
+During the time the refresh token is valid, you may refresh the access token (expired or not) using the `/token/refresh` 
+endpoint - as the service does not facilitate any internal service access to LDAP, both tokens must be sent. 
+
+#### Validate access token
+On the side of the integrator, in order to trust the access token, one should do the following actions:
+1. obtain the public-key from LS at `/token/public-key`
+2. verify that the access token
+   1. is valid against this public-key (e.g. using `jwtt` library or similar)
+   2. is not expired
+   3. has `type=access` 
+
+
+## API documentation:
+Swagger doc site is available at `http://localhost:port/swagger-ui.html`
+(substitute `http://localhost:port` with any possible host and port you have deployed your package to.)
+### Need the OpenAPI 3 yaml file?
+It is available for download while running the service at `http://localhost:port/v3/api-docs.yaml` -
+gets generated from code (specifically from Spring annotations)
+
 
 ## Configuration
 The project requires a valid configuration file to run.
@@ -49,12 +89,7 @@ sbt
 service / Tomcat / start
 ```
 
-## API documentation:
-Swagger doc site is available at `http://localhost:port/swagger-ui.html`
-(substitute `http://localhost:port` with any possible host and port you have deployed your package to.)
-### Need the OpenAPI 3 yaml file?
-It is available for download while running the service at `http://localhost:port/v3/api-docs.yaml` - 
-gets generated from code (specifically from Spring annotations) 
+
 
 ## Authentication Providers
 ### Enabling and Selecting Authentication Providers
@@ -105,12 +140,14 @@ loginsvc:
     jwt:
       generate-in-memory:
          access-exp-time: 15min
-         rotate-time: 9h
+         refresh-exp-time: 9h
+         key-rotation-time: 9h
          alg-name: "RS256"
 ```
 There are a few important configuration values to be provided:
-- `access-exp-time` which indicates how long a token is valid for,
-- Optional property: `rotate-time` which indicates how often Key pairs are rotated. Rotation will be disabled if missing.
+- `access-exp-time` which indicates how long an access token is valid for,
+- `refresh-exp-time` which indicates how long a refresh token is valid for,
+- Optional property: `key-rotation-time` which indicates how often Key pairs are rotated. Rotation will be disabled if missing.
 - `alg-name` which indicates which algorithm is used to encode your keys.
 
 To setup for AWS Secrets Manager, your config should look like so:
@@ -124,6 +161,7 @@ loginsvc:
         private-key-field-name: "privateKey"
         public-key-field-name: "publicKey"
         access-exp-time: 15min
+        refresh-exp-time: 9h
         poll-time: 30min
         alg-name: "RS256"
 ```
@@ -136,7 +174,8 @@ with `"privateKey"` and `"publicKey"` indicating the field-name of those secrets
 Replace the above example values with the field-names you used in AWS Secrets Manager.
 
 There are a few important configuration values to be provided:
-- `access-exp-time` which indicates how long a token is valid for,
+- `access-exp-time` which indicates how long an access token is valid for,
+- `refresh-exp-time` which indicates how long a refresh token is valid for,
 - Optional property:`poll-time` which indicates how often key pairs (`private-key-field-name` and `public-key-field-name`) are polled and fetched from AWS Secrets Manager. Polling will be disabled if missing.
 - `alg-name` which indicates which algorithm is used to encode your keys.
   

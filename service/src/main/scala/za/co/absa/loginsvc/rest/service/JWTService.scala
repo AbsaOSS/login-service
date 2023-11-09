@@ -18,18 +18,22 @@ package za.co.absa.loginsvc.rest.service
 
 import com.nimbusds.jose.JWSAlgorithm
 import com.nimbusds.jose.jwk.{JWKSet, KeyUse, RSAKey}
-import io.jsonwebtoken.{JwtBuilder, Jwts}
+import io.jsonwebtoken.security.Keys
+import io.jsonwebtoken.{JwtBuilder, Jwts, SignatureAlgorithm}
+import io.jsonwebtoken._
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import za.co.absa.loginsvc.model.User
 import za.co.absa.loginsvc.rest.config.provider.JwtConfigProvider
-import za.co.absa.loginsvc.rest.service.JWTService.JwtBuilderExt
-import za.co.absa.loginsvc.utils.OptionExt
+import za.co.absa.loginsvc.rest.model.{AccessToken, RefreshToken, Token}
+import za.co.absa.loginsvc.rest.service.JWTService.extractUserFrom
+import za.co.absa.loginsvc.utils.OptionUtils.ImplicitBuilderExt
 
 import java.security.interfaces.RSAPublicKey
 import java.security.{KeyPair, PublicKey}
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 import java.util.concurrent.{Executors, TimeUnit}
 import java.util.Date
 import scala.collection.JavaConverters._
@@ -42,17 +46,18 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider) {
   private val logger = LoggerFactory.getLogger(classOf[JWTService])
   private val scheduler = Executors.newSingleThreadScheduledExecutor()
 
-  private val jwtConfig = jwtConfigProvider.getJWTConfig
+  private val jwtConfig = jwtConfigProvider.getJwtKeyConfig
   @volatile private var keyPair: KeyPair = jwtConfig.keyPair()
 
-  if(jwtConfig.refreshKeyTime.nonEmpty)
+  if(jwtConfig.keyRotationTime.nonEmpty)
     {
-      val refreshTime = jwtConfig.refreshKeyTime.get
+      val refreshTime = jwtConfig.keyRotationTime.get
       scheduleSecretsRefresh(refreshTime)
     }
 
-  def generateToken(user: User): String = {
+  def generateAccessToken(user: User): AccessToken = {
     logger.info(s"Generating Token for user: ${user.name}")
+    import scala.collection.JavaConverters._
 
     val expiration = Date.from(
       Instant.now().plus(jwtConfig.accessExpTime.toJava)
@@ -61,17 +66,63 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider) {
     // needs to be Java List/Array, otherwise incorrect claim is generated
     val groupsClaim = user.groups.asJava
 
-    Jwts
+    val tokenContent = Jwts
       .builder()
       .setSubject(user.name)
       .setExpiration(expiration)
       .setIssuedAt(issuedAt)
       .claim("kid", publicKeyThumbprint)
       .claim("groups", groupsClaim)
-      .applyIfDefined(user.email, (builder, value: String) => builder.claim("email", value))
-      .applyIfDefined(user.displayName, (builder, value: String) => builder.claim("displayname", value))
+      .applyIfDefined(user.email)((builder, value: String) => builder.claim("email", value))
+      .applyIfDefined(user.displayName)((builder, value: String) => builder.claim("displayname", value))
+      .claim("type", Token.TokenType.Access.toString)
       .signWith(keyPair.getPrivate)
       .compact()
+
+    AccessToken(tokenContent)
+  }
+
+  def generateRefreshToken(user: User): RefreshToken = {
+    val expiration = Date.from(
+      Instant.now().plus(jwtConfig.refreshExpTime.toJava)
+    )
+
+    val issuedAt = Date.from(Instant.now())
+
+    val tokenContent = Jwts
+      .builder()
+      .setSubject(user.name)
+      .setExpiration(expiration)
+      .setIssuedAt(issuedAt)
+      .claim("type", Token.TokenType.Refresh.toString)
+      .signWith(keyPair.getPrivate)
+      .compact()
+
+    RefreshToken(tokenContent)
+  }
+
+  def refreshTokens(accessToken: AccessToken, refreshToken: RefreshToken): (AccessToken, RefreshToken) = {
+    val oldAccessJws: Jws[Claims] = Jwts.parserBuilder()
+      .require("type", Token.TokenType.Access.toString)
+      .setSigningKey(keyPair.getPublic)
+      .setClock(() => Date.from(Instant.now().minus(jwtConfig.refreshExpTime.toJava))) // allowing expired access token - up to refresh token validity window
+      .build()
+      .parseClaimsJws(accessToken.token) // checks requirements: type=access, signature, custom validity window
+
+    val userFromOldAccessToken: User = extractUserFrom(oldAccessJws.getBody)
+
+    Jwts.parserBuilder()
+      .require("type", Token.TokenType.Refresh.toString)
+      .requireSubject(userFromOldAccessToken.name)
+      .setSigningKey(keyPair.getPublic)
+      .build()
+      .parseClaimsJws(refreshToken.token) // checks username, validity, and signature.
+
+
+    val refreshedAccessToken = generateAccessToken(userFromOldAccessToken) // same process as with normal generation
+
+    // we are giving the original still-valid refreshToken back - potentially making room here to revoke or regenerate refreshTokens later
+    (refreshedAccessToken, refreshToken)
   }
 
   def publicKey: PublicKey = keyPair.getPublic
@@ -134,12 +185,17 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider) {
         this.close()
       }))
   }
+
+  def getConfiguredRefreshExpDuration: FiniteDuration = jwtConfig.refreshExpTime
 }
 
 object JWTService {
-  implicit class JwtBuilderExt(val jwtBuilder: JwtBuilder) extends AnyVal {
-    def applyIfDefined[T](opt: Option[T], fn: (JwtBuilder, T) => JwtBuilder): JwtBuilder = {
-      OptionExt.applyIfDefined(jwtBuilder, opt, fn)
-    }
+  def extractUserFrom(claims: Claims): User = {
+    val name = claims.getSubject
+    val groups = claims.get("groups", classOf[java.util.List[String]]).asScala
+    val email = Option(claims.get("email", classOf[String]))
+    val displayName = Option(claims.get("displayname", classOf[String]))
+
+    User(name, email, displayName, groups)
   }
 }

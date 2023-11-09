@@ -14,22 +14,17 @@
  * limitations under the License.
  */
 
-package za.co.absa.loginsvc.rest.config
+package za.co.absa.loginsvc.rest.config.jwt
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import za.co.absa.loginsvc.rest.config.jwt.{AwsSecretsManagerKeyConfig, InMemoryKeyConfig, KeyConfig}
 import za.co.absa.loginsvc.rest.config.validation.ConfigValidationException
 import za.co.absa.loginsvc.rest.config.validation.ConfigValidationResult.{ConfigValidationError, ConfigValidationSuccess}
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.FiniteDuration
 
-class JwtConfigTest extends AnyFlatSpec with Matchers {
-
-  val inMemoryKeyConfig: InMemoryKeyConfig = InMemoryKeyConfig("RS256",
-    FiniteDuration(15, TimeUnit.MINUTES),
-    Option(FiniteDuration(30, TimeUnit.MINUTES)))
+class AwsSecretsManagerKeyConfigTest extends AnyFlatSpec with Matchers {
 
   val awsSecretsManagerKeyConfig: AwsSecretsManagerKeyConfig = AwsSecretsManagerKeyConfig("Secret",
     "region",
@@ -37,47 +32,34 @@ class JwtConfigTest extends AnyFlatSpec with Matchers {
     "public",
     "RS256",
     FiniteDuration(15, TimeUnit.MINUTES),
+    FiniteDuration(9, TimeUnit.HOURS),
     Option(FiniteDuration(30, TimeUnit.MINUTES)))
-
-  "inMemoryKeyConfig" should "validate expected content" in {
-    inMemoryKeyConfig.validate() shouldBe ConfigValidationSuccess
-  }
 
   "awsSecretsManagerKeyConfig" should "validate expected content" in {
     awsSecretsManagerKeyConfig.validate() shouldBe ConfigValidationSuccess
   }
 
-  "inMemoryKeyConfig" should "fail on invalid algorithm" in {
-    inMemoryKeyConfig.copy(algName = "ABC").validate() shouldBe
-      ConfigValidationError(ConfigValidationException("Invalid algName 'ABC' was given."))
-  }
-
-  "awsSecretsManagerKeyConfig" should "fail on invalid algorithm" in {
+  it should "fail on invalid algorithm" in {
     awsSecretsManagerKeyConfig.copy(algName = "ABC").validate() shouldBe
       ConfigValidationError(ConfigValidationException("Invalid algName 'ABC' was given."))
   }
 
-  "inMemoryKeyConfig" should "fail on non-negative accessExpTime" in {
-    inMemoryKeyConfig.copy(accessExpTime = FiniteDuration(5, TimeUnit.MILLISECONDS)).validate() shouldBe
-      ConfigValidationError(ConfigValidationException(s"accessExpTime must be at least ${KeyConfig.minAccessExpTime}"))
-  }
-
-  "awsSecretsManagerKeyConfig" should "fail on non-negative accessExpTime" in {
+  it should "fail on non-negative accessExpTime" in {
     awsSecretsManagerKeyConfig.copy(accessExpTime = FiniteDuration(5, TimeUnit.MILLISECONDS)).validate() shouldBe
       ConfigValidationError(ConfigValidationException(s"accessExpTime must be at least ${KeyConfig.minAccessExpTime}"))
   }
 
-  "inMemoryKeyConfig" should "fail on non-negative refreshExpTime" in {
-    inMemoryKeyConfig.copy(rotationTime = Option(FiniteDuration(5, TimeUnit.MILLISECONDS))).validate() shouldBe
-      ConfigValidationError(ConfigValidationException(s"refreshKeyTime must be at least ${KeyConfig.minRefreshKeyTime}"))
+  it should "fail on non-negative refreshExpTime" in {
+    awsSecretsManagerKeyConfig.copy(refreshExpTime = FiniteDuration(5, TimeUnit.MILLISECONDS)).validate() shouldBe
+      ConfigValidationError(ConfigValidationException(s"refreshExpTime must be at least ${KeyConfig.minRefreshExpTime}"))
   }
 
-  "awsSecretsManagerKeyConfig" should "fail on non-negative refreshExpTime" in {
+  it should "fail on non-negative keyRotationTime" in {
     awsSecretsManagerKeyConfig.copy(pollTime = Option(FiniteDuration(5, TimeUnit.MILLISECONDS))).validate() shouldBe
-      ConfigValidationError(ConfigValidationException(s"refreshKeyTime must be at least ${KeyConfig.minRefreshKeyTime}"))
+      ConfigValidationError(ConfigValidationException(s"keyRotationTime must be at least ${KeyConfig.minKeyRotationTime}"))
   }
 
-  "awsSecretsManagerKeyConfig" should "fail on missing value" in {
+  it should "fail on missing value" in {
     awsSecretsManagerKeyConfig.copy(secretName = null).validate() shouldBe
       ConfigValidationError(ConfigValidationException("secretName is empty"))
   }

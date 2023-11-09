@@ -17,8 +17,9 @@
 package za.co.absa.loginsvc.rest.config.jwt
 
 import io.jsonwebtoken.SignatureAlgorithm
-import za.co.absa.loginsvc.rest.config.validation.ConfigValidationResult.{ConfigValidationError, ConfigValidationSuccess}
+import org.slf4j.LoggerFactory
 import za.co.absa.loginsvc.rest.config.validation.{ConfigValidatable, ConfigValidationException, ConfigValidationResult}
+import za.co.absa.loginsvc.rest.config.validation.ConfigValidationResult.{ConfigValidationError, ConfigValidationSuccess}
 
 import java.security.KeyPair
 import java.util.concurrent.TimeUnit
@@ -28,7 +29,8 @@ import scala.util.{Failure, Success, Try}
 trait KeyConfig extends ConfigValidatable {
   def algName: String
   def accessExpTime: FiniteDuration
-  def refreshKeyTime: Option[FiniteDuration]
+  def refreshExpTime: FiniteDuration
+  def keyRotationTime: Option[FiniteDuration]
   def keyPair(): KeyPair
   def throwErrors(): Unit
 
@@ -43,6 +45,8 @@ trait KeyConfig extends ConfigValidatable {
       throw new IllegalArgumentException(s"Unsupported JWT algorithm: $algName")
     })
   }
+
+  private val logger = LoggerFactory.getLogger(classOf[KeyConfig])
 
   override def validate(): ConfigValidationResult = {
 
@@ -59,15 +63,24 @@ trait KeyConfig extends ConfigValidatable {
       ConfigValidationError(ConfigValidationException(s"accessExpTime must be at least ${KeyConfig.minAccessExpTime}"))
     } else ConfigValidationSuccess
 
-    val refreshKeyTimeResult = if (refreshKeyTime.nonEmpty && refreshKeyTime.get < KeyConfig.minRefreshKeyTime) {
-      ConfigValidationError(ConfigValidationException(s"refreshKeyTime must be at least ${KeyConfig.minRefreshKeyTime}"))
+    val refreshExpTimeResult = if (refreshExpTime < KeyConfig.minRefreshExpTime) {
+      ConfigValidationError(ConfigValidationException(s"refreshExpTime must be at least ${KeyConfig.minRefreshExpTime}"))
     } else ConfigValidationSuccess
 
-    algValidation.merge(accessExpTimeResult).merge(refreshKeyTimeResult)
+    val keyRotationTimeResult = if (keyRotationTime.nonEmpty && keyRotationTime.get < KeyConfig.minKeyRotationTime) {
+      ConfigValidationError(ConfigValidationException(s"keyRotationTime must be at least ${KeyConfig.minKeyRotationTime}"))
+    } else ConfigValidationSuccess
+
+    if (keyRotationTime.isEmpty) {
+      logger.warn("keyRotationTime is not set in config, key-pair will not be rotated!")
+    }
+
+    algValidation.merge(accessExpTimeResult).merge(refreshExpTimeResult).merge(keyRotationTimeResult)
   }
 }
 
 object KeyConfig {
   val minAccessExpTime: FiniteDuration = FiniteDuration(10, TimeUnit.MILLISECONDS)
-  val minRefreshKeyTime: FiniteDuration = FiniteDuration(10, TimeUnit.MILLISECONDS)
+  val minRefreshExpTime: FiniteDuration = FiniteDuration(10, TimeUnit.MILLISECONDS)
+  val minKeyRotationTime: FiniteDuration = FiniteDuration(10, TimeUnit.MILLISECONDS)
 }

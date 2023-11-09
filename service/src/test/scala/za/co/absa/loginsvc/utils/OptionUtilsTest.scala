@@ -19,24 +19,24 @@ package za.co.absa.loginsvc.utils
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
-class OptionExtTest extends AnyFlatSpec with Matchers {
+class OptionUtilsTest extends AnyFlatSpec with Matchers {
 
-  "OptionExt.applyIfDefined" should "apply fn correctly if defined" in {
-    OptionExt.applyIfDefined(1, Some(2), (a:Int, b: Int) => a + b) shouldBe 3
+  "OptionUtils.applyIfDefined" should "apply fn correctly if defined" in {
+    OptionUtils.applyIfDefined(1, Some(2), (a: Int, b: Int) => a + b) shouldBe 3
   }
 
   it should "not apply fn if empty" in {
-    OptionExt.applyIfDefined(1, None, (a: Int, b: Int) => a + b) shouldBe 1
+    OptionUtils.applyIfDefined(1, None, (a: Int, b: Int) => a + b) shouldBe 1
   }
 
-  import OptionExt.ImplicitOptionExt
+  import OptionUtils.ImplicitBuilderExt
 
-  "OptionExt.ImplicitOptionExt" should "apply fn correctly if defined" in {
-    Some(2).applyIfDefined(1, (a: Int, b: Int) => a + b) shouldBe 3
+  "ImplicitBuilderExt.applyIfDefined" should "apply fn correctly if defined" in {
+    1.applyIfDefined(Some(2)) { (a: Int, b: Int) => a + b } shouldBe 3
   }
 
   it should "not apply fn if empty" in {
-    None.applyIfDefined(1, (a: Int, b: Int) => a + b) shouldBe 1
+    1.applyIfDefined(None) { (a: Int, b: Int) => a + b } shouldBe 1
   }
 
 }

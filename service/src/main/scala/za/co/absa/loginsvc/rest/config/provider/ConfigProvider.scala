@@ -47,7 +47,7 @@ class ConfigProvider(@Value("${spring.config.location}") yamlPath: String)
       getOrElse(BaseConfig(""))
   }
 
-  def getJWTConfig : KeyConfig = {
+  def getJwtKeyConfig : KeyConfig = {
     val inMemoryKeyConfig: Option[InMemoryKeyConfig] = createConfigClass[InMemoryKeyConfig]("loginsvc.rest.jwt.generate-in-memory")
     val awsSecretsManagerKeyConfig: Option[AwsSecretsManagerKeyConfig] = createConfigClass[AwsSecretsManagerKeyConfig]("loginsvc.rest.jwt.aws-secrets-manager")
 

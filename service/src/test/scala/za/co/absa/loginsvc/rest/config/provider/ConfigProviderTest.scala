@@ -25,6 +25,9 @@ import za.co.absa.loginsvc.rest.config.jwt.KeyConfig
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.FiniteDuration
 
+import java.util.concurrent.TimeUnit
+import scala.concurrent.duration.FiniteDuration
+
 class ConfigProviderTest extends AnyFlatSpec with Matchers  {
 
   private val configProvider : ConfigProvider = new ConfigProvider("service/src/test/resources/application.yaml")
@@ -35,10 +38,11 @@ class ConfigProviderTest extends AnyFlatSpec with Matchers  {
   }
 
   "The jwtConfig properties" should "Match" in {
-    val keyConfig: KeyConfig = configProvider.getJWTConfig
+    val keyConfig: KeyConfig = configProvider.getJwtKeyConfig
     assert(keyConfig.algName == "RS256" &&
       keyConfig.accessExpTime == FiniteDuration(15, TimeUnit.MINUTES) &&
-      keyConfig.refreshKeyTime.get == FiniteDuration(5, TimeUnit.SECONDS)
+      keyConfig.refreshExpTime == FiniteDuration(10, TimeUnit.HOURS) &&
+      keyConfig.keyRotationTime.get == FiniteDuration(5, TimeUnit.SECONDS)
     )
   }
 

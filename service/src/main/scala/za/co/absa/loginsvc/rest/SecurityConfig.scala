@@ -39,6 +39,7 @@ class SecurityConfig {
         "/swagger-ui/**", "/swagger-ui.html", // "/swagger-ui.html" redirects to "/swagger-ui/index.html
         "/swagger-resources/**", "/v3/api-docs/**", // swagger needs these
         "/actuator/**",
+        "/token/refresh", // access+refresh JWT in payload, no auth
         "/token/public-key-jwks",
         "/token/public-key").permitAll()
         .anyRequest().authenticated()
