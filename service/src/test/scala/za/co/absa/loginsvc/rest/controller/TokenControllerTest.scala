@@ -17,8 +17,8 @@
 package za.co.absa.loginsvc.rest.controller
 
 import com.nimbusds.jose.jwk.{JWKSet, RSAKey}
+import io.jsonwebtoken.security.Keys
 import io.jsonwebtoken.{ExpiredJwtException, MalformedJwtException, SignatureAlgorithm}
-import io.jsonwebtoken.security.{Keys, SignatureException}
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import org.scalatest.flatspec.AnyFlatSpec
@@ -29,12 +29,11 @@ import org.springframework.context.annotation.Import
 import org.springframework.test.web.servlet.MockMvc
 import za.co.absa.loginsvc.model.User
 import za.co.absa.loginsvc.rest.model.{AccessToken, RefreshToken}
-import za.co.absa.loginsvc.rest.{FakeAuthentication, RestResponseEntityExceptionHandler, SecurityConfig}
 import za.co.absa.loginsvc.rest.service.JWTService
+import za.co.absa.loginsvc.rest.{FakeAuthentication, RestResponseEntityExceptionHandler, SecurityConfig}
 
 import java.security.interfaces.RSAPublicKey
 import java.util.Base64
-import javax.servlet.http.Cookie
 import scala.concurrent.duration._
 
 @Import(Array(classOf[SecurityConfig], classOf[RestResponseEntityExceptionHandler]))
@@ -69,8 +68,7 @@ class TokenControllerTest extends AnyFlatSpec
       "/token/generate",
       Post()
     )(
-      expectedJsonBody = s"""{"token": "${fakeAccessJwt.token}"}""",
-      expectedHeaderContaining = Some(("Set-Cookie", Set(s"refresh=${fakeRefreshJwt.token}", "Secure; HttpOnly")))
+      expectedJsonBody = s"""{"token": "${fakeAccessJwt.token}", "refresh": "${fakeRefreshJwt.token}"}"""
     )(Some(FakeAuthentication.fakeUserAuthentication))
   }
 
@@ -85,8 +83,7 @@ class TokenControllerTest extends AnyFlatSpec
       "/token/generate?group-prefixes=first",
       Post()
     )(
-      expectedJsonBody = s"""{"token": "${fakeAccessJwt.token}"}""",
-      expectedHeaderContaining = Some(("Set-Cookie", Set(s"refresh=${fakeRefreshJwt.token}", "Secure; HttpOnly")))
+      expectedJsonBody = s"""{"token": "${fakeAccessJwt.token}", "refresh": "${fakeRefreshJwt.token}"}"""
     )(Some(FakeAuthentication.fakeUserAuthentication))
   }
 
@@ -100,13 +97,12 @@ class TokenControllerTest extends AnyFlatSpec
       "/token/generate?group-prefixes=second,third,nonexistent",
       Post()
     )(
-      expectedJsonBody = s"""{"token": "${fakeAccessJwt.token}"}""",
-      expectedHeaderContaining = Some(("Set-Cookie", Set(s"refresh=${fakeRefreshJwt.token}", "Secure; HttpOnly")))
+      expectedJsonBody = s"""{"token": "${fakeAccessJwt.token}", "refresh": "${fakeRefreshJwt.token}"}"""
     )(Some(FakeAuthentication.fakeUserAuthentication))
   }
 
   it should "fail for anonymous (not authenticated) user" in {
-    when(jwtService.generateAccessToken(any[User]())).thenReturn(fakeAccessJwt)
+    when(jwtService.generateAccessToken(any[User], any[Boolean])).thenReturn(fakeAccessJwt)
 
     assertNotAuthenticatedFailure(
       "/token/generate",
@@ -126,13 +122,10 @@ class TokenControllerTest extends AnyFlatSpec
     assertExpectedResponseFields(
       "/token/refresh",
       Post(
-        cookies = Some(Seq(new Cookie("refresh", fakeRefreshJwt.token))),
-        body = Some(s"""{"token": "${fakeAccessJwt.token}"}""")
-
+        body = Some(s"""{"token": "${fakeAccessJwt.token}", "refresh": "${fakeRefreshJwt.token}"}""")
       )
     )(
-      expectedJsonBody = s"""{"token": "${newFakeAccessJwt.token}"}""",
-      expectedHeaderContaining = Some(("Set-Cookie", Set(s"refresh=${newFakeRefreshJwt.token}", "Secure; HttpOnly")))
+      expectedJsonBody = s"""{"token": "${newFakeAccessJwt.token}", "refresh": "${newFakeRefreshJwt.token}"}"""
     )(auth = None)
   }
 
@@ -143,8 +136,7 @@ class TokenControllerTest extends AnyFlatSpec
     assertErrorStatusAndResultBodyJsonEquals(
       "/token/refresh",
       Post(
-        cookies = Some(Seq(new Cookie("refresh", fakeRefreshJwt.token))),
-        body = Some(s"""{"token": "${fakeAccessJwt.token}"}""")
+        body = Some(s"""{"token": "${fakeAccessJwt.token}", "refresh": "${fakeRefreshJwt.token}"}""")
       ),
       expectedStatus = 400,
       expectedJson =
@@ -159,8 +151,8 @@ class TokenControllerTest extends AnyFlatSpec
     assertErrorStatusAndResultBodyJsonEquals(
       "/token/refresh",
       Post(
-        cookies = Some(Seq(new Cookie("refresh", fakeRefreshJwt.token))),
-        body = Some(s"""{"token": "${fakeAccessJwt.token}"}""")),
+        body = Some(s"""{"token": "${fakeAccessJwt.token}", "refresh": "${fakeRefreshJwt.token}"}""")
+      ),
       expectedStatus = 401,
       expectedJson =  s"""{
          |    "message": "expired jwt"

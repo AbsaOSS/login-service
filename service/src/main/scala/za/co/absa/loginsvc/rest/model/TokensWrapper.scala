@@ -20,15 +20,29 @@ import com.fasterxml.jackson.annotation.{JsonIgnore, JsonProperty}
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.media.Schema.RequiredMode
 
-case class AccessToken(
+case class TokensWrapper(
   @JsonProperty("token")
   @Schema(example = "abcd123.efgh456.ijkl789", requiredMode = RequiredMode.REQUIRED)
+  token: String,
+  @JsonProperty("refresh")
+  @Schema(example = "ab12.cd34.ef56", requiredMode = RequiredMode.NOT_REQUIRED)
+  refresh: String
+) {
+  def accessToken: AccessToken = AccessToken(token)
+  def refreshToken: RefreshToken = RefreshToken(refresh)
+}
+
+object TokensWrapper {
+  def fromTokens(accessToken: AccessToken, refreshToken: RefreshToken): TokensWrapper = {
+    TokensWrapper(accessToken.token, refreshToken.token)
+  }
+}
+
+case class AccessToken(
   token: String
 ) extends Token
 
 case class RefreshToken(
-  @JsonProperty("refresh")
-  @Schema(example = "ab12.cd34.ef56", requiredMode = RequiredMode.NOT_REQUIRED)
   token: String,
 ) extends Token
 
