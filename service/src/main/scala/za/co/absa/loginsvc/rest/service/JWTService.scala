@@ -55,8 +55,10 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider) {
       scheduleSecretsRefresh(refreshTime)
     }
 
-  def generateAccessToken(user: User): AccessToken = {
-    logger.info(s"Generating Token for user: ${user.name}")
+  def generateAccessToken(user: User, isRefresh: Boolean = false): AccessToken = {
+    val msgIntro = if (isRefresh) "Refreshing" else "Generating new"
+    logger.info(s"$msgIntro token for user: ${user.name}")
+
     import scala.collection.JavaConverters._
 
     val expiration = Date.from(
@@ -119,7 +121,7 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider) {
       .parseClaimsJws(refreshToken.token) // checks username, validity, and signature.
 
 
-    val refreshedAccessToken = generateAccessToken(userFromOldAccessToken) // same process as with normal generation
+    val refreshedAccessToken = generateAccessToken(userFromOldAccessToken, isRefresh = true) // same process as with normal generation, but different msg
 
     // we are giving the original still-valid refreshToken back - potentially making room here to revoke or regenerate refreshTokens later
     (refreshedAccessToken, refreshToken)
