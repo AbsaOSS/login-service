@@ -102,7 +102,7 @@ class TokenControllerTest extends AnyFlatSpec
   }
 
   it should "fail for anonymous (not authenticated) user" in {
-    when(jwtService.generateAccessToken(any[User]())).thenReturn(fakeAccessJwt)
+    when(jwtService.generateAccessToken(any[User], any[Boolean])).thenReturn(fakeAccessJwt)
 
     assertNotAuthenticatedFailure(
       "/token/generate",

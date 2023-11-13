@@ -18,8 +18,6 @@ package za.co.absa.loginsvc.rest.service
 
 import com.nimbusds.jose.JWSAlgorithm
 import com.nimbusds.jose.jwk.{JWKSet, KeyUse, RSAKey}
-import io.jsonwebtoken.security.Keys
-import io.jsonwebtoken.{JwtBuilder, Jwts, SignatureAlgorithm}
 import io.jsonwebtoken._
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -33,9 +31,8 @@ import za.co.absa.loginsvc.utils.OptionUtils.ImplicitBuilderExt
 import java.security.interfaces.RSAPublicKey
 import java.security.{KeyPair, PublicKey}
 import java.time.Instant
-import java.time.temporal.ChronoUnit
-import java.util.concurrent.{Executors, TimeUnit}
 import java.util.Date
+import java.util.concurrent.{Executors, TimeUnit}
 import scala.collection.JavaConverters._
 import scala.compat.java8.DurationConverters._
 import scala.concurrent.duration.FiniteDuration
