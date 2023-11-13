@@ -13,14 +13,13 @@ To interact with the service, most notable endpoints are
 Please, refer to the [API documentation](#api-documentation) below for details of the endpoints.
 
 #### Generate tokens
-Once you request your token at `/token/generate` endpoint, you will receive both an access token (in body)
+Once you request your token at `/token/generate` endpoint, you will receive both an access token and a refresh token
 ```json
 {
-  "token": "..."
+  "token": "...",
+  "refresh": "..."
 }
 ```
-and a refresh token (in Cookie named `refresh`).
-
 Both tokens are signed by LS public key and carry the username (`sub`), `type` (`access`/`refresh`) and creation/expiry info (`iat`/`exp`). 
 
 #### Refresh access token
