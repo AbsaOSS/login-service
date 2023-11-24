@@ -49,10 +49,16 @@ object Dependencies {
   lazy val jjwtImpl = "io.jsonwebtoken" % "jjwt-impl" % Versions.jjwt % Runtime
   lazy val jjwtJackson = "io.jsonwebtoken" % "jjwt-jackson" % Versions.jjwt % Runtime
 
+  lazy val jsonParser = "com.google.code.gson" % "gson" % "2.10.1"
+
+  lazy val jwtDecoder = "org.springframework.security" % "spring-security-oauth2-jose" % "6.0.2"
   lazy val nimbusJoseJwt = "com.nimbusds" % "nimbus-jose-jwt" % Versions.nimbusJoseJwt
+  lazy val bouncyCastle = "org.bouncycastle" % "bcprov-jdk15on" % "1.70"
 
   lazy val pureConfig = "com.github.pureconfig" %% "pureconfig" % Versions.pureConfig
   lazy val pureConfigYaml = "com.github.pureconfig" %% "pureconfig-yaml" % Versions.pureConfig
+
+  lazy val requests = "com.lihaoyi" %% "requests" % "0.8.0"
 
   lazy val awsSecrets = "software.amazon.awssdk" % "secretsmanager" % "2.20.68"
 
@@ -60,7 +66,6 @@ object Dependencies {
 
   // this is UI + swagger annotations together, just annotathons should be in "io.swagger.core.v3":"swagger-annotations":"2.2.8"+
   lazy val springDoc = "org.springdoc" % "springdoc-openapi-ui" % "1.6.14"
-
 
   // Enables /actuator/health endpoint
   lazy val springBootStarterActuator = "org.springframework.boot" % "spring-boot-starter-actuator" % Versions.springBoot
@@ -100,4 +105,21 @@ object Dependencies {
     springBootSecurityTest
   )
 
+  def clientLibDependencies: Seq[ModuleID] = Seq(
+    javaCompat,
+
+    nimbusJoseJwt,
+    jwtDecoder,
+    bouncyCastle,
+
+    jsonParser,
+
+    requests,
+
+    springBootWeb,
+    springBootSecurity,
+
+    pureConfig,
+    pureConfigYaml,
+  )
 }

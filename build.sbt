@@ -29,12 +29,13 @@ lazy val commonJacocoReportSettings: JacocoReportSettings = JacocoReportSettings
 )
 
 lazy val commonJacocoExcludes: Seq[String] = Seq(
-    "za.co.absa.loginsvc.rest.Application*"
-//    "za.co.absa.loginsvc.rest.config.BaseConfig" // class only
+  "za.co.absa.loginsvc.rest.Application*"
+  //    "za.co.absa.loginsvc.rest.config.BaseConfig" // class only
 )
 
 lazy val parent = (project in file("."))
   .aggregate(service)
+  .aggregate(clientLibrary)
   .settings(
     name := "login-service",
     javacOptions ++= Seq("-source", "1.8", "-target", "1.8", "-Xlint"),
@@ -53,3 +54,11 @@ lazy val service = project // no need to define file, because path is same as va
     jacocoExcludes := commonJacocoExcludes
   ).enablePlugins(TomcatPlugin)
   .enablePlugins(AutomateHeaderPlugin)
+
+lazy val clientLibrary = project // no need to define file, because path is same as val name
+  .settings(
+    name := "login-service-client-library",
+    libraryDependencies ++= clientLibDependencies,
+    webappWebInfClasses := true,
+    inheritJarManifest := true
+  ).enablePlugins(AutomateHeaderPlugin)
