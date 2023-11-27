@@ -1,0 +1,5 @@
+# Login-service Config
+login-service:
+  example:
+    host: "http://localhost:9090"
+    refresh-period: 5m

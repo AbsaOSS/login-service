@@ -17,16 +17,17 @@
 
 package za.co.absa.loginclient.tokenRetrieval.service
 
-import com.google.gson.JsonParser
+import com.google.gson.{JsonObject, JsonParser}
 import com.nimbusds.jose.jwk.JWK
 import org.slf4j.{Logger, LoggerFactory}
-import org.springframework.http.{HttpEntity, HttpHeaders, HttpMethod, ResponseEntity}
+import org.springframework.http.{HttpEntity, HttpHeaders, HttpMethod, MediaType, ResponseEntity}
 import org.springframework.web.client.RestTemplate
 import za.co.absa.loginclient.tokenRetrieval.model.{AccessToken, PublicKey, RefreshToken}
 
 import java.net.URLEncoder
+import java.util.Collections
 
-case class retrieveToken(host: String) {
+case class RetrieveToken(host: String) {
 
   private val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
@@ -66,14 +67,42 @@ case class retrieveToken(host: String) {
     (AccessToken(accessToken), RefreshToken(refreshToken))
   }
 
-  def refreshAccessToken(): (AccessToken, RefreshToken) = {
-    //todo: Implement properly
+  def refreshAccessToken(accessToken: AccessToken, refreshToken: RefreshToken): (AccessToken, RefreshToken) = {
     val issuerUri = s"$host/token/refresh"
-    val jsonString = fetchToken(issuerUri)
-    val jsonObject = JsonParser.parseString(jsonString).getAsJsonObject
-    val accessToken = jsonObject.get("token").getAsString
-    val refreshToken = jsonObject.get("refresh").getAsString
-    (AccessToken(accessToken), RefreshToken(refreshToken))
+
+    val jsonPayload: JsonObject = new JsonObject()
+    jsonPayload.addProperty("token", accessToken.token)
+    jsonPayload.addProperty("refresh", refreshToken.token)
+
+    val headers: HttpHeaders  = new HttpHeaders()
+    headers.setContentType(MediaType.APPLICATION_JSON)
+    headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON))
+
+    val requestEntity = new HttpEntity[String] (jsonPayload.toString, headers)
+
+    val restTemplate: RestTemplate = new RestTemplate()
+
+    try {
+      val response: ResponseEntity[String] = restTemplate.exchange(
+        issuerUri,
+        HttpMethod.POST,
+        requestEntity,
+        classOf[String]
+      )
+      val jsonObject = JsonParser.parseString(response.getBody).getAsJsonObject
+      (
+        AccessToken(jsonObject.get("token").getAsString),
+        RefreshToken(jsonObject.get("refresh").getAsString)
+      )
+    }
+    catch {
+      case e: Throwable =>
+        logger.error(s"Error occurred refreshing and decoding Token from $issuerUri", e)
+        (
+          AccessToken(""),
+          RefreshToken("")
+        )
+    }
   }
 
   private def fetchToken(issuerUri: String, username: String, password: String): String = {

@@ -19,7 +19,9 @@ package za.co.absa.loginclient.authorization
 import com.nimbusds.jwt.JWT
 import org.springframework.security.oauth2.jwt.Jwt
 
+import java.text.SimpleDateFormat
 import java.util
+import java.util.Date
 import scala.collection.JavaConverters._
 
 object ClaimsParser {
@@ -52,17 +54,19 @@ object ClaimsParser {
     }
   }
 
-  def getExpiration(jwt: Jwt): Long = {
+  def getExpiration(jwt: Jwt): Option[Date] = {
+    val dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss")
     getClaim(jwt, "exp") match {
-      case Some(expiration) => expiration.toString.toLong
-      case None => 0
+      case Some(expiration) => Some(dateFormat.parse(expiration.toString))
+      case None => None
     }
   }
 
-  def getIssueTime(jwt: Jwt): Long = {
+  def getIssueTime(jwt: Jwt): Option[Date] = {
+    val dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss")
     getClaim(jwt, "iat") match {
-      case Some(issueTime) => issueTime.toString.toLong
-      case None => 0
+      case Some(issueTime) => Some(dateFormat.parse(issueTime.toString))
+      case None => None
     }
   }
 

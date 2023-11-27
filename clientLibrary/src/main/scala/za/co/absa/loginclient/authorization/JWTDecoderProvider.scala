@@ -23,17 +23,20 @@ import za.co.absa.loginclient.authorization.ClaimsParser.getAllClaims
 import java.security.KeyFactory
 import java.security.interfaces.RSAPublicKey
 import java.security.spec.X509EncodedKeySpec
-import java.util.Base64
+import java.util.{Base64, Date}
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import scala.language.postfixOps
-import za.co.absa.loginclient.tokenRetrieval.model.PublicKey
-import za.co.absa.loginclient.tokenRetrieval.service.retrieveToken
+import za.co.absa.loginclient.tokenRetrieval.model.{AccessToken, PublicKey, Token}
+import za.co.absa.loginclient.tokenRetrieval.service.RetrieveToken
 
-case class jwtDecoderProvider(publicKeyEndpoint : String, refreshPeriod : Option[Int] = None) extends JwtDecoder {
+import java.text.SimpleDateFormat
+import scala.concurrent.duration.FiniteDuration
+
+case class JWTDecoderProvider(publicKeyEndpoint : String, refreshPeriod : Option[FiniteDuration] = None) extends JwtDecoder {
 
   private val logger = LoggerFactory.getLogger(this.getClass)
-  private val tokenRetrieval = retrieveToken(publicKeyEndpoint)
+  private val tokenRetrieval = RetrieveToken(publicKeyEndpoint)
   @volatile private var decoder: JwtDecoder = createDecoder(tokenRetrieval.getPublicKey)
   if (refreshPeriod.nonEmpty) scheduleKeyRefresh()
 
@@ -45,9 +48,9 @@ case class jwtDecoderProvider(publicKeyEndpoint : String, refreshPeriod : Option
     })
     scheduler.scheduleAtFixedRate(() => {
       refreshDecoder()
-    }, refreshPeriod.get,
-      refreshPeriod.get,
-      TimeUnit.SECONDS
+    }, refreshPeriod.get.toMillis,
+      refreshPeriod.get.toMillis,
+      TimeUnit.MILLISECONDS
     )
   }
 
@@ -71,10 +74,18 @@ case class jwtDecoderProvider(publicKeyEndpoint : String, refreshPeriod : Option
 
   override def decode(token: String): Jwt = decoder.decode(token)
 
-  def verifyToken(token: String): Map[String, Any] = {
+  def decode(token: Token): Jwt = decode(token.token)
+
+  def verifyAccessToken(token: AccessToken): Map[String, Any] = {
     try {
       val jwt = decode(token)
-      getAllClaims(jwt)
+      val claims = getAllClaims(jwt)
+      val dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss")
+      if(dateFormat.parse(claims("exp").toString).getTime < System.currentTimeMillis())
+        throw new Exception("Token has expired")
+      if(claims("type").toString != "access")
+        throw new Exception("Token is not an access token")
+      claims
     }
     catch {
       case e: Throwable =>
@@ -82,5 +93,4 @@ case class jwtDecoderProvider(publicKeyEndpoint : String, refreshPeriod : Option
         Map()
     }
   }
-
 }
