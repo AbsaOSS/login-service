@@ -55,6 +55,7 @@ case class RetrieveToken(host: String) {
 
   def fetchAccessAndRefreshToken(username: String, password: String, groups: Option[List[String]] = None): (AccessToken, RefreshToken) = {
     var issuerUri = s"$host/token/generate"
+
     if(groups.nonEmpty)
       {
         val commaSeparatedString = groups.mkString(",")
@@ -69,6 +70,8 @@ case class RetrieveToken(host: String) {
 
   def refreshAccessToken(accessToken: AccessToken, refreshToken: RefreshToken): (AccessToken, RefreshToken) = {
     val issuerUri = s"$host/token/refresh"
+
+    logger.info(s"Refreshing Access token from $issuerUri")
 
     val jsonPayload: JsonObject = new JsonObject()
     jsonPayload.addProperty("token", accessToken.token)
@@ -90,6 +93,7 @@ case class RetrieveToken(host: String) {
         classOf[String]
       )
       val jsonObject = JsonParser.parseString(response.getBody).getAsJsonObject
+      logger.info("Successfully refreshed token")
       (
         AccessToken(jsonObject.get("token").getAsString),
         RefreshToken(jsonObject.get("refresh").getAsString)
@@ -98,14 +102,13 @@ case class RetrieveToken(host: String) {
     catch {
       case e: Throwable =>
         logger.error(s"Error occurred refreshing and decoding Token from $issuerUri", e)
-        (
-          AccessToken(""),
-          RefreshToken("")
-        )
+        throw e
     }
   }
 
   private def fetchToken(issuerUri: String, username: String, password: String): String = {
+
+    logger.info(s"Fetching token from $issuerUri for user $username")
 
     val headers = new HttpHeaders()
     val base64Credentials = java.util.Base64.getEncoder.encodeToString(s"$username:$password".getBytes)
@@ -122,25 +125,30 @@ case class RetrieveToken(host: String) {
         requestEntity,
         classOf[String]
       )
+      logger.info("Successfully fetched token")
       response.getBody
     }
     catch {
       case e: Throwable =>
         logger.error(s"Error occurred retrieving and decoding Token from $issuerUri", e)
-        ""
+        throw e
     }
   }
 
   private def fetchToken(issuerUri: String): String = {
 
+    logger.info(s"Fetching token from $issuerUri")
+
     val restTemplate = new RestTemplate()
     try {
-      restTemplate.getForEntity(issuerUri, classOf[String]).getBody
+      val response = restTemplate.getForEntity(issuerUri, classOf[String])
+      logger.info("Successfully fetched token")
+      response.getBody
     }
     catch {
       case e: Throwable =>
         logger.error(s"Error occurred retrieving and decoding Token from $issuerUri", e)
-        ""
+        throw e
     }
   }
 }

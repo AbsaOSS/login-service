@@ -56,12 +56,15 @@ case class JWTDecoderProvider(publicKeyEndpoint : String, refreshPeriod : Option
 
   private def refreshDecoder(): Unit = {
     try {
+      logger.info(s"Refreshing Public Key from $publicKeyEndpoint")
       decoder = createDecoder(tokenRetrieval.getPublicKey)
+      logger.info(s"Successfully refreshed Public Key from $publicKeyEndpoint" +
+        s"next refresh will occur in ${refreshPeriod.get.toSeconds} seconds")
     }
     catch {
       case e: Throwable =>
         logger.error(s"Error occurred retrieving and decoding Public Key from $publicKeyEndpoint " +
-          s"will attempt to retrieve Public Key again in $refreshPeriod seconds", e)
+          s"will attempt to retrieve Public Key again in ${refreshPeriod.get.toSeconds} seconds", e)
     }
   }
 
@@ -78,6 +81,7 @@ case class JWTDecoderProvider(publicKeyEndpoint : String, refreshPeriod : Option
 
   def verifyAccessToken(token: AccessToken): Map[String, Any] = {
     try {
+      logger.info("Verifying access token")
       val jwt = decode(token)
       val claims = getAllClaims(jwt)
       val dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss")
@@ -85,12 +89,13 @@ case class JWTDecoderProvider(publicKeyEndpoint : String, refreshPeriod : Option
         throw new Exception("Token has expired")
       if(claims("type").toString != "access")
         throw new Exception("Token is not an access token")
+      logger.info("Successfully verified access token")
       claims
     }
     catch {
       case e: Throwable =>
         logger.error(s"Error occurred verifying token", e)
-        Map()
+        throw e
     }
   }
 }

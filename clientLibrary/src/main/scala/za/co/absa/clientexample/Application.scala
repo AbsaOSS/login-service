@@ -32,22 +32,62 @@ object Application {
     val tokenRetriever = RetrieveToken(config.host)
     val scanner = new Scanner(System.in)
 
+    var loggedIn = false
+
     while (true) {
-      // Ask the user for their username and password
+      println("----------------------------------------------")
+      println("---------------PLEASE LOGIN-------------------")
+      println("----------------------------------------------")
       print("Enter your username: ")
       val username = scanner.nextLine()
       print("Enter your password: ")
       val password = scanner.nextLine()
 
       try {
-        val jwt = tokenRetriever.fetchAccessToken(username, password)
+        val (accessToken, refreshToken) = tokenRetriever.fetchAccessAndRefreshToken(username, password)
         val jwtDecoder = JWTDecoderProvider(config.host, config.refreshPeriod)
-        val claims = jwtDecoder.verifyAccessToken(jwt)
-        println(s"${claims("sub")} has authenticated successfully.")
+        val claims = jwtDecoder.verifyAccessToken(accessToken)
+        loggedIn = true
+        println("----------------------------------------------")
+        println(s"${claims("sub").toString.toUpperCase} HAS LOGGED IN.")
+        println(s"ACCESS TOKEN: $accessToken")
+        println("----------------------------------------------")
+
+        while(loggedIn) {
+          println("1) Refresh Token")
+          println("2) Print Claims")
+          println("3) Logout")
+          print("Enter your choice: ")
+          val choice = scanner.nextLine()
+          choice match {
+            case "1" =>
+                val (newAccessToken, newRefreshToken) = tokenRetriever.refreshAccessToken(accessToken, refreshToken)
+                val newClaims = jwtDecoder.verifyAccessToken(newAccessToken)
+                println("----------------------------------------------")
+                println(s"NEW ACCESS TOKEN: $newAccessToken")
+                println(s"${newClaims("sub").toString.toUpperCase} HAS REFRESHED ACCESS TOKEN.")
+                println("----------------------------------------------")
+            case "2" =>
+              println("----------------------------------------------")
+              println(s"CLAIMS: $claims")
+              println("----------------------------------------------")
+            case "3" =>
+              loggedIn = false
+              println("----------------------------------------------")
+              println(s"${claims("sub").toString.toUpperCase} HAS LOGGED OUT.")
+              println("----------------------------------------------")
+            case _ =>
+              println("----------------------------------------------")
+              println(s"INVALID CHOICE. PLEASE TRY AGAIN")
+              println("----------------------------------------------")
+          }
+        }
       }
       catch {
         case e: Throwable =>
-          println("Authentication failed. Please try again.")
+          println("----------------------------------------------")
+          println(s"UNAUTHORIZED. PLEASE TRY AGAIN")
+          println("----------------------------------------------")
       }
     }
   }
