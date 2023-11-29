@@ -27,6 +27,13 @@ import za.co.absa.loginclient.tokenRetrieval.model.{AccessToken, PublicKey, Refr
 import java.net.URLEncoder
 import java.util.Collections
 
+/**
+ * This class is used to retrieve tokens and the public key from the login service.
+ * Public Key comes from a publicly available endpoint. Available in String or JWKS format.
+ * Refresh and Access Keys require authorization. Basic Auth is used for the initial retrieval.
+ * Refresh token from initial retrieval is used to refresh the access token.
+ * @param host The host of the login service.
+ */
 case class RetrieveToken(host: String) {
 
   private val logger: Logger = LoggerFactory.getLogger(this.getClass)

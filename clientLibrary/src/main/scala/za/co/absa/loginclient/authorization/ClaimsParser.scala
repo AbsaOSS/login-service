@@ -24,6 +24,9 @@ import java.util
 import java.util.Date
 import scala.collection.JavaConverters._
 
+/**
+ * This object is used to parse Access Token claims.
+ */
 object ClaimsParser {
 
   //Generic methods for parsing JWT claims

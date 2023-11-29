@@ -17,6 +17,13 @@
 
 package za.co.absa.loginclient.tokenRetrieval.model
 
+/**
+ * This class represents a token.
+ * This is used to store the token string
+ * and differentiate between public key, access tokens and refresh tokens.
+ * @param token The token string.
+ */
+
 case class AccessToken(token: String) extends Token
 
 case class RefreshToken(token: String) extends Token

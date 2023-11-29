@@ -51,6 +51,7 @@ object Application {
         println("----------------------------------------------")
         println(s"${claims("sub").toString.toUpperCase} HAS LOGGED IN.")
         println(s"ACCESS TOKEN: $accessToken")
+        println(s"REFRESH TOKEN: $accessToken")
         println("----------------------------------------------")
 
         while(loggedIn) {
@@ -61,12 +62,13 @@ object Application {
           val choice = scanner.nextLine()
           choice match {
             case "1" =>
-                val (newAccessToken, newRefreshToken) = tokenRetriever.refreshAccessToken(accessToken, refreshToken)
-                val newClaims = jwtDecoder.verifyAccessToken(newAccessToken)
-                println("----------------------------------------------")
-                println(s"NEW ACCESS TOKEN: $newAccessToken")
-                println(s"${newClaims("sub").toString.toUpperCase} HAS REFRESHED ACCESS TOKEN.")
-                println("----------------------------------------------")
+              val (newAccessToken, newRefreshToken) = tokenRetriever.refreshAccessToken(accessToken, refreshToken)
+              val newClaims = jwtDecoder.verifyAccessToken(newAccessToken)
+              println("----------------------------------------------")
+              println(s"NEW ACCESS TOKEN: $newAccessToken")
+              println(s"REFRESH TOKEN: $newRefreshToken")
+              println(s"${newClaims("sub").toString.toUpperCase} HAS REFRESHED ACCESS TOKEN.")
+              println("----------------------------------------------")
             case "2" =>
               println("----------------------------------------------")
               println(s"CLAIMS: $claims")

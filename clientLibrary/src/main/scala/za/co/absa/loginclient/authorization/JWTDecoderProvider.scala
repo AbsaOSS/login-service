@@ -33,6 +33,14 @@ import za.co.absa.loginclient.tokenRetrieval.service.RetrieveToken
 import java.text.SimpleDateFormat
 import scala.concurrent.duration.FiniteDuration
 
+/**
+ * This class is used to decode JWT tokens.
+ * It can be used to create decoders from publicKeys which decode access tokens.
+ * It can also be used to verify access tokens.
+ * Optionally, you may set it to periodically update the decoder with a new publickey.
+ * @param publicKeyEndpoint The endpoint to retrieve the public key from.
+ * @param refreshPeriod The period at which to refresh the public key. Optional Parameter.
+ */
 case class JWTDecoderProvider(publicKeyEndpoint : String, refreshPeriod : Option[FiniteDuration] = None) extends JwtDecoder {
 
   private val logger = LoggerFactory.getLogger(this.getClass)
