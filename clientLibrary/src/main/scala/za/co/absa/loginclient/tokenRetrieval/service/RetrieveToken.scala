@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-
 package za.co.absa.loginclient.tokenRetrieval.service
 
 import com.google.gson.{JsonObject, JsonParser}
@@ -34,6 +33,7 @@ import java.util.Collections
  * Refresh token from initial retrieval is used to refresh the access token.
  * @param host The host of the login service.
  */
+
 case class RetrieveToken(host: String) {
 
   private val logger: Logger = LoggerFactory.getLogger(this.getClass)

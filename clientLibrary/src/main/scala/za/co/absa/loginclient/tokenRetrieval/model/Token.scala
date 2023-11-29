@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-
 package za.co.absa.loginclient.tokenRetrieval.model
 
 /**

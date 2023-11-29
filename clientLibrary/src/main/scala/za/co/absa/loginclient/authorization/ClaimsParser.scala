@@ -16,7 +16,6 @@
 
 package za.co.absa.loginclient.authorization
 
-import com.nimbusds.jwt.JWT
 import org.springframework.security.oauth2.jwt.Jwt
 
 import java.text.SimpleDateFormat
@@ -27,6 +26,7 @@ import scala.collection.JavaConverters._
 /**
  * This object is used to parse Access Token claims.
  */
+
 object ClaimsParser {
 
   //Generic methods for parsing JWT claims

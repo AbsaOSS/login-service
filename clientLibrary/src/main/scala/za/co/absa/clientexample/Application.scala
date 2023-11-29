@@ -16,7 +16,6 @@
 
 package za.co.absa.clientexample
 
-import org.springframework.security.oauth2.jwt.{Jwt, JwtDecoder}
 import za.co.absa.clientexample.config.ConfigProvider
 import za.co.absa.loginclient.authorization.JWTDecoderProvider
 import za.co.absa.loginclient.tokenRetrieval.service.RetrieveToken

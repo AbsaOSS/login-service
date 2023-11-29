@@ -23,7 +23,7 @@ import za.co.absa.loginclient.authorization.ClaimsParser.getAllClaims
 import java.security.KeyFactory
 import java.security.interfaces.RSAPublicKey
 import java.security.spec.X509EncodedKeySpec
-import java.util.{Base64, Date}
+import java.util.Base64
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import scala.language.postfixOps
@@ -41,6 +41,7 @@ import scala.concurrent.duration.FiniteDuration
  * @param publicKeyEndpoint The endpoint to retrieve the public key from.
  * @param refreshPeriod The period at which to refresh the public key. Optional Parameter.
  */
+
 case class JWTDecoderProvider(publicKeyEndpoint : String, refreshPeriod : Option[FiniteDuration] = None) extends JwtDecoder {
 
   private val logger = LoggerFactory.getLogger(this.getClass)
