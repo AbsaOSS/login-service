@@ -61,6 +61,7 @@ object Dependencies {
   lazy val requests = "com.lihaoyi" %% "requests" % "0.8.0"
 
   lazy val awsSecrets = "software.amazon.awssdk" % "secretsmanager" % "2.20.68"
+  lazy val awsSts = "software.amazon.awssdk" % "sts" % "2.20.69"
 
   lazy val servletApi = "javax.servlet" % "javax.servlet-api" % "3.0.1" % Provided
 
@@ -95,6 +96,7 @@ object Dependencies {
     pureConfigYaml,
 
     awsSecrets,
+    awsSts,
 
     springDoc,
 
