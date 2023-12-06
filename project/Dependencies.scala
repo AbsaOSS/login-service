@@ -120,8 +120,10 @@ object Dependencies {
 
     springBootWeb,
     springBootSecurity,
+  )
 
+  def exampleDependencies: Seq[ModuleID] = Seq(
     pureConfig,
-    pureConfigYaml,
+    pureConfigYaml
   )
 }

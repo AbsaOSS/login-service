@@ -1,31 +1,21 @@
-/*
- * Copyright 2023 ABSA Group Limited
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package za.co.absa.clientexample
 
 import za.co.absa.clientexample.config.ConfigProvider
-import za.co.absa.loginclient.authorization.JWTDecoderProvider
-import za.co.absa.loginclient.tokenRetrieval.service.RetrieveToken
 
+import java.nio.file.{Paths, Files}
 import java.util.Scanner
 
 object Application {
   def main(args: Array[String]): Unit = {
 
-    val config = new ConfigProvider("clientLibrary/src/main/resources/exampleConfig.yaml").
+    var configPath = ""
+    if (args.length < 1) {
+      throw new Exception("Usage: Application <config_path>")
+    } else {
+      if(Files.exists(Paths.get(args(0)))) configPath = args(0)
+      else throw new Exception("Config file does not exist")
+    }
+    val config = new ConfigProvider(configPath).
       getExampleConfig
 
     val tokenRetriever = RetrieveToken(config.host)
@@ -53,7 +43,7 @@ object Application {
         println(s"REFRESH TOKEN: $accessToken")
         println("----------------------------------------------")
 
-        while(loggedIn) {
+        while (loggedIn) {
           println("1) Refresh Token")
           println("2) Print Claims")
           println("3) Logout")

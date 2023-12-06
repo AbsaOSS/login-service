@@ -34,12 +34,14 @@ lazy val commonJacocoExcludes: Seq[String] = Seq(
 )
 
 lazy val parent = (project in file("."))
-  .aggregate(service)
-  .aggregate(clientLibrary)
+  .aggregate(service, clientLibrary, examples)
   .settings(
     name := "login-service",
     javacOptions ++= Seq("-source", "1.8", "-target", "1.8", "-Xlint"),
-    publish / skip := true
+    // No need to publish the aggregation [empty] artifact
+    publishArtifact := false,
+    publish := {},
+    publishLocal := {}
   )
 
 lazy val service = project // no need to define file, because path is same as val name
@@ -47,7 +49,11 @@ lazy val service = project // no need to define file, because path is same as va
     name := "login-service-service",
     libraryDependencies ++= serviceDependencies,
     webappWebInfClasses := true,
-    inheritJarManifest := true
+    inheritJarManifest := true,
+    // No need to publish the service
+    publishArtifact := false,
+    publish := {},
+    publishLocal := {}
   )
   .settings(
     jacocoReportSettings := commonJacocoReportSettings.withTitle(s"login-service:service Jacoco Report - scala:${scalaVersion.value}"),
@@ -58,7 +64,15 @@ lazy val service = project // no need to define file, because path is same as va
 lazy val clientLibrary = project // no need to define file, because path is same as val name
   .settings(
     name := "login-service-client-library",
-    libraryDependencies ++= clientLibDependencies,
-    webappWebInfClasses := true,
-    inheritJarManifest := true
+    libraryDependencies ++= clientLibDependencies
+  ).enablePlugins(AutomateHeaderPlugin)
+
+lazy val examples = project // no need to define file, because path is same as val name
+  .settings(
+    name := "login-service-examples",
+    libraryDependencies ++= exampleDependencies,
+    // No need to publish the example artifact
+    publishArtifact := false,
+    publish := {},
+    publishLocal := {}
   ).enablePlugins(AutomateHeaderPlugin)
