@@ -17,15 +17,16 @@
 package za.co.absa.clientexample
 
 import za.co.absa.clientexample.config.ConfigProvider
+import za.co.absa.loginclient.authorization.JWTDecoderProvider
+import za.co.absa.loginclient.tokenRetrieval.service.RetrieveToken
 
-import java.nio.file.{Paths, Files}
+import java.nio.file.{Files, Paths}
 import java.util.Scanner
 
 object Application {
   def main(args: Array[String]): Unit = {
 
-    //TODO: Add Client Client Library and uncomment code
-    /*var configPath = ""
+    var configPath = ""
     if (args.length < 1) {
       throw new Exception("Usage: Application <config_path>")
     } else {
@@ -97,6 +98,6 @@ object Application {
           println(s"UNAUTHORIZED. PLEASE TRY AGAIN")
           println("----------------------------------------------")
       }
-    }*/
+    }
   }
 }
