@@ -76,3 +76,4 @@ lazy val examples = project // no need to define file, because path is same as v
     publish := {},
     publishLocal := {}
   ).enablePlugins(AutomateHeaderPlugin)
+  .dependsOn(clientLibrary)

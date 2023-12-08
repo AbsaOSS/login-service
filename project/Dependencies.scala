@@ -75,8 +75,6 @@ object Dependencies {
   lazy val springBootTest = "org.springframework.boot" % "spring-boot-starter-test" % Versions.springBoot % Test
   lazy val springBootSecurityTest = "org.springframework.security" % "spring-security-test" % Versions.spring % Test
 
-  lazy val clientLib = "za.co.absa" % "login-service-client-library_2.12" % "0.1.0-SNAPSHOT"
-
   def serviceDependencies: Seq[ModuleID] = Seq(
     jacksonModuleScala,
     jacksonDatabind,
@@ -126,8 +124,6 @@ object Dependencies {
 
   def exampleDependencies: Seq[ModuleID] = Seq(
     pureConfig,
-    pureConfigYaml,
-
-    clientLib
+    pureConfigYaml
   )
 }
