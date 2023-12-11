@@ -14,16 +14,12 @@
  * limitations under the License.
  */
 
-package za.co.absa.loginclient.tokenRetrieval.model
+package za.co.absa.loginclient.publicKeyRetrieval.model
 
 /**
- * This class represents a token.
- * This is used to store the token string
- * @param token The token string.
+ * This class represents a public key.
+ * This is used to store the public key string
+ * @param token The public key string.
  */
 
-case class AccessToken(token: String) extends Token
-
-case class RefreshToken(token: String) extends Token
-
-trait Token {def token: String}
+case class PublicKey(token: String)

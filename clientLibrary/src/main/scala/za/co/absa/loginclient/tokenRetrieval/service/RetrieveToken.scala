@@ -17,18 +17,16 @@
 package za.co.absa.loginclient.tokenRetrieval.service
 
 import com.google.gson.{JsonObject, JsonParser}
-import com.nimbusds.jose.jwk.JWK
 import org.slf4j.{Logger, LoggerFactory}
 import org.springframework.http.{HttpEntity, HttpHeaders, HttpMethod, MediaType, ResponseEntity}
 import org.springframework.web.client.RestTemplate
-import za.co.absa.loginclient.tokenRetrieval.model.{AccessToken, PublicKey, RefreshToken}
+import za.co.absa.loginclient.tokenRetrieval.model.{AccessToken, RefreshToken}
 
 import java.net.URLEncoder
 import java.util.Collections
 
 /**
- * This class is used to retrieve tokens and the public key from the login service.
- * Public Key comes from a publicly available endpoint. Available in String or JWKS format.
+ * This class is used to retrieve tokens from the login service.
  * Refresh and Access Keys require authorization. Basic Auth is used for the initial retrieval.
  * Refresh token from initial retrieval is used to refresh the access token.
  * @param host The host of the login service.
@@ -37,20 +35,6 @@ import java.util.Collections
 case class RetrieveToken(host: String) {
 
   private val logger: Logger = LoggerFactory.getLogger(this.getClass)
-
-  def getPublicKey: PublicKey = {
-    val issuerUri = s"$host/token/public-key"
-    val jsonString = fetchToken(issuerUri)
-    val token = JsonParser.parseString(jsonString).getAsJsonObject.get("key").getAsString
-    PublicKey(token)
-  }
-
-  def getPublicKeyJwk: JWK = {
-    val issuerUri = s"$host/token/public-key-jwks"
-    val jsonString = fetchToken(issuerUri)
-    val jwkString = JsonParser.parseString(jsonString).getAsJsonObject.get("key").getAsString
-    JWK.parse(jwkString)
-  }
 
   def fetchAccessToken(username: String, password: String): AccessToken = {
     fetchAccessAndRefreshToken(username, password)._1
@@ -132,23 +116,6 @@ case class RetrieveToken(host: String) {
         requestEntity,
         classOf[String]
       )
-      logger.info("Successfully fetched token")
-      response.getBody
-    }
-    catch {
-      case e: Throwable =>
-        logger.error(s"Error occurred retrieving and decoding Token from $issuerUri", e)
-        throw e
-    }
-  }
-
-  private def fetchToken(issuerUri: String): String = {
-
-    logger.info(s"Fetching token from $issuerUri")
-
-    val restTemplate = new RestTemplate()
-    try {
-      val response = restTemplate.getForEntity(issuerUri, classOf[String])
       logger.info("Successfully fetched token")
       response.getBody
     }

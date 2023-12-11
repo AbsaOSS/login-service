@@ -27,8 +27,9 @@ import java.util.Base64
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import scala.language.postfixOps
-import za.co.absa.loginclient.tokenRetrieval.model.{AccessToken, PublicKey, Token}
-import za.co.absa.loginclient.tokenRetrieval.service.RetrieveToken
+import za.co.absa.loginclient.publicKeyRetrieval.model.PublicKey
+import za.co.absa.loginclient.publicKeyRetrieval.service.RetrievePublicKey
+import za.co.absa.loginclient.tokenRetrieval.model.{AccessToken, Token}
 
 import java.text.SimpleDateFormat
 import scala.concurrent.duration.FiniteDuration
@@ -45,28 +46,33 @@ import scala.concurrent.duration.FiniteDuration
 case class JWTDecoderProvider(publicKeyEndpoint : String, refreshPeriod : Option[FiniteDuration] = None) extends JwtDecoder {
 
   private val logger = LoggerFactory.getLogger(this.getClass)
-  private val tokenRetrieval = RetrieveToken(publicKeyEndpoint)
-  @volatile private var decoder: JwtDecoder = createDecoder(tokenRetrieval.getPublicKey)
+  private val scheduler = Executors.newSingleThreadScheduledExecutor(r => {
+    val t = new Thread(r)
+    t.setDaemon(true)
+    t
+  })
+  private val publicKeyRetrieval = RetrievePublicKey(publicKeyEndpoint)
+  @volatile private var decoder: JwtDecoder = createDecoder(publicKeyRetrieval.getPublicKey)
   if (refreshPeriod.nonEmpty) scheduleKeyRefresh()
 
   private def scheduleKeyRefresh(): Unit = {
-    val scheduler = Executors.newSingleThreadScheduledExecutor(r => {
-      val t = new Thread(r)
-      t.setDaemon(true)
-      t
-    })
-    scheduler.scheduleAtFixedRate(() => {
+    val scheduledFuture = scheduler.scheduleAtFixedRate(() => {
       refreshDecoder()
     }, refreshPeriod.get.toMillis,
       refreshPeriod.get.toMillis,
       TimeUnit.MILLISECONDS
     )
+
+    Runtime.getRuntime.addShutdownHook(new Thread(() => {
+      scheduledFuture.cancel(false)
+      this.close()
+    }))
   }
 
   private def refreshDecoder(): Unit = {
     try {
       logger.info(s"Refreshing Public Key from $publicKeyEndpoint")
-      decoder = createDecoder(tokenRetrieval.getPublicKey)
+      decoder = createDecoder(publicKeyRetrieval.getPublicKey)
       logger.info(s"Successfully refreshed Public Key from $publicKeyEndpoint" +
         s"next refresh will occur in ${refreshPeriod.get.toSeconds} seconds")
     }
@@ -105,6 +111,22 @@ case class JWTDecoderProvider(publicKeyEndpoint : String, refreshPeriod : Option
       case e: Throwable =>
         logger.error(s"Error occurred verifying token", e)
         throw e
+    }
+  }
+
+  def close(): Unit = {
+    scheduler.shutdown()
+
+    try {
+      // Wait for up to 5 seconds for the scheduler to terminate
+      if (!scheduler.awaitTermination(5, TimeUnit.SECONDS)) {
+        // If it doesn't terminate, forcefully shut it down
+        scheduler.shutdownNow()
+      }
+    }
+    catch {
+      case _: InterruptedException =>
+        Thread.currentThread().interrupt()
     }
   }
 }

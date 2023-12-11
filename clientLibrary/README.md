@@ -5,14 +5,30 @@ This library provides client-functionality for the login-service.
 ## Usage
 
 Include the library in your project:
-TODO: add maven/SBT dependency
+### Maven
 
-See the [examples](clientLibrary/src/main/scala/za/co/absa/clientexample/Application.scala)
+`<dependency>
+<groupId>za.co.absa</groupId>
+<artifactId>login-service-client-library_2.12</artifactId>
+<version>0.1.0-SNAPSHOT</version>
+</dependency>`
+
+### SBT
+
+`libraryDependencies += "za.co.absa" % "login-service-client-library_2.12" % "0.1.0-SNAPSHOT"`
+
+See the [examples](examples)
 for a more detailed view of how to use the library.
 
-## Token and Public Key retrieval
+## Public key retrieval
 
-The library provides a `TokenService` class that can be used to retrieve a JWT tokens and the public key used to sign the tokens.
+The library provides a `RetrievePublicKey` class that can be used to retrieve the public key used to sign the tokens.
+Public Key is available without authorization so just the relevant host needs to be provided. Public Key is available as a `String` and as a JWKS.
+
+
+## Token retrieval
+
+The library provides a `RetrieveToken` class that can be used to retrieve a JWT tokens.
 Public Key is available without authorization so just the relevant host needs to be provided. Public Key is available as a `String` and as a JWKS.
 Refresh and Access Keys require authorization. Basic Auth is used for the initial retrieval so a valid username and password is required.
 Please see the [login-service documentation](README.md) for more information on what a valid username and password is.
@@ -40,8 +56,8 @@ For example, one may check what groups the user belongs to under the `groups` cl
 
 ## Example Code
 
-An example of how to use the library can be found in the [examples](clientLibrary/src/main/scala/za/co/absa/clientexample/Application.scala) folder.
-The example makes use of a [configuration file](clientLibrary/src/main/resources/exampleConfig.yaml) to provide the necessary configuration to the library.
+An example of how to use the library can be found in the [examples](examples) folder.
+The example makes use of a [configuration file](examples/src/main/resources/example.application.yaml) to provide the necessary configuration to the library.
 
 Configurations required are:
 1. `host` - the url of the login-service (Including Port if required)
