@@ -58,6 +58,4 @@ ThisBuild / publishTo := {
 }
 ThisBuild / publishMavenStyle := true
 
-ThisBuild / credentials += Credentials("Sonatype Nexus Repository Manager", "oss.sonatype.org", "TheLydonKing", "JamesBue10368Sonatype!!!")
-
 ThisBuild / versionScheme := Some("semver-spec")
