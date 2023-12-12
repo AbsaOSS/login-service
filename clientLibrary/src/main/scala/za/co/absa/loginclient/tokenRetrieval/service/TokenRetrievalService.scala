@@ -32,7 +32,7 @@ import java.util.Collections
  * @param host The host of the login service.
  */
 
-case class RetrieveToken(host: String) {
+case class TokenRetrievalService(host: String) {
 
   private val logger: Logger = LoggerFactory.getLogger(this.getClass)
 

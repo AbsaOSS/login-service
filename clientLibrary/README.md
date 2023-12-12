@@ -22,13 +22,13 @@ for a more detailed view of how to use the library.
 
 ## Public key retrieval
 
-The library provides a `RetrievePublicKey` class that can be used to retrieve the public key used to sign the tokens.
+The library provides a `PublicKeyRetrievalService` class that can be used to retrieve the public key used to sign the tokens.
 Public Key is available without authorization so just the relevant host needs to be provided. Public Key is available as a `String` and as a JWKS.
 
 
 ## Token retrieval
 
-The library provides a `RetrieveToken` class that can be used to retrieve a JWT tokens.
+The library provides a `TokenRetrievalService` class that can be used to retrieve a JWT tokens.
 Public Key is available without authorization so just the relevant host needs to be provided. Public Key is available as a `String` and as a JWKS.
 Refresh and Access Keys require authorization. Basic Auth is used for the initial retrieval so a valid username and password is required.
 Please see the [login-service documentation](README.md) for more information on what a valid username and password is.

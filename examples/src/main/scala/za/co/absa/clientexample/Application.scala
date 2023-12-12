@@ -18,7 +18,7 @@ package za.co.absa.clientexample
 
 import za.co.absa.clientexample.config.ConfigProvider
 import za.co.absa.loginclient.authorization.JWTDecoderProvider
-import za.co.absa.loginclient.tokenRetrieval.service.RetrieveToken
+import za.co.absa.loginclient.tokenRetrieval.service.TokenRetrievalService
 
 import java.nio.file.{Files, Paths}
 import java.util.Scanner
@@ -36,7 +36,7 @@ object Application {
     val config = new ConfigProvider(configPath).
       getExampleConfig
 
-    val tokenRetriever = RetrieveToken(config.host)
+    val tokenRetriever = TokenRetrievalService(config.host)
     val scanner = new Scanner(System.in)
 
     var loggedIn = false

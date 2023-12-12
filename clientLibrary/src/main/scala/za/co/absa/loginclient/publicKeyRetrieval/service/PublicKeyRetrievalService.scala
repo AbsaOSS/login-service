@@ -28,7 +28,7 @@ import za.co.absa.loginclient.publicKeyRetrieval.model.PublicKey
  * @param host The issuer host.
  */
 
-case class RetrievePublicKey(host: String) {
+case class PublicKeyRetrievalService(host: String) {
 
   private val logger: Logger = LoggerFactory.getLogger(this.getClass)
 

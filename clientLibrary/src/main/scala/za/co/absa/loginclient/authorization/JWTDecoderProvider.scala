@@ -28,7 +28,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import scala.language.postfixOps
 import za.co.absa.loginclient.publicKeyRetrieval.model.PublicKey
-import za.co.absa.loginclient.publicKeyRetrieval.service.RetrievePublicKey
+import za.co.absa.loginclient.publicKeyRetrieval.service.PublicKeyRetrievalService
 import za.co.absa.loginclient.tokenRetrieval.model.{AccessToken, Token}
 
 import java.text.SimpleDateFormat
@@ -51,7 +51,7 @@ case class JWTDecoderProvider(publicKeyEndpoint : String, refreshPeriod : Option
     t.setDaemon(true)
     t
   })
-  private val publicKeyRetrieval = RetrievePublicKey(publicKeyEndpoint)
+  private val publicKeyRetrieval = PublicKeyRetrievalService(publicKeyEndpoint)
   @volatile private var decoder: JwtDecoder = createDecoder(publicKeyRetrieval.getPublicKey)
   if (refreshPeriod.nonEmpty) scheduleKeyRefresh()
 
