@@ -16,8 +16,7 @@
 import Dependencies._
 import com.github.sbt.jacoco.report.JacocoReportSettings
 
-ThisBuild / organization := "za.co.absa"
-ThisBuild / name         := "login-service"
+ThisBuild / organization := "za.co.absa.login-service"
 
 lazy val scala212 = "2.12.17"
 
@@ -39,9 +38,7 @@ lazy val parent = (project in file("."))
     name := "login-service",
     javacOptions ++= Seq("-source", "1.8", "-target", "1.8", "-Xlint"),
     // No need to publish the aggregation [empty] artifact
-    publishArtifact := false,
-    publish := {},
-    publishLocal := {}
+    publish / skip := true
   )
 
 lazy val service = project // no need to define file, because path is same as val name
@@ -51,11 +48,7 @@ lazy val service = project // no need to define file, because path is same as va
     webappWebInfClasses := true,
     inheritJarManifest := true,
     // No need to publish the service
-    publishArtifact := false,
-    publish := {},
-    publishLocal := {}
-  )
-  .settings(
+    publish / skip := true,
     jacocoReportSettings := commonJacocoReportSettings.withTitle(s"login-service:service Jacoco Report - scala:${scalaVersion.value}"),
     jacocoExcludes := commonJacocoExcludes
   ).enablePlugins(TomcatPlugin)
@@ -72,8 +65,6 @@ lazy val examples = project // no need to define file, because path is same as v
     name := "login-service-examples",
     libraryDependencies ++= exampleDependencies,
     // No need to publish the example artifact
-    publishArtifact := false,
-    publish := {},
-    publishLocal := {}
+    publish / skip := true
   ).enablePlugins(AutomateHeaderPlugin)
   .dependsOn(clientLibrary)
