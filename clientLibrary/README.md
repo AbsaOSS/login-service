@@ -36,23 +36,20 @@ Refresh token from initial retrieval is used to refresh the access token.
 
 ## Creating and Using a JWT Decoder
 
-The library provides a `JwtDecoder` class that can be used to decode and verify JWT tokens.
+The user can add the `org.springframework.security.oauth2.jwt.NimbusJwtDecoder` dependency in order to decode and verify JWT tokens.
 Decoded Tokens are available as a `Jwt` object that provides access to the claims of the token.
-The Decoder Class also allows for the verification of the token using the following parameters:
-1. is valid against the public-key retrieved from the login-service
-2. is not expired
-3. has `type=access`
-
-The Decoder Class also allows for periodically refreshing the public-key used for verification
-if key rotation is used on the login-service.
 
 ## Parsing and using Claims
 
-This object is used to parse Access Token claims. 
-It is used to extract the claims from the token which can be used to verify the token 
+This object is used to parse Access Token claims.
+It is used to extract the claims from the token which can be used to verify the token
 and to indicate what permissions the user has.
 
 For example, one may check what groups the user belongs to under the `groups` claim to indicate what a user may or may not do.
+
+The claims object also allows for the verification of the token using the following parameters:
+1. is not expired
+2. has `type=access`
 
 ## Example Code
 

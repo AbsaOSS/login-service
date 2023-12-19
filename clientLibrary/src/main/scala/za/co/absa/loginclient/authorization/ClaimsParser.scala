@@ -94,4 +94,16 @@ object ClaimsParser {
     }
   }
 
+  def verifyDecodedAccessToken(jwt: Jwt): Boolean = {
+    val claims = getAllClaims(jwt)
+    verifyDecodedAccessToken(claims)
+  }
+
+  def verifyDecodedAccessToken(claims: Map[String, Any]): Boolean = {
+    val dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss")
+    if ((dateFormat.parse(claims("exp").toString).getTime < System.currentTimeMillis()) &&
+      claims("type").toString != "access") false
+    else true
+  }
+
 }

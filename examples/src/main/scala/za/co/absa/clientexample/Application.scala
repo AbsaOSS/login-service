@@ -16,14 +16,21 @@
 
 package za.co.absa.clientexample
 
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder
 import za.co.absa.clientexample.config.ConfigProvider
-import za.co.absa.loginclient.authorization.JWTDecoderProvider
+import za.co.absa.loginclient.authorization.ClaimsParser.{getAllClaims, verifyDecodedAccessToken}
+import za.co.absa.loginclient.publicKeyRetrieval.service.PublicKeyRetrievalService
 import za.co.absa.loginclient.tokenRetrieval.service.TokenRetrievalService
 
 import java.nio.file.{Files, Paths}
 import java.util.Scanner
+import java.security.KeyFactory
+import java.security.interfaces.RSAPublicKey
+import java.security.spec.X509EncodedKeySpec
+import java.util.Base64
 
 object Application {
+
   def main(args: Array[String]): Unit = {
 
     var configPath = ""
@@ -33,11 +40,19 @@ object Application {
       if(Files.exists(Paths.get(args(0)))) configPath = args(0)
       else throw new Exception("Config file does not exist")
     }
-    val config = new ConfigProvider(configPath).
-      getExampleConfig
+    val config = new ConfigProvider(configPath).getExampleConfig
 
     val tokenRetriever = TokenRetrievalService(config.host)
+    val publicKeyRetriever = PublicKeyRetrievalService(config.host)
     val scanner = new Scanner(System.in)
+
+    val jwtDecoder = {
+      val publicKey = publicKeyRetriever.getPublicKey
+      val publicKeyBytes = Base64.getDecoder.decode(publicKey.token)
+      val publicKeySpec = new X509EncodedKeySpec(publicKeyBytes)
+      val encodedPublicKey = KeyFactory.getInstance("RSA").generatePublic(publicKeySpec).asInstanceOf[RSAPublicKey]
+      NimbusJwtDecoder.withPublicKey(encodedPublicKey).build()
+    }
 
     var loggedIn = false
 
@@ -52,13 +67,14 @@ object Application {
 
       try {
         val (accessToken, refreshToken) = tokenRetriever.fetchAccessAndRefreshToken(username, password)
-        val jwtDecoder = JWTDecoderProvider(config.host, config.refreshPeriod)
-        val claims = jwtDecoder.verifyAccessToken(accessToken)
+        val accessJwt = jwtDecoder.decode(accessToken.token)
+        var accessClaims = getAllClaims(accessJwt)
+        if(!verifyDecodedAccessToken(accessClaims)) throw new Exception("Access Token Verification Failed")
         loggedIn = true
         println("----------------------------------------------")
-        println(s"${claims("sub").toString.toUpperCase} HAS LOGGED IN.")
+        println(s"${accessClaims("sub").toString.toUpperCase} HAS LOGGED IN.")
         println(s"ACCESS TOKEN: $accessToken")
-        println(s"REFRESH TOKEN: $accessToken")
+        println(s"REFRESH TOKEN: $refreshToken")
         println("----------------------------------------------")
 
         while (loggedIn) {
@@ -70,20 +86,21 @@ object Application {
           choice match {
             case "1" =>
               val (newAccessToken, newRefreshToken) = tokenRetriever.refreshAccessToken(accessToken, refreshToken)
-              val newClaims = jwtDecoder.verifyAccessToken(newAccessToken)
+              accessClaims = getAllClaims(accessJwt)
+              if(!verifyDecodedAccessToken(accessClaims)) throw new Exception("Refreshed Access Token Verification Failed")
               println("----------------------------------------------")
               println(s"NEW ACCESS TOKEN: $newAccessToken")
               println(s"REFRESH TOKEN: $newRefreshToken")
-              println(s"${newClaims("sub").toString.toUpperCase} HAS REFRESHED ACCESS TOKEN.")
+              println(s"${accessClaims("sub").toString.toUpperCase} HAS REFRESHED ACCESS TOKEN.")
               println("----------------------------------------------")
             case "2" =>
               println("----------------------------------------------")
-              println(s"CLAIMS: $claims")
+              println(s"CLAIMS: $accessClaims")
               println("----------------------------------------------")
             case "3" =>
               loggedIn = false
               println("----------------------------------------------")
-              println(s"${claims("sub").toString.toUpperCase} HAS LOGGED OUT.")
+              println(s"${accessClaims("sub").toString.toUpperCase} HAS LOGGED OUT.")
               println("----------------------------------------------")
             case _ =>
               println("----------------------------------------------")

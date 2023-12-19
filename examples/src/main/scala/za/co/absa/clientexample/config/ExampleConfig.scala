@@ -18,4 +18,4 @@ package za.co.absa.clientexample.config
 
 import scala.concurrent.duration.FiniteDuration
 
-case class ExampleConfig(host: String, refreshPeriod: Option[FiniteDuration])
+case class ExampleConfig(host: String)
