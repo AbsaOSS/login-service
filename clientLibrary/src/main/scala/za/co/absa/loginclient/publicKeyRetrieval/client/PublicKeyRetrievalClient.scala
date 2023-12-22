@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package za.co.absa.loginclient.publicKeyRetrieval.service
+package za.co.absa.loginclient.publicKeyRetrieval.client
 
 import com.google.gson.JsonParser
 import com.nimbusds.jose.jwk.JWK
@@ -28,10 +28,17 @@ import za.co.absa.loginclient.publicKeyRetrieval.model.PublicKey
  * @param host The issuer host.
  */
 
-case class PublicKeyRetrievalService(host: String) {
+case class PublicKeyRetrievalClient(host: String) {
 
   private val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
+  /**
+   * Retrieves the public key from the login service as a PublicKey object.
+   * This method fetches the public key used for JWT verification and returns it as a PublicKey object.
+   * Key is available as a string within the object
+   *
+   * @return A PublicKey object representing the public key retrieved from the login service.
+   */
   def getPublicKey: PublicKey = {
     val issuerUri = s"$host/token/public-key"
     val jsonString = fetchToken(issuerUri)
@@ -39,6 +46,12 @@ case class PublicKeyRetrievalService(host: String) {
     PublicKey(token)
   }
 
+  /**
+   * Retrieves the public key from the login service in JWK (JSON Web Key) format.
+   * This method fetches the public key used for JWT verification and returns it in JWK format.
+   *
+   * @return A String containing the public key in JWK (JSON Web Key) format retrieved from the login service.
+   */
   def getPublicKeyJwk: JWK = {
     val issuerUri = s"$host/token/public-key-jwks"
     val jsonString = fetchToken(issuerUri)

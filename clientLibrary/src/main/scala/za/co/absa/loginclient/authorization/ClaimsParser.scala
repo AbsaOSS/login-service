@@ -19,6 +19,7 @@ package za.co.absa.loginclient.authorization
 import org.springframework.security.oauth2.jwt.Jwt
 
 import java.text.SimpleDateFormat
+import java.time.Instant
 import java.util
 import java.util.Date
 import scala.collection.JavaConverters._
@@ -53,44 +54,42 @@ object ClaimsParser {
   def getSubject(jwt: Jwt): String = {
     getClaim(jwt, "sub") match {
       case Some(username) => username.toString
-      case None => ""
+      case None => throw new Exception("Subject not found")
     }
   }
 
-  def getExpiration(jwt: Jwt): Option[Date] = {
-    val dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss")
+  def getExpiration(jwt: Jwt): Instant = {
     getClaim(jwt, "exp") match {
-      case Some(expiration) => Some(dateFormat.parse(expiration.toString))
-      case None => None
+      case Some(expiration) => Instant.ofEpochSecond(expiration.toString.toLong)
+      case None => throw new Exception("Expiration not found")
     }
   }
 
-  def getIssueTime(jwt: Jwt): Option[Date] = {
-    val dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss")
+  def getIssueTime(jwt: Jwt): Instant = {
     getClaim(jwt, "iat") match {
-      case Some(issueTime) => Some(dateFormat.parse(issueTime.toString))
+      case Some(issueTime) => Instant.ofEpochSecond(issueTime.toString.toLong)
+      case None => throw new Exception("Issue time not found")
+    }
+  }
+
+  def getEmail(jwt: Jwt): Option[String] = {
+    getClaim(jwt, "email") match {
+      case Some(email) => Some(email.toString)
       case None => None
     }
   }
 
-  def getEmail(jwt: Jwt): String = {
-    getClaim(jwt, "email") match {
-      case Some(email) => email.toString
-      case None => ""
-    }
-  }
-
-  def getDisplayName(jwt: Jwt): String = {
+  def getDisplayName(jwt: Jwt): Option[String] = {
     getClaim(jwt, "displayname") match {
-      case Some(displayName) => displayName.toString
-      case None => ""
+      case Some(displayName) => Some(displayName.toString)
+      case None => None
     }
   }
 
   def getTokenType(jwt: Jwt): String = {
     getClaim(jwt, "type") match {
       case Some(tokenType) => tokenType.toString
-      case None => ""
+      case None => throw new Exception("Token type not found")
     }
   }
 
@@ -100,10 +99,8 @@ object ClaimsParser {
   }
 
   def verifyDecodedAccessToken(claims: Map[String, Any]): Boolean = {
-    val dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss")
-    if ((dateFormat.parse(claims("exp").toString).getTime < System.currentTimeMillis()) &&
-      claims("type").toString != "access") false
-    else true
+    val notExpired = claims("exp").toString.toLong > Instant.now().getEpochSecond
+    val isAccessType = claims("type").toString == "access"
+    notExpired && isAccessType
   }
-
 }

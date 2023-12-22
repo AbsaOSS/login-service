@@ -10,7 +10,7 @@ Include the library in your project:
 `<dependency>
 <groupId>za.co.absa</groupId>
 <artifactId>login-service-client-library_2.12</artifactId>
-<version>0.1.0-SNAPSHOT</version>
+<version>$VERSION</version>
 </dependency>`
 
 ### SBT
@@ -28,21 +28,20 @@ Public Key is available without authorization so just the relevant host needs to
 
 ## Token retrieval
 
-The library provides a `TokenRetrievalService` class that can be used to retrieve a JWT tokens.
-Public Key is available without authorization so just the relevant host needs to be provided. Public Key is available as a `String` and as a JWKS.
+The library provides a `TokenRetrievalClient` class that can be used to retrieve access and refresh tokens.
 Refresh and Access Keys require authorization. Basic Auth is used for the initial retrieval so a valid username and password is required.
 Please see the [login-service documentation](README.md) for more information on what a valid username and password is.
 Refresh token from initial retrieval is used to refresh the access token.
 
 ## Creating and Using a JWT Decoder
 
-The user can add the `org.springframework.security.oauth2.jwt.NimbusJwtDecoder` dependency in order to decode and verify JWT tokens.
+The user can add the `org.springframework.security.oauth2.jwt.NimbusJwtDecoder` dependency in order to decode and verify JWTs.
 Decoded Tokens are available as a `Jwt` object that provides access to the claims of the token.
 
 ## Parsing and using Claims
 
-This object is used to parse Access Token claims.
-It is used to extract the claims from the token which can be used to verify the token
+`ClaimsParser` object is used to parse decoded Access Token claims.
+It is used to extract the claims from the decoded jwt which can be used to verify the token
 and to indicate what permissions the user has.
 
 For example, one may check what groups the user belongs to under the `groups` claim to indicate what a user may or may not do.

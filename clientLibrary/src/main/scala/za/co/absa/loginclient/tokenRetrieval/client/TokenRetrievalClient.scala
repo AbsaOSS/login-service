@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package za.co.absa.loginclient.tokenRetrieval.service
+package za.co.absa.loginclient.tokenRetrieval.client
 
 import com.google.gson.{JsonObject, JsonParser}
 import org.slf4j.{Logger, LoggerFactory}
@@ -32,18 +32,44 @@ import java.util.Collections
  * @param host The host of the login service.
  */
 
-case class TokenRetrievalService(host: String) {
+case class TokenRetrievalClient(host: String) {
 
   private val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
+  /**
+   * This method requests an access token (JWT) from the login service using the specified username and password.
+   * This Token is used to access resources which utilize the login Service for authentication.
+   *
+   * @param username The username used for authentication.
+   * @param password The password associated with the provided username.
+   * @return An AccessToken object representing the retrieved access token (JWT) from the login service.
+   */
   def fetchAccessToken(username: String, password: String): AccessToken = {
     fetchAccessAndRefreshToken(username, password)._1
   }
 
+  /**
+   * This method requests a refresh token from the login service using the specified username and password.
+   * This token may be used to acquire a new access token (JWT) when the current access token expires.
+   *
+   * @param username The username used for authentication.
+   * @param password The password associated with the provided username.
+   * @return A RefreshToken object representing the retrieved refresh token from the login service.
+   */
   def fetchRefreshToken(username: String, password: String): RefreshToken = {
     fetchAccessAndRefreshToken(username, password)._2
   }
 
+  /**
+   * Fetches both an access token and a refresh token from the login service using the provided username, password, and optional groups.
+   * This method requests both an access token and a refresh token (JWTs) from the login service using the specified username and password.
+   * Additionally, it allows specifying optional groups that act as filters for the JWT, returning only the JWTs associated with the provided groups if the user belongs to them.
+   *
+   * @param username The username used for authentication.
+   * @param password The password associated with the provided username.
+   * @param groups   An optional list of PAM groups. If provided, only JWTs associated with these groups are returned if the user belongs to them.
+   * @return A tuple containing the AccessToken and RefreshToken objects representing the retrieved access and refresh tokens (JWTs) from the login service.
+   */
   def fetchAccessAndRefreshToken(username: String, password: String, groups: Option[List[String]] = None): (AccessToken, RefreshToken) = {
     var issuerUri = s"$host/token/generate"
 

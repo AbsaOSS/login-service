@@ -19,8 +19,8 @@ package za.co.absa.clientexample
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder
 import za.co.absa.clientexample.config.ConfigProvider
 import za.co.absa.loginclient.authorization.ClaimsParser.{getAllClaims, verifyDecodedAccessToken}
-import za.co.absa.loginclient.publicKeyRetrieval.service.PublicKeyRetrievalService
-import za.co.absa.loginclient.tokenRetrieval.service.TokenRetrievalService
+import za.co.absa.loginclient.publicKeyRetrieval.client.PublicKeyRetrievalClient
+import za.co.absa.loginclient.tokenRetrieval.client.TokenRetrievalClient
 
 import java.nio.file.{Files, Paths}
 import java.util.Scanner
@@ -42,8 +42,8 @@ object Application {
     }
     val config = new ConfigProvider(configPath).getExampleConfig
 
-    val tokenRetriever = TokenRetrievalService(config.host)
-    val publicKeyRetriever = PublicKeyRetrievalService(config.host)
+    val tokenRetriever = TokenRetrievalClient(config.host)
+    val publicKeyRetriever = PublicKeyRetrievalClient(config.host)
     val scanner = new Scanner(System.in)
 
     val jwtDecoder = {
