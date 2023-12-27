@@ -18,10 +18,8 @@ package za.co.absa.loginclient.authorization
 
 import org.springframework.security.oauth2.jwt.Jwt
 
-import java.text.SimpleDateFormat
-import java.time.Instant
+import java.time.{Instant, LocalDateTime, ZoneId}
 import java.util
-import java.util.Date
 import scala.collection.JavaConverters._
 
 /**
@@ -31,19 +29,46 @@ import scala.collection.JavaConverters._
 object ClaimsParser {
 
   //Generic methods for parsing JWT claims
+
+  /**
+   * Returns a list of all the claim keys in the JWT.
+   *
+   * @param jwt The JWT to parse.
+   * @return A list of all the claim keys in the JWT.
+   */
   def listClaimKeys(jwt: Jwt): List[String] = {
     jwt.getClaims.keySet().asScala.toList
   }
 
+  /**
+   * Returns the value of the claim with the given key.
+   *
+   * @param jwt      The JWT to parse.
+   * @param claimKey The key of the claim to retrieve.
+   * @return The value of the claim with the given key.
+   */
   def getClaim(jwt: Jwt, claimKey: String): Option[Any] = {
     Option(jwt.getClaim(claimKey))
   }
 
+  /**
+   * Returns a map of all the claims in the JWT.
+   *
+   * @param jwt The JWT to parse.
+   * @return A map of all the claims in the JWT.
+   */
   def getAllClaims(jwt: Jwt): Map[String, Any] = {
     jwt.getClaims.asScala.toMap
   }
 
   // Login Service specific methods for parsing JWT claims
+
+  /**
+   * Returns the list of groups of the user that the JWT was issued to.
+   *
+   * @param jwt The JWT to parse.
+   * @return The List of groups of the user that the JWT was issued to.
+   */
   def getGroups(jwt: Jwt): List[String] = {
     getClaim(jwt, "groups") match {
       case Some(groups) => groups.asInstanceOf[util.ArrayList[String]].asScala.toList
@@ -51,6 +76,12 @@ object ClaimsParser {
     }
   }
 
+  /**
+   * Returns the username of the user that the JWT was issued to.
+   *
+   * @param jwt The JWT to parse.
+   * @return The username of the user that the JWT was issued to.
+   */
   def getSubject(jwt: Jwt): String = {
     getClaim(jwt, "sub") match {
       case Some(username) => username.toString
@@ -58,6 +89,12 @@ object ClaimsParser {
     }
   }
 
+  /**
+   * Returns the expiry time of the JWT.
+   *
+   * @param jwt The JWT to parse.
+   * @return The expiry time of the JWT.
+   */
   def getExpiration(jwt: Jwt): Instant = {
     getClaim(jwt, "exp") match {
       case Some(expiration) => Instant.ofEpochSecond(expiration.toString.toLong)
@@ -65,6 +102,12 @@ object ClaimsParser {
     }
   }
 
+  /**
+   * Returns the issue time of the JWT.
+   *
+   * @param jwt The JWT to parse.
+   * @return The issue time of the JWT.
+   */
   def getIssueTime(jwt: Jwt): Instant = {
     getClaim(jwt, "iat") match {
       case Some(issueTime) => Instant.ofEpochSecond(issueTime.toString.toLong)
@@ -72,6 +115,11 @@ object ClaimsParser {
     }
   }
 
+  /**
+   * Returns the email of the user that the JWT was issued to.
+   * @param jwt The JWT to parse.
+   * @return The email of the user that the JWT was issued to.
+   */
   def getEmail(jwt: Jwt): Option[String] = {
     getClaim(jwt, "email") match {
       case Some(email) => Some(email.toString)
@@ -79,6 +127,11 @@ object ClaimsParser {
     }
   }
 
+  /**
+   * Returns the display name of the user that the JWT was issued to.
+   * @param jwt The JWT to parse.
+   * @return The display name of the user that the JWT was issued to.
+   */
   def getDisplayName(jwt: Jwt): Option[String] = {
     getClaim(jwt, "displayname") match {
       case Some(displayName) => Some(displayName.toString)
@@ -86,6 +139,11 @@ object ClaimsParser {
     }
   }
 
+  /**
+   * Returns the type of JWT. Can be either an access or refresh token.
+   * @param jwt The JWT to parse.
+   * @return The type of JWT as a String.
+   */
   def getTokenType(jwt: Jwt): String = {
     getClaim(jwt, "type") match {
       case Some(tokenType) => tokenType.toString
@@ -93,13 +151,26 @@ object ClaimsParser {
     }
   }
 
+  /**
+   * Verifies that the JWT is a valid access token.
+   * Checks that the token is not expired and that the type is access.
+   * @param jwt The JWT to parse.
+   * @return True if the JWT is a valid access token, false otherwise.
+   */
   def verifyDecodedAccessToken(jwt: Jwt): Boolean = {
     val claims = getAllClaims(jwt)
     verifyDecodedAccessToken(claims)
   }
 
+  /**
+   * Verifies that the JWT is a valid access token.
+   * Checks that the token is not expired and that the type is access.
+   * @param claims The claims of the JWT to parse.
+   * @return True if the JWT is a valid access token, false otherwise.
+   */
   def verifyDecodedAccessToken(claims: Map[String, Any]): Boolean = {
-    val notExpired = claims("exp").toString.toLong > Instant.now().getEpochSecond
+    val exp = Instant.parse(claims("exp").toString).getEpochSecond
+    val notExpired = exp > Instant.now().getEpochSecond
     val isAccessType = claims("type").toString == "access"
     notExpired && isAccessType
   }

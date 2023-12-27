@@ -19,6 +19,7 @@ package za.co.absa.clientexample
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder
 import za.co.absa.clientexample.config.ConfigProvider
 import za.co.absa.loginclient.authorization.ClaimsParser.{getAllClaims, verifyDecodedAccessToken}
+import za.co.absa.loginclient.authorization.DecoderProvider
 import za.co.absa.loginclient.publicKeyRetrieval.client.PublicKeyRetrievalClient
 import za.co.absa.loginclient.tokenRetrieval.client.TokenRetrievalClient
 
@@ -43,16 +44,8 @@ object Application {
     val config = new ConfigProvider(configPath).getExampleConfig
 
     val tokenRetriever = TokenRetrievalClient(config.host)
-    val publicKeyRetriever = PublicKeyRetrievalClient(config.host)
+    val decoder = DecoderProvider.getDecoderFromURL(config.host)
     val scanner = new Scanner(System.in)
-
-    val jwtDecoder = {
-      val publicKey = publicKeyRetriever.getPublicKey
-      val publicKeyBytes = Base64.getDecoder.decode(publicKey.token)
-      val publicKeySpec = new X509EncodedKeySpec(publicKeyBytes)
-      val encodedPublicKey = KeyFactory.getInstance("RSA").generatePublic(publicKeySpec).asInstanceOf[RSAPublicKey]
-      NimbusJwtDecoder.withPublicKey(encodedPublicKey).build()
-    }
 
     var loggedIn = false
 
@@ -67,10 +60,12 @@ object Application {
 
       try {
         val (accessToken, refreshToken) = tokenRetriever.fetchAccessAndRefreshToken(username, password)
-        val accessJwt = jwtDecoder.decode(accessToken.token)
-        var accessClaims = getAllClaims(accessJwt)
-        if(!verifyDecodedAccessToken(accessClaims)) throw new Exception("Access Token Verification Failed")
+        if(!DecoderProvider.verifyAccessToken(decoder, accessToken)) throw new Exception("Access Token Verification Failed")
         loggedIn = true
+
+        val accessJwt = DecoderProvider.decodeAccessToken(decoder, accessToken)
+        var accessClaims = getAllClaims(accessJwt)
+
         println("----------------------------------------------")
         println(s"${accessClaims("sub").toString.toUpperCase} HAS LOGGED IN.")
         println(s"ACCESS TOKEN: $accessToken")
@@ -86,8 +81,15 @@ object Application {
           choice match {
             case "1" =>
               val (newAccessToken, newRefreshToken) = tokenRetriever.refreshAccessToken(accessToken, refreshToken)
+              if(!DecoderProvider.verifyAccessToken(decoder, newAccessToken))
+                {
+                  loggedIn = false
+                  println("----------------------------------------------")
+                  println(s"REFRESH TOKEN NOT VALID. PLEASE LOG IN AGAIN.")
+                  println(s"${accessClaims("sub").toString.toUpperCase} HAS LOGGED OUT.")
+                  println("----------------------------------------------")
+                }
               accessClaims = getAllClaims(accessJwt)
-              if(!verifyDecodedAccessToken(accessClaims)) throw new Exception("Refreshed Access Token Verification Failed")
               println("----------------------------------------------")
               println(s"NEW ACCESS TOKEN: $newAccessToken")
               println(s"REFRESH TOKEN: $newRefreshToken")
