@@ -16,14 +16,14 @@
 
 package za.co.absa.loginclient.authorization
 
-import io.jsonwebtoken.Jwts
-import org.springframework.security.oauth2.jwt.Jwt
+import io.jsonwebtoken.security.Keys
+import io.jsonwebtoken.{Jwts, SignatureAlgorithm}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 import java.time.Instant
 import java.util
-import java.util.Date
+import java.util.{Base64, Date}
 
 class ClaimsParserTest extends AnyFlatSpec with Matchers {
 
@@ -38,17 +38,22 @@ class ClaimsParserTest extends AnyFlatSpec with Matchers {
   groupsClaim.add("group1")
   groupsClaim.add("group2")
 
-  private val token = Jwts.builder().compact()
+  private val keys = Keys.keyPairFor(SignatureAlgorithm.RS256)
 
-  private val jwt = Jwt.withTokenValue(token)
-    .header("alg", "none")
-    .subject(subject)
-    .expiresAt(expiration.toInstant)
-    .issuedAt(issuedAt.toInstant)
+  private val token = Jwts.builder()
+    .setSubject(subject)
+    .setExpiration(expiration)
+    .setIssuedAt(issuedAt)
     .claim("groups", groupsClaim)
     .claim("email", email)
     .claim("displayname", displayName)
-    .claim("type", tokenType)build()
+    .claim("type", tokenType)
+    .signWith(keys.getPrivate)
+    .compact()
+
+  private val privateKeyString = Base64.getEncoder.encodeToString(keys.getPublic.getEncoded)
+  private val decoder = DecoderProvider.getDecoder(privateKeyString)
+  private val jwt = decoder.decode(token)
 
   it should "return a subject that equals 'testUser'" in {
     val sub = ClaimsParser.getSubject(jwt)
@@ -62,12 +67,14 @@ class ClaimsParserTest extends AnyFlatSpec with Matchers {
 
   it should "return a expiration date that should be within an hour of testing" in {
     val exp = ClaimsParser.getExpiration(jwt)
-    assert(exp.equals(expiration.toInstant))
+    val check = expiration.toInstant
+    assert(exp.equals(Instant.ofEpochSecond(check.getEpochSecond)))
   }
 
   it should "return the set time of issue" in {
     val issueTime = ClaimsParser.getIssueTime(jwt)
-    assert(issueTime.equals(issuedAt.toInstant))
+    val check = issuedAt.toInstant
+    assert(issueTime.equals(Instant.ofEpochSecond(check.getEpochSecond)))
   }
 
   it should "return the email address" in {
