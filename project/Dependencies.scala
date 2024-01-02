@@ -51,7 +51,7 @@ object Dependencies {
 
   lazy val jsonParser = "com.google.code.gson" % "gson" % "2.10.1"
 
-  lazy val jwtDecoder = "org.springframework.security" % "spring-security-oauth2-jose" % "6.0.2"
+  lazy val jwtDecoder = "org.springframework.security" % "spring-security-oauth2-jose" % Versions.spring
   lazy val nimbusJoseJwt = "com.nimbusds" % "nimbus-jose-jwt" % Versions.nimbusJoseJwt
   lazy val bouncyCastle = "org.bouncycastle" % "bcprov-jdk15on" % "1.70"
 
