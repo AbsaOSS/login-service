@@ -42,10 +42,11 @@ case class TokenRetrievalClient(host: String) {
    *
    * @param username The username used for authentication.
    * @param password The password associated with the provided username.
+   * @param groups   An optional list of PAM groups. If provided, only JWTs associated with these groups are returned if the user belongs to them.
    * @return An AccessToken object representing the retrieved access token (JWT) from the login service.
    */
-  def fetchAccessToken(username: String, password: String): AccessToken = {
-    fetchAccessAndRefreshToken(username, password)._1
+  def fetchAccessToken(username: String, password: String, groups: List[String] = List.empty): AccessToken = {
+    fetchAccessAndRefreshToken(username, password, groups)._1
   }
 
   /**
@@ -70,7 +71,7 @@ case class TokenRetrievalClient(host: String) {
    * @param groups   An optional list of PAM groups. If provided, only JWTs associated with these groups are returned if the user belongs to them.
    * @return A tuple containing the AccessToken and RefreshToken objects representing the retrieved access and refresh tokens (JWTs) from the login service.
    */
-  def fetchAccessAndRefreshToken(username: String, password: String, groups: Option[List[String]] = None): (AccessToken, RefreshToken) = {
+  def fetchAccessAndRefreshToken(username: String, password: String, groups: List[String] = List.empty): (AccessToken, RefreshToken) = {
     var issuerUri = s"$host/token/generate"
 
     if(groups.nonEmpty)
