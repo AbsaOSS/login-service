@@ -97,7 +97,7 @@ object ClaimsParser {
    */
   def getExpiration(jwt: Jwt): Instant = {
     getClaim(jwt, "exp") match {
-      case Some(expiration) => Instant.ofEpochSecond(expiration.toString.toLong)
+      case Some(expiration) => Instant.parse(expiration.toString)
       case None => throw new Exception("Expiration not found")
     }
   }
@@ -110,7 +110,7 @@ object ClaimsParser {
    */
   def getIssueTime(jwt: Jwt): Instant = {
     getClaim(jwt, "iat") match {
-      case Some(issueTime) => Instant.ofEpochSecond(issueTime.toString.toLong)
+      case Some(issueTime) => Instant.parse(issueTime.toString)
       case None => throw new Exception("Issue time not found")
     }
   }

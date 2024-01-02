@@ -114,12 +114,18 @@ object Dependencies {
     jwtDecoder,
     bouncyCastle,
 
+    jjwtApi,
+    jjwtImpl,
+    jjwtJackson,
+
     jsonParser,
 
     requests,
 
     springBootWeb,
     springBootSecurity,
+
+    scalaTest
   )
 
   def exampleDependencies: Seq[ModuleID] = Seq(
