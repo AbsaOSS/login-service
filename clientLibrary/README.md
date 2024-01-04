@@ -22,7 +22,7 @@ for a more detailed view of how to use the library.
 
 ## Public key retrieval
 
-The library provides a `PublicKeyRetrievalService` class that can be used to retrieve the public key used to sign the tokens.
+The library provides a `PublicKeyRetrievalClient` class that can be used to retrieve the public key to verify tokens' signatures.
 Public Key is available without authorization so just the relevant host needs to be provided. Public Key is available as a `String` and as a JWKS.
 
 
