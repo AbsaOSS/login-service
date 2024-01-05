@@ -26,7 +26,7 @@ import scala.collection.JavaConverters._
  * This object is used to parse Access Token claims.
  */
 
-object ClaimsParser {
+object AccessTokenClaimsParser {
 
   //Generic methods for parsing JWT claims
 
@@ -151,27 +151,5 @@ object ClaimsParser {
     }
   }
 
-  /**
-   * Verifies that the JWT is a valid access token.
-   * Checks that the token is not expired and that the type is access.
-   * @param jwt The JWT to parse.
-   * @return True if the JWT is a valid access token, false otherwise.
-   */
-  def verifyDecodedAccessToken(jwt: Jwt): Boolean = {
-    val claims = getAllClaims(jwt)
-    verifyDecodedAccessToken(claims)
-  }
 
-  /**
-   * Verifies that the JWT is a valid access token.
-   * Checks that the token is not expired and that the type is access.
-   * @param claims The claims of the JWT to parse.
-   * @return True if the JWT is a valid access token, false otherwise.
-   */
-  def verifyDecodedAccessToken(claims: Map[String, Any]): Boolean = {
-    val exp = Instant.parse(claims("exp").toString).getEpochSecond
-    val notExpired = exp > Instant.now().getEpochSecond
-    val isAccessType = claims("type").toString == "access"
-    notExpired && isAccessType
-  }
 }

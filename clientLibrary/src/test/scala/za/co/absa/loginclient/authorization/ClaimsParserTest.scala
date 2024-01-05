@@ -51,44 +51,44 @@ class ClaimsParserTest extends AnyFlatSpec with Matchers {
     .signWith(keys.getPrivate)
     .compact()
 
-  private val privateKeyString = Base64.getEncoder.encodeToString(keys.getPublic.getEncoded)
-  private val decoder = DecoderProvider.getDecoder(privateKeyString)
+  private val publicKeyString = Base64.getEncoder.encodeToString(keys.getPublic.getEncoded)
+  private val decoder = JwtDecoderProvider.getDecoderFromPublicKeyString(publicKeyString)
   private val jwt = decoder.decode(token)
 
   it should "return a subject that equals 'testUser'" in {
-    val sub = ClaimsParser.getSubject(jwt)
+    val sub = AccessTokenClaimsParser.getSubject(jwt)
     assert(sub.equals(subject))
   }
 
   it should "return a list of groups that contain 'group1', 'group2')" in {
-    val groups = ClaimsParser.getGroups(jwt)
+    val groups = AccessTokenClaimsParser.getGroups(jwt)
     assert(groups == List("group1", "group2"))
   }
 
   it should "return a expiration date that should be within an hour of testing" in {
-    val exp = ClaimsParser.getExpiration(jwt)
+    val exp = AccessTokenClaimsParser.getExpiration(jwt)
     val check = expiration.toInstant
     assert(exp.equals(Instant.ofEpochSecond(check.getEpochSecond)))
   }
 
   it should "return the set time of issue" in {
-    val issueTime = ClaimsParser.getIssueTime(jwt)
+    val issueTime = AccessTokenClaimsParser.getIssueTime(jwt)
     val check = issuedAt.toInstant
     assert(issueTime.equals(Instant.ofEpochSecond(check.getEpochSecond)))
   }
 
   it should "return the email address" in {
-    val email = ClaimsParser.getEmail(jwt)
+    val email = AccessTokenClaimsParser.getEmail(jwt)
     assert(email.equals(email))
   }
 
   it should "return the display name" in {
-    val displayName = ClaimsParser.getDisplayName(jwt)
+    val displayName = AccessTokenClaimsParser.getDisplayName(jwt)
     assert(displayName.equals(displayName))
   }
 
   it should "return the token type" in {
-    val tokenType = ClaimsParser.getTokenType(jwt)
+    val tokenType = AccessTokenClaimsParser.getTokenType(jwt)
     assert(tokenType.equals(tokenType))
   }
 }
