@@ -16,19 +16,13 @@
 
 package za.co.absa.clientexample
 
-import org.springframework.security.oauth2.jwt.NimbusJwtDecoder
 import za.co.absa.clientexample.config.ConfigProvider
-import za.co.absa.loginclient.authorization.ClaimsParser.{getAllClaims, verifyDecodedAccessToken}
-import za.co.absa.loginclient.authorization.DecoderProvider
-import za.co.absa.loginclient.publicKeyRetrieval.client.PublicKeyRetrievalClient
+import za.co.absa.loginclient.exceptions.LsJwtException
+import za.co.absa.loginclient.authorization.{AccessTokenClaimsParser, AccessTokenVerificator, JwtDecoderProvider}
 import za.co.absa.loginclient.tokenRetrieval.client.TokenRetrievalClient
 
 import java.nio.file.{Files, Paths}
 import java.util.Scanner
-import java.security.KeyFactory
-import java.security.interfaces.RSAPublicKey
-import java.security.spec.X509EncodedKeySpec
-import java.util.Base64
 
 object Application {
 
@@ -38,13 +32,14 @@ object Application {
     if (args.length < 1) {
       throw new Exception("Usage: Application <config_path>")
     } else {
-      if(Files.exists(Paths.get(args(0)))) configPath = args(0)
+      if (Files.exists(Paths.get(args(0)))) configPath = args(0)
       else throw new Exception("Config file does not exist")
     }
     val config = new ConfigProvider(configPath).getExampleConfig
 
     val tokenRetriever = TokenRetrievalClient(config.host)
-    val decoder = DecoderProvider.getDecoderFromURL(config.host)
+    val decoder = JwtDecoderProvider.getDecoderFromURL(config.host)
+    val accessVerificator = AccessTokenVerificator(decoder)
     val scanner = new Scanner(System.in)
 
     var loggedIn = false
@@ -60,11 +55,10 @@ object Application {
 
       try {
         val (accessToken, refreshToken) = tokenRetriever.fetchAccessAndRefreshToken(username, password)
-        if(!DecoderProvider.verifyAccessToken(decoder, accessToken)) throw new Exception("Access Token Verification Failed")
+        val decodedAtJwt = accessVerificator.decodeAndVerifyAccessToken(accessToken) // throw Exception on verification fail
         loggedIn = true
 
-        val accessJwt = DecoderProvider.decodeAccessToken(decoder, accessToken)
-        var accessClaims = getAllClaims(accessJwt)
+        var accessClaims = AccessTokenClaimsParser.getAllClaims(decodedAtJwt)
 
         println("----------------------------------------------")
         println(s"${accessClaims("sub").toString.toUpperCase} HAS LOGGED IN.")
@@ -81,20 +75,23 @@ object Application {
           choice match {
             case "1" =>
               val (newAccessToken, newRefreshToken) = tokenRetriever.refreshAccessToken(accessToken, refreshToken)
-              if(!DecoderProvider.verifyAccessToken(decoder, newAccessToken))
-                {
+              try {
+                val refreshedAtJwt = accessVerificator.decodeAndVerifyAccessToken(accessToken)
+                accessClaims = AccessTokenClaimsParser.getAllClaims(refreshedAtJwt)
+                println("----------------------------------------------")
+                println(s"NEW ACCESS TOKEN: $newAccessToken")
+                println(s"REFRESH TOKEN: $newRefreshToken")
+                println(s"${accessClaims("sub").toString.toUpperCase} HAS REFRESHED ACCESS TOKEN.")
+                println("----------------------------------------------")
+
+              } catch {
+                case _:LsJwtException =>
                   loggedIn = false
                   println("----------------------------------------------")
                   println(s"REFRESH TOKEN NOT VALID. PLEASE LOG IN AGAIN.")
                   println(s"${accessClaims("sub").toString.toUpperCase} HAS LOGGED OUT.")
                   println("----------------------------------------------")
-                }
-              accessClaims = getAllClaims(accessJwt)
-              println("----------------------------------------------")
-              println(s"NEW ACCESS TOKEN: $newAccessToken")
-              println(s"REFRESH TOKEN: $newRefreshToken")
-              println(s"${accessClaims("sub").toString.toUpperCase} HAS REFRESHED ACCESS TOKEN.")
-              println("----------------------------------------------")
+              }
             case "2" =>
               println("----------------------------------------------")
               println(s"CLAIMS: $accessClaims")
