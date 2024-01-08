@@ -72,13 +72,13 @@ case class TokenRetrievalClient(host: String) {
    * @return A tuple containing the AccessToken and RefreshToken objects representing the retrieved access and refresh tokens (JWTs) from the login service.
    */
   def fetchAccessAndRefreshToken(username: String, password: String, groups: List[String] = List.empty): (AccessToken, RefreshToken) = {
-    var issuerUri = s"$host/token/generate"
 
-    if(groups.nonEmpty)
-      {
+    val issuerUri = if(groups.nonEmpty) {
         val commaSeparatedString = groups.mkString(",")
-        issuerUri += "?group-prefixes=" + URLEncoder.encode(commaSeparatedString, "UTF-8")
-      }
+        val urlEncodedGroups = URLEncoder.encode(commaSeparatedString, "UTF-8")
+        s"$host/token/generate?group-prefixes=$urlEncodedGroups"
+    } else s"$host/token/generate"
+
     val jsonString = fetchToken(issuerUri, username, password)
     val jsonObject = JsonParser.parseString(jsonString).getAsJsonObject
     val accessToken = jsonObject.get("token").getAsString

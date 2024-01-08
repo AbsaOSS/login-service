@@ -27,7 +27,12 @@ case class AccessTokenVerificator(
 ) {
 
   def decodeAndVerifyAccessToken(accessToken: AccessToken): Jwt = {
-    val jwt = decoder.decode(accessToken.token)
+
+    val jwt = try decoder.decode(accessToken.token)
+    catch {
+      case e: Throwable => throw LsJwtException("Access Token Decoding Failed")
+    }
+
     val verificationSuccess = verifyDecodedAccessToken(jwt)
 
     if (!verificationSuccess){

@@ -22,13 +22,7 @@ import java.time.{Instant, LocalDateTime, ZoneId}
 import java.util
 import scala.collection.JavaConverters._
 
-/**
- * This object is used to parse Access Token claims.
- */
-
-object AccessTokenClaimsParser {
-
-  //Generic methods for parsing JWT claims
+trait ClaimsParser {
 
   /**
    * Returns a list of all the claim keys in the JWT.
@@ -59,21 +53,6 @@ object AccessTokenClaimsParser {
    */
   def getAllClaims(jwt: Jwt): Map[String, Any] = {
     jwt.getClaims.asScala.toMap
-  }
-
-  // Login Service specific methods for parsing JWT claims
-
-  /**
-   * Returns the list of groups of the user that the JWT was issued to.
-   *
-   * @param jwt The JWT to parse.
-   * @return The List of groups of the user that the JWT was issued to.
-   */
-  def getGroups(jwt: Jwt): List[String] = {
-    getClaim(jwt, "groups") match {
-      case Some(groups) => groups.asInstanceOf[util.ArrayList[String]].asScala.toList
-      case None => List()
-    }
   }
 
   /**
@@ -116,6 +95,39 @@ object AccessTokenClaimsParser {
   }
 
   /**
+   * Returns the type of JWT. Can be either an access or refresh token.
+   *
+   * @param jwt The JWT to parse.
+   * @return The type of JWT as a String.
+   */
+  def getTokenType(jwt: Jwt): String = {
+    getClaim(jwt, "type") match {
+      case Some(tokenType) => tokenType.toString
+      case None => throw new Exception("Token type not found")
+    }
+  }
+}
+
+/**
+ * This object is used to parse Access Token claims.
+ */
+
+object AccessTokenClaimsParser extends ClaimsParser {
+
+  /**
+   * Returns the list of groups of the user that the JWT was issued to.
+   *
+   * @param jwt The JWT to parse.
+   * @return The List of groups of the user that the JWT was issued to.
+   */
+  def getGroups(jwt: Jwt): List[String] = {
+    getClaim(jwt, "groups") match {
+      case Some(groups) => groups.asInstanceOf[util.ArrayList[String]].asScala.toList
+      case None => List()
+    }
+  }
+
+  /**
    * Returns the email of the user that the JWT was issued to.
    * @param jwt The JWT to parse.
    * @return The email of the user that the JWT was issued to.
@@ -138,18 +150,9 @@ object AccessTokenClaimsParser {
       case None => None
     }
   }
-
-  /**
-   * Returns the type of JWT. Can be either an access or refresh token.
-   * @param jwt The JWT to parse.
-   * @return The type of JWT as a String.
-   */
-  def getTokenType(jwt: Jwt): String = {
-    getClaim(jwt, "type") match {
-      case Some(tokenType) => tokenType.toString
-      case None => throw new Exception("Token type not found")
-    }
-  }
-
-
 }
+
+/**
+ * This object is used to parse Refresh Token claims.
+ */
+object RefreshTokenClaimsParser extends ClaimsParser

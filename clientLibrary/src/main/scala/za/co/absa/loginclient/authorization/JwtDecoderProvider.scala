@@ -65,5 +65,4 @@ object JwtDecoderProvider {
   def getDecoderFromURL(host: String): JwtDecoder = {
     NimbusJwtDecoder.withJwkSetUri(s"$host/token/public-key-jwks").build()
   }
-
 }
