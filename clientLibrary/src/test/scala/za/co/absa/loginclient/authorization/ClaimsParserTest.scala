@@ -28,6 +28,7 @@ class ClaimsParserTest extends AnyFlatSpec with Matchers {
   private val decoder = JwtDecoderProvider.getDecoderFromPublicKeyString(publicKeyString)
   private val accessJwt = decoder.decode(FakeTokens.validAccessToken)
   private val refreshJwt = decoder.decode(FakeTokens.validRefreshToken)
+  private val invalidJwt = decoder.decode(FakeTokens.missingClaimToken)
 
   "Access token" should "return a subject that equals 'testUser'" in {
     val subject = AccessTokenClaimsParser.getSubject(accessJwt)
@@ -86,5 +87,12 @@ class ClaimsParserTest extends AnyFlatSpec with Matchers {
   "Refresh token" should "return the token type" in {
     val tokenType = RefreshTokenClaimsParser.getTokenType(refreshJwt)
     assert(tokenType.equals("refresh"))
+  }
+
+  "Token with missing Type" should "return an exception" in {
+    val exception = the[Exception] thrownBy {
+      RefreshTokenClaimsParser.getTokenType(invalidJwt)
+    }
+    exception.getMessage shouldBe "Token type not found"
   }
 }

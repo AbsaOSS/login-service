@@ -95,4 +95,19 @@ object FakeTokens {
     .claim("type", "refresh")
     .signWith(invalidKeys.getPrivate)
     .compact()
+
+  val missingClaimToken: String = Jwts.builder()
+    .setSubject(subject)
+    .setExpiration(validExpiration)
+    .setIssuedAt(issuedAt)
+    .signWith(keys.getPrivate)
+    .compact()
+
+  val invalidTypeToken: String = Jwts.builder()
+    .setSubject(subject)
+    .setExpiration(validExpiration)
+    .setIssuedAt(issuedAt)
+    .claim("type", "invalid")
+    .signWith(keys.getPrivate)
+    .compact()
 }
