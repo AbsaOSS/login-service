@@ -17,8 +17,9 @@
 package za.co.absa.loginclient.authorization
 
 import org.springframework.security.oauth2.jwt.Jwt
+import za.co.absa.loginclient.exceptions.LsJwtException
 
-import java.time.{Instant, LocalDateTime, ZoneId}
+import java.time.Instant
 import java.util
 import scala.collection.JavaConverters._
 
@@ -64,7 +65,7 @@ trait ClaimsParser {
   def getSubject(jwt: Jwt): String = {
     getClaim(jwt, "sub") match {
       case Some(username) => username.toString
-      case None => throw new Exception("Subject not found")
+      case None => throw LsJwtException("Subject not found")
     }
   }
 
@@ -77,7 +78,7 @@ trait ClaimsParser {
   def getExpiration(jwt: Jwt): Instant = {
     getClaim(jwt, "exp") match {
       case Some(expiration) => Instant.parse(expiration.toString)
-      case None => throw new Exception("Expiration not found")
+      case None => throw LsJwtException("Expiration not found")
     }
   }
 
@@ -90,7 +91,7 @@ trait ClaimsParser {
   def getIssueTime(jwt: Jwt): Instant = {
     getClaim(jwt, "iat") match {
       case Some(issueTime) => Instant.parse(issueTime.toString)
-      case None => throw new Exception("Issue time not found")
+      case None => throw LsJwtException("Issue time not found")
     }
   }
 
@@ -103,7 +104,7 @@ trait ClaimsParser {
   def getTokenType(jwt: Jwt): String = {
     getClaim(jwt, "type") match {
       case Some(tokenType) => tokenType.toString
-      case None => throw new Exception("Token type not found")
+      case None => throw LsJwtException("Token type not found")
     }
   }
 }
@@ -150,9 +151,35 @@ object AccessTokenClaimsParser extends ClaimsParser {
       case None => None
     }
   }
+
+  /**
+   * Checks the type of JWT to be 'access'
+   *
+   * @param jwt The JWT to parse.
+   * @return true if type=access was found, false otherwise
+   * @throws LsJwtException if `type` claim was not found at all
+
+   */
+
+  def isAccessTokenType(jwt: Jwt): Boolean = {
+    getTokenType(jwt) == "access"
+  }
 }
 
 /**
  * This object is used to parse Refresh Token claims.
  */
-object RefreshTokenClaimsParser extends ClaimsParser
+object RefreshTokenClaimsParser extends ClaimsParser {
+
+  /**
+   * Checks the type of JWT to be 'refresh'
+   *
+   * @param jwt The JWT to parse.
+   * @return true if type=refresh was found, false otherwise
+   * @throws LsJwtException if `type` claim was not found at all
+   */
+
+  def isRefreshTokenType(jwt: Jwt): Boolean = {
+    getTokenType(jwt)  == "refresh"
+  }
+}

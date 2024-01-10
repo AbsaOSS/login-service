@@ -34,12 +34,20 @@ class RefreshTokenVerificatorTest extends AnyFlatSpec with Matchers{
     refreshTokenVerificator.decodeAndVerifyRefreshToken(token)
   }
 
+  "Incorrectly structured Refresh Token" should "fail decoding" in {
+    val token = RefreshToken(FakeTokens.missingSubjectToken)
+    val exception = the[LsJwtException] thrownBy {
+      refreshTokenVerificator.decodeAndVerifyRefreshToken(token)
+    }
+    exception.getMessage shouldBe "Refresh Token Decoding Failed: An error occurred while attempting to decode the Jwt: Malformed payload"
+  }
+
   "Expired Refresh Token" should "fail decoding" in {
     val token = RefreshToken(FakeTokens.invalidExpirationRefreshToken)
     val exception = the[LsJwtException] thrownBy {
       refreshTokenVerificator.decodeAndVerifyRefreshToken(token)
     }
-    exception.getMessage shouldBe "Refresh Token Decoding Failed"
+    exception.getMessage shouldBe "Refresh Token Decoding Failed: An error occurred while attempting to decode the Jwt: expiresAt must be after issuedAt"
   }
 
   "Incorrectly signed Refresh Token" should "fail decoding" in {
@@ -47,7 +55,7 @@ class RefreshTokenVerificatorTest extends AnyFlatSpec with Matchers{
     val exception = the[LsJwtException] thrownBy {
       refreshTokenVerificator.decodeAndVerifyRefreshToken(token)
     }
-    exception.getMessage shouldBe "Refresh Token Decoding Failed"
+    exception.getMessage shouldBe "Refresh Token Decoding Failed: An error occurred while attempting to decode the Jwt: Signed JWT rejected: Invalid signature"
   }
 
   "Access Token with missing Type" should "return an exception" in {

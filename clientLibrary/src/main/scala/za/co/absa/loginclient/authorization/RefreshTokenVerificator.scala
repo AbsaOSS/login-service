@@ -30,7 +30,7 @@ decoder: JwtDecoder
 
     val jwt = try decoder.decode(refreshToken.token)
     catch {
-      case e: Throwable => throw LsJwtException("Refresh Token Decoding Failed")
+      case e: Throwable => throw LsJwtException(s"Refresh Token Decoding Failed: ${e.getMessage}", e)
     }
 
     val verificationSuccess = verifyDecodedRefreshToken(jwt)
@@ -50,21 +50,10 @@ decoder: JwtDecoder
    * @return True if the JWT is a valid refresh token, false otherwise.
    */
   private[authorization] def verifyDecodedRefreshToken(jwt: Jwt): Boolean = {
-    val claims = RefreshTokenClaimsParser.getAllClaims(jwt)
-    verifyDecodedRefreshToken(claims)
-  }
+    val exp = RefreshTokenClaimsParser.getExpiration(jwt)
+    val notExpired = exp.isAfter(Instant.now())
 
-  /**
-   * Verifies that the JWT is a valid refresh token.
-   * Checks that the token is not expired and that the type is refresh.
-   *
-   * @param claims The claims of the JWT to parse.
-   * @return True if the JWT is a valid refresh token, false otherwise.
-   */
-  private[authorization] def verifyDecodedRefreshToken(claims: Map[String, Any]): Boolean = {
-    val exp = Instant.parse(claims("exp").toString).getEpochSecond
-    val notExpired = exp > Instant.now().getEpochSecond
-    val isRefreshType = claims("type").toString == "refresh"
+    val isRefreshType = RefreshTokenClaimsParser.isRefreshTokenType(jwt)
     notExpired && isRefreshType
   }
 }

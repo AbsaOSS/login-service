@@ -30,7 +30,7 @@ case class AccessTokenVerificator(
 
     val jwt = try decoder.decode(accessToken.token)
     catch {
-      case e: Throwable => throw LsJwtException("Access Token Decoding Failed")
+      case e: Throwable => throw LsJwtException(s"Access Token Decoding Failed: ${e.getMessage}", e)
     }
 
     val verificationSuccess = verifyDecodedAccessToken(jwt)
@@ -50,21 +50,10 @@ case class AccessTokenVerificator(
    * @return True if the JWT is a valid access token, false otherwise.
    */
   private[authorization] def verifyDecodedAccessToken(jwt: Jwt): Boolean = {
-    val claims = AccessTokenClaimsParser.getAllClaims(jwt)
-    verifyDecodedAccessToken(claims)
-  }
+    val exp = AccessTokenClaimsParser.getExpiration(jwt)
+    val notExpired = exp.isAfter(Instant.now())
 
-  /**
-   * Verifies that the JWT is a valid access token.
-   * Checks that the token is not expired and that the type is access.
-   *
-   * @param claims The claims of the JWT to parse.
-   * @return True if the JWT is a valid access token, false otherwise.
-   */
-  private[authorization] def verifyDecodedAccessToken(claims: Map[String, Any]): Boolean = {
-    val exp = Instant.parse(claims("exp").toString).getEpochSecond
-    val notExpired = exp > Instant.now().getEpochSecond
-    val isAccessType = claims("type").toString == "access"
+    val isAccessType = AccessTokenClaimsParser.isAccessTokenType(jwt)
     notExpired && isAccessType
   }
 }
