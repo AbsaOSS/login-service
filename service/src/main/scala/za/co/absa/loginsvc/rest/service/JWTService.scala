@@ -41,7 +41,11 @@ import scala.concurrent.duration.FiniteDuration
 class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider) {
 
   private val logger = LoggerFactory.getLogger(classOf[JWTService])
-  private val scheduler = Executors.newSingleThreadScheduledExecutor()
+  private val scheduler = Executors.newSingleThreadScheduledExecutor(r => {
+    val t = new Thread(r)
+    t.setDaemon(true)
+    t
+  })
 
   private val jwtConfig = jwtConfigProvider.getJwtKeyConfig
   @volatile private var keyPair: KeyPair = jwtConfig.keyPair()

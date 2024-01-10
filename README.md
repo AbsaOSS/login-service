@@ -254,3 +254,6 @@ If you wish to generate an accurate `git.properties file`, you can do so in 2 wa
 
 This requires Git to be installed and available on the host.
 The example `git.properties` file provided may be edited manually if the git generation is functioning incorrectly.
+
+## Client Library
+See Readme in [clientLibrary](clientLibrary/README.md) module.

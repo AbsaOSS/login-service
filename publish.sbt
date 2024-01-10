@@ -35,6 +35,12 @@ ThisBuild / developers := List(
     name = "Bartlomiej Baj",
     email = "bartlomiej.baj@absa.africa",
     url = url("https://github.com/jakipatryk")
+  ),
+  Developer(
+    id = "TheLydonKing",
+    name = "Lydon da Rocha",
+    email = "lydon.darocha@absa.africa",
+    url = url("https://github.com/TheLydonKing")
   )
 )
 
@@ -46,3 +52,14 @@ ThisBuild / description := "Login service for JWT public signing services"
 ThisBuild / organizationName := "ABSA Group Limited"
 ThisBuild / startYear := Some(2023)
 ThisBuild / licenses += "Apache-2.0" -> url("https://www.apache.org/licenses/LICENSE-2.0.txt")
+
+ThisBuild / pomIncludeRepository := { _ => false }
+ThisBuild / publishTo := {
+  val nexus = "https://oss.sonatype.org/"
+  if (isSnapshot.value) {
+    Some("snapshots" at s"${nexus}content/repositories/snapshots")
+  } else {
+    Some("releases" at s"${nexus}service/local/staging/deploy/maven2")
+  }
+}
+ThisBuild / publishMavenStyle := true
