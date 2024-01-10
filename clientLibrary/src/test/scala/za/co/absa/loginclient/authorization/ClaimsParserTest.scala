@@ -18,80 +18,165 @@ package za.co.absa.loginclient.authorization
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+import za.co.absa.loginclient.exceptions.LsJwtException
 
 import java.time.Instant
 import java.util.Base64
 
-class ClaimsParserTest extends AnyFlatSpec with Matchers {
+object ClaimsParserTest {
+  val publicKeyString = Base64.getEncoder.encodeToString(FakeTokens.keys.getPublic.getEncoded)
+  val decoder = JwtDecoderProvider.getDecoderFromPublicKeyString(publicKeyString)
 
-  private val publicKeyString = Base64.getEncoder.encodeToString(FakeTokens.keys.getPublic.getEncoded)
-  private val decoder = JwtDecoderProvider.getDecoderFromPublicKeyString(publicKeyString)
-  private val accessJwt = decoder.decode(FakeTokens.validAccessToken)
-  private val refreshJwt = decoder.decode(FakeTokens.validRefreshToken)
-  private val invalidJwt = decoder.decode(FakeTokens.missingClaimToken)
+  val missingTokenTypeJwt = decoder.decode(FakeTokens.missingTokenTypeToken)
+  val missingAllClaimsButSubjectJwt = decoder.decode(FakeTokens.missingAllClaimsButSubjectToken)
+
+}
+
+
+class AccessClaimsParserTest extends AnyFlatSpec with Matchers {
+
+  private val accessJwt = ClaimsParserTest.decoder.decode(FakeTokens.validAccessToken)
+  import ClaimsParserTest._
 
   "Access token" should "return a subject that equals 'testUser'" in {
     val subject = AccessTokenClaimsParser.getSubject(accessJwt)
     assert(subject.equals(FakeTokens.subject))
   }
 
-  "Access token" should "return a list of groups that contain 'group1', 'group2')" in {
+  it should "return a list of groups that contain 'group1', 'group2')" in {
     val groups = AccessTokenClaimsParser.getGroups(accessJwt)
     assert(groups == List("group1", "group2"))
   }
 
-  "Access token" should "return a expiration date that should be within an hour of testing" in {
+  it should "return an empty groups even if groups claim is not present at all" in {
+    val groups = AccessTokenClaimsParser.getGroups(missingAllClaimsButSubjectJwt) // does not throw
+    assert(groups == List.empty)
+  }
+
+  it should "return a expiration date that should be within an hour of testing" in {
     val exp = AccessTokenClaimsParser.getExpiration(accessJwt)
     val check = FakeTokens.validExpiration.toInstant
     assert(exp.equals(Instant.ofEpochSecond(check.getEpochSecond)))
   }
 
-  "Access token" should "return the set time of issue" in {
+  it should "return an exception for missing expiration" in {
+    val exception = the[LsJwtException] thrownBy {
+      AccessTokenClaimsParser.getExpiration(missingAllClaimsButSubjectJwt)
+    }
+    exception.getMessage shouldBe "Expiration not found"
+  }
+
+  it should "return the set time of issue" in {
     val issueTime = AccessTokenClaimsParser.getIssueTime(accessJwt)
     val check = FakeTokens.issuedAt.toInstant
     assert(issueTime.equals(Instant.ofEpochSecond(check.getEpochSecond)))
   }
 
-  "Access token" should "return the email address" in {
+  it should "return an exception for missing issuedAt" in {
+    val exception = the[LsJwtException] thrownBy {
+      AccessTokenClaimsParser.getIssueTime(missingAllClaimsButSubjectJwt)
+    }
+    exception.getMessage shouldBe "Issue time not found"
+  }
+
+  it should "return the email address" in {
     val email = AccessTokenClaimsParser.getEmail(accessJwt)
     assert(email.get.equals(FakeTokens.email))
   }
 
-  "Access token" should "return the display name" in {
+  it should "return an empty email if email claim is not present at all" in {
+    val email = AccessTokenClaimsParser.getEmail(missingAllClaimsButSubjectJwt) // does not throw
+    email shouldBe None
+  }
+
+  it should "return the display name" in {
     val displayName = AccessTokenClaimsParser.getDisplayName(accessJwt)
     assert(displayName.get.equals(FakeTokens.displayName))
   }
 
-  "Access token" should "return the token type" in {
+  it should "return an empty display name if displayname claim is not present at all" in {
+    val dn = AccessTokenClaimsParser.getDisplayName(missingAllClaimsButSubjectJwt) // does not throw
+    dn shouldBe None
+  }
+
+  it should "return the token type" in {
     val tokenType = AccessTokenClaimsParser.getTokenType(accessJwt)
     assert(tokenType.equals("access"))
   }
+
+  it should "return an exception for missing token type" in {
+    val exception = the[LsJwtException] thrownBy {
+      AccessTokenClaimsParser.getTokenType(missingTokenTypeJwt)
+    }
+    exception.getMessage shouldBe "Token type not found"
+  }
+
+  it should "check access token type" in {
+    assert(AccessTokenClaimsParser.isAccessTokenType(accessJwt))
+  }
+
+  it should "return an exception for missing token type 2" in {
+    val exception = the[LsJwtException] thrownBy {
+      AccessTokenClaimsParser.isAccessTokenType(missingTokenTypeJwt)
+    }
+    exception.getMessage shouldBe "Token type not found"
+  }
+}
+class RefreshClaimsParserTest extends AnyFlatSpec with Matchers {
+  
+  private val refreshJwt = ClaimsParserTest.decoder.decode(FakeTokens.validRefreshToken)
+  import ClaimsParserTest._
 
   "Refresh Token" should "return a subject that equals 'testUser'" in {
     val sub = RefreshTokenClaimsParser.getSubject(refreshJwt)
     assert(sub.equals(FakeTokens.subject))
   }
 
-  "Refresh token" should "return a expiration date that should be within an hour of testing" in {
+  it should "return a expiration date that should be within an hour of testing" in {
     val exp = RefreshTokenClaimsParser.getExpiration(refreshJwt)
     val check = FakeTokens.validExpiration.toInstant
     assert(exp.equals(Instant.ofEpochSecond(check.getEpochSecond)))
   }
 
-  "Refresh token" should "return the set time of issue" in {
+  it should "return an exception for missing expiration" in {
+    val exception = the[LsJwtException] thrownBy {
+      RefreshTokenClaimsParser.getExpiration(missingAllClaimsButSubjectJwt)
+    }
+    exception.getMessage shouldBe "Expiration not found"
+  }
+
+  it should "return the set time of issue" in {
     val issueTime = RefreshTokenClaimsParser.getIssueTime(refreshJwt)
     val check = FakeTokens.issuedAt.toInstant
     assert(issueTime.equals(Instant.ofEpochSecond(check.getEpochSecond)))
   }
 
-  "Refresh token" should "return the token type" in {
+  it should "return an exception for missing issuedAt" in {
+    val exception = the[LsJwtException] thrownBy {
+      RefreshTokenClaimsParser.getIssueTime(missingAllClaimsButSubjectJwt)
+    }
+    exception.getMessage shouldBe "Issue time not found"
+  }
+
+  it should "return the token type" in {
     val tokenType = RefreshTokenClaimsParser.getTokenType(refreshJwt)
     assert(tokenType.equals("refresh"))
   }
 
-  "Token with missing Type" should "return an exception" in {
-    val exception = the[Exception] thrownBy {
-      RefreshTokenClaimsParser.getTokenType(invalidJwt)
+  it should "return an exception for missing token type" in {
+    val exception = the[LsJwtException] thrownBy {
+      RefreshTokenClaimsParser.getTokenType(missingTokenTypeJwt)
+    }
+    exception.getMessage shouldBe "Token type not found"
+  }
+
+  it should "check refresh token type" in {
+    assert(RefreshTokenClaimsParser.isRefreshTokenType(refreshJwt))
+  }
+
+  it should "return an exception for missing token type 2" in {
+    val exception = the[LsJwtException] thrownBy {
+      RefreshTokenClaimsParser.isRefreshTokenType(missingTokenTypeJwt)
     }
     exception.getMessage shouldBe "Token type not found"
   }

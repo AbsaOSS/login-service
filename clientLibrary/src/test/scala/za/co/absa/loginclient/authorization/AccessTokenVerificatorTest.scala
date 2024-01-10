@@ -34,12 +34,20 @@ class AccessTokenVerificatorTest extends AnyFlatSpec with Matchers{
     accessTokenVerificator.decodeAndVerifyAccessToken(token)
   }
 
+  "Incorrectly structured Access Token" should "fail decoding" in {
+    val token = AccessToken(FakeTokens.missingSubjectToken)
+    val exception = the[LsJwtException] thrownBy {
+      accessTokenVerificator.decodeAndVerifyAccessToken(token)
+    }
+    exception.getMessage shouldBe "Access Token Decoding Failed: An error occurred while attempting to decode the Jwt: Malformed payload"
+  }
+
   "Expired Access Token" should "fail decoding" in {
     val token = AccessToken(FakeTokens.invalidExpirationAccessToken)
     val exception = the[LsJwtException] thrownBy {
       accessTokenVerificator.decodeAndVerifyAccessToken(token)
     }
-    exception.getMessage shouldBe "Access Token Decoding Failed"
+    exception.getMessage shouldBe "Access Token Decoding Failed: An error occurred while attempting to decode the Jwt: expiresAt must be after issuedAt"
   }
 
   "Incorrectly signed Access Token" should "fail decoding" in {
@@ -47,7 +55,7 @@ class AccessTokenVerificatorTest extends AnyFlatSpec with Matchers{
     val exception = the[LsJwtException] thrownBy {
       accessTokenVerificator.decodeAndVerifyAccessToken(token)
     }
-    exception.getMessage shouldBe "Access Token Decoding Failed"
+    exception.getMessage shouldBe "Access Token Decoding Failed: An error occurred while attempting to decode the Jwt: Signed JWT rejected: Invalid signature"
   }
 
   "Access Token with missing Type" should "return an exception" in {

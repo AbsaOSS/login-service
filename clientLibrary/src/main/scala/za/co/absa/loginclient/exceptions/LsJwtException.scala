@@ -17,5 +17,6 @@
 package za.co.absa.loginclient.exceptions
 
 case class LsJwtException(
-  message: String
-) extends Exception(message)
+  message: String,
+  cause: Throwable = null
+) extends Exception(message, cause)
