@@ -58,8 +58,6 @@ object Dependencies {
   lazy val pureConfig = "com.github.pureconfig" %% "pureconfig" % Versions.pureConfig
   lazy val pureConfigYaml = "com.github.pureconfig" %% "pureconfig-yaml" % Versions.pureConfig
 
-  lazy val requests = "com.lihaoyi" %% "requests" % "0.8.0"
-
   lazy val awsSecrets = "software.amazon.awssdk" % "secretsmanager" % "2.20.68"
   lazy val awsSts = "software.amazon.awssdk" % "sts" % "2.20.69"
 
@@ -119,8 +117,6 @@ object Dependencies {
     jjwtJackson,
 
     jsonParser,
-
-    requests,
 
     springBootWeb,
     springBootSecurity,
