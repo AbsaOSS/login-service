@@ -33,7 +33,7 @@ lazy val commonJacocoExcludes: Seq[String] = Seq(
 )
 
 lazy val parent = (project in file("."))
-  .aggregate(service, clientLibrary, examples)
+  .aggregate(api, clientLibrary, examples)
   .settings(
     name := "login-service",
     javacOptions ++= Seq("-source", "1.8", "-target", "1.8", "-Xlint"),
@@ -41,10 +41,10 @@ lazy val parent = (project in file("."))
     publish / skip := true
   )
 
-lazy val service = project // no need to define file, because path is same as val name
+lazy val api = project // no need to define file, because path is same as val name
   .settings(
-    name := "login-service-service",
-    libraryDependencies ++= serviceDependencies,
+    name := "login-service-api",
+    libraryDependencies ++= apiDependencies,
     webappWebInfClasses := true,
     inheritJarManifest := true,
     // No need to publish the service
