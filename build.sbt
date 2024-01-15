@@ -20,8 +20,6 @@ ThisBuild / organization := "za.co.absa.login-service"
 
 lazy val scala212 = "2.12.17"
 
-ThisBuild / name := "login-service"
-
 ThisBuild / scalaVersion := scala212
 ThisBuild / versionScheme := Some("early-semver")
 
@@ -41,8 +39,6 @@ lazy val api = project // no need to define file, because path is same as val na
     webappWebInfClasses := true,
     inheritJarManifest := true,
     javacOptions ++= Seq("-source", "1.8", "-target", "1.8", "-Xlint"),
-    // No need to publish the service
-    publish / skip := true,
     jacocoReportSettings := commonJacocoReportSettings.withTitle(s"login-service:service Jacoco Report - scala:${scalaVersion.value}"),
     jacocoExcludes := commonJacocoExcludes
   ).enablePlugins(TomcatPlugin)
@@ -59,8 +55,6 @@ lazy val examples = project // no need to define file, because path is same as v
   .settings(
     name := "login-service-examples",
     libraryDependencies ++= exampleDependencies,
-    javacOptions ++= Seq("-source", "1.8", "-target", "1.8", "-Xlint"),
-    // No need to publish the example artifact
-    publish / skip := true
+    javacOptions ++= Seq("-source", "1.8", "-target", "1.8", "-Xlint")
   ).enablePlugins(AutomateHeaderPlugin)
   .dependsOn(clientLibrary)
