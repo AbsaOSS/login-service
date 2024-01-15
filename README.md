@@ -56,11 +56,11 @@ Without having to study the whole documentation section, let us offer a few simp
 ### Locally available `application.yaml`
 If you are looking to build and run locally, just supply the following argument:
 ```
---spring.config.location=service/src/main/resources/example.application.yaml
+--spring.config.location=api/src/main/resources/example.application.yaml
 ```
 or set the following Environment Variable:
 ```
-"SPRING_CONFIG_LOCATION=service/src/main/resources/example.application.yaml"
+"SPRING_CONFIG_LOCATION=api/src/main/resources/example.application.yaml"
 ```
 and you will be up and running.
 This will run the application using the provided example config for usage in local tests/development.
