@@ -35,7 +35,7 @@ import scala.collection.JavaConverters._
 
 class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
 
-  private val testConfig : ConfigProvider = new ConfigProvider("service/src/test/resources/application.yaml")
+  private val testConfig : ConfigProvider = new ConfigProvider("api/src/test/resources/application.yaml")
   private var jwtService: JWTService = _
 
   private val userWithoutEmailAndGroups: User = User(
