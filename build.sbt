@@ -32,13 +32,15 @@ lazy val commonJacocoExcludes: Seq[String] = Seq(
   //    "za.co.absa.loginsvc.rest.config.BaseConfig" // class only
 )
 
+lazy val commonJavacOptions = Seq("-source", "1.8", "-target", "1.8", "-Xlint")
+
 lazy val api = project // no need to define file, because path is same as val name
   .settings(
     name := "login-service-api",
     libraryDependencies ++= apiDependencies,
     webappWebInfClasses := true,
     inheritJarManifest := true,
-    javacOptions ++= Seq("-source", "1.8", "-target", "1.8", "-Xlint"),
+    javacOptions ++= commonJavacOptions,
     jacocoReportSettings := commonJacocoReportSettings.withTitle(s"login-service:service Jacoco Report - scala:${scalaVersion.value}"),
     jacocoExcludes := commonJacocoExcludes
   ).enablePlugins(TomcatPlugin)
@@ -48,13 +50,13 @@ lazy val clientLibrary = project // no need to define file, because path is same
   .settings(
     name := "login-service-client-library",
     libraryDependencies ++= clientLibDependencies,
-    javacOptions ++= Seq("-source", "1.8", "-target", "1.8", "-Xlint"),
+    javacOptions ++= commonJavacOptions,
   ).enablePlugins(AutomateHeaderPlugin)
 
 lazy val examples = project // no need to define file, because path is same as val name
   .settings(
     name := "login-service-examples",
     libraryDependencies ++= exampleDependencies,
-    javacOptions ++= Seq("-source", "1.8", "-target", "1.8", "-Xlint")
+    javacOptions ++= commonJavacOptions
   ).enablePlugins(AutomateHeaderPlugin)
   .dependsOn(clientLibrary)
