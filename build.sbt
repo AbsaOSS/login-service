@@ -32,23 +32,15 @@ lazy val commonJacocoExcludes: Seq[String] = Seq(
   //    "za.co.absa.loginsvc.rest.config.BaseConfig" // class only
 )
 
-lazy val parent = (project in file("."))
-  .aggregate(service, clientLibrary, examples)
-  .settings(
-    name := "login-service",
-    javacOptions ++= Seq("-source", "1.8", "-target", "1.8", "-Xlint"),
-    // No need to publish the aggregation [empty] artifact
-    publish / skip := true
-  )
+lazy val commonJavacOptions = Seq("-source", "1.8", "-target", "1.8", "-Xlint")
 
-lazy val service = project // no need to define file, because path is same as val name
+lazy val api = project // no need to define file, because path is same as val name
   .settings(
-    name := "login-service-service",
-    libraryDependencies ++= serviceDependencies,
+    name := "login-service-api",
+    libraryDependencies ++= apiDependencies,
     webappWebInfClasses := true,
     inheritJarManifest := true,
-    // No need to publish the service
-    publish / skip := true,
+    javacOptions ++= commonJavacOptions,
     jacocoReportSettings := commonJacocoReportSettings.withTitle(s"login-service:service Jacoco Report - scala:${scalaVersion.value}"),
     jacocoExcludes := commonJacocoExcludes
   ).enablePlugins(TomcatPlugin)
@@ -57,14 +49,14 @@ lazy val service = project // no need to define file, because path is same as va
 lazy val clientLibrary = project // no need to define file, because path is same as val name
   .settings(
     name := "login-service-client-library",
-    libraryDependencies ++= clientLibDependencies
+    libraryDependencies ++= clientLibDependencies,
+    javacOptions ++= commonJavacOptions,
   ).enablePlugins(AutomateHeaderPlugin)
 
 lazy val examples = project // no need to define file, because path is same as val name
   .settings(
     name := "login-service-examples",
     libraryDependencies ++= exampleDependencies,
-    // No need to publish the example artifact
-    publish / skip := true
+    javacOptions ++= commonJavacOptions
   ).enablePlugins(AutomateHeaderPlugin)
   .dependsOn(clientLibrary)
