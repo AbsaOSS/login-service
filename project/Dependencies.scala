@@ -73,7 +73,7 @@ object Dependencies {
   lazy val springBootTest = "org.springframework.boot" % "spring-boot-starter-test" % Versions.springBoot % Test
   lazy val springBootSecurityTest = "org.springframework.security" % "spring-security-test" % Versions.spring % Test
 
-  def serviceDependencies: Seq[ModuleID] = Seq(
+  def apiDependencies: Seq[ModuleID] = Seq(
     jacksonModuleScala,
     jacksonDatabind,
     javaCompat,

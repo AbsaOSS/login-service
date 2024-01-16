@@ -24,7 +24,7 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.{TestContextManager, TestPropertySource}
 
 @SpringBootTest
-@TestPropertySource(properties = Array("spring.config.location=service/src/test/resources/application.yaml"))
+@TestPropertySource(properties = Array("spring.config.location=api/src/test/resources/application.yaml"))
 class ActuatorInfoTest extends AnyFlatSpec with Matchers with ActuatorTestBase {
 
   @Autowired
