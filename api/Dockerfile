@@ -24,8 +24,7 @@ FROM $BASE_IMAGE as base
 
 # Provide your proxy if needed, e.g. http://my.proxy.examle.com:3128
 ARG BUILD_PROXY
-# Override of the example application config is possible
-ARG CONFIG=./src/main/resources/example.application.yaml
+
 # Provide path to the directory with LDAP certs in PEM format
 ARG LDAP_SSL_CERTS_PATH
 # ARG SSL_DNAME is defined below in the SSL-enabled image
@@ -34,13 +33,12 @@ ARG LS_PREFIX=.
 
 LABEL org.opencontainers.image.authors="ABSA"
 
-# Copy Spring application properties
-COPY $CONFIG /opt/application.yaml
-
 # deploy as root application in tomcat
 COPY ${LS_PREFIX}/target/scala-2.12/*.war /usr/local/tomcat/webapps/ROOT.war
 
-ENV SPRING_CONFIG_LOCATION=/opt/application.yaml
+# "/opt/config" dir needs to externally mounted (and must contain application.yaml) when run
+# e.g. docker run -p 8080:8080 -p 8443:8443 -v "$(pwd)/src/main/resources:/opt/config" absaoss/login-service:latest
+ENV SPRING_CONFIG_LOCATION=/opt/config/application.yaml
 
 ENV http_proxy=$BUILD_PROXY
 ENV https_proxy=$BUILD_PROXY
@@ -49,7 +47,8 @@ ENV HTTPS_PROXY=$BUILD_PROXY
 
 
 RUN mkdir -p /opt/certs
-COPY $LDAP_SSL_CERTS_PATH /opt/certs/
+# just PEMs are supported
+COPY $LDAP_SSL_CERTS_PATH/*.pem /opt/certs/
 
 RUN for file in `ls /opt/certs/*.pem`; \
 do \
