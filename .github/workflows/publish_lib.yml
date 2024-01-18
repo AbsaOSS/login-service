@@ -14,10 +14,11 @@
 # limitations under the License.
 #
 
-name: Release - publish artifacts
+name: Release - publish client library
 on:
-  release:
-    types: [released]
+  push:
+    branches: [master]
+    tags: ["*"]
 
 jobs:
   publish:
