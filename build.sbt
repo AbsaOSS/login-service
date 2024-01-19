@@ -41,7 +41,8 @@ lazy val api = project // no need to define file, because path is same as val na
     inheritJarManifest := true,
     javacOptions ++= commonJavacOptions,
     jacocoReportSettings := commonJacocoReportSettings.withTitle(s"login-service:service Jacoco Report - scala:${scalaVersion.value}"),
-    jacocoExcludes := commonJacocoExcludes
+    jacocoExcludes := commonJacocoExcludes,
+    publish / skip := true
   ).enablePlugins(TomcatPlugin)
   .enablePlugins(AutomateHeaderPlugin)
 
@@ -56,6 +57,7 @@ lazy val examples = project // no need to define file, because path is same as v
   .settings(
     name := "login-service-examples",
     libraryDependencies ++= exampleDependencies,
-    javacOptions ++= commonJavacOptions
+    javacOptions ++= commonJavacOptions,
+    publish / skip := true
   ).enablePlugins(AutomateHeaderPlugin)
   .dependsOn(clientLibrary)

@@ -30,7 +30,7 @@ jobs:
         with:
           java-version: "openjdk@1.17.0"
       - name: Build and release to Sonatype and Maven Central
-        run: sbt clientLibrary/ci-release
+        run: sbt ci-release
         env:
           PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
           PGP_SECRET: ${{ secrets.PGP_SECRET }}
