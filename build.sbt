@@ -16,7 +16,7 @@
 import Dependencies._
 import com.github.sbt.jacoco.report.JacocoReportSettings
 
-ThisBuild / organization := "za.co.absa.login-service"
+ThisBuild / organization := "za.co.absa"
 
 lazy val scala212 = "2.12.17"
 
