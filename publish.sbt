@@ -52,6 +52,3 @@ ThisBuild / description := "Login service for JWT public signing services"
 ThisBuild / organizationName := "ABSA Group Limited"
 ThisBuild / startYear := Some(2023)
 ThisBuild / licenses += "Apache-2.0" -> url("https://www.apache.org/licenses/LICENSE-2.0.txt")
-
-ThisBuild / sonatypeCredentialHost := "s01.oss.sonatype.org"
-sonatypeRepository := "https://s01.oss.sonatype.org/service/local"
