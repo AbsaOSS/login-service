@@ -16,9 +16,8 @@
 
 name: Release - publish client library
 on:
-  push:
-    branches: [master]
-    tags: ["*"]
+  release:
+    types: [released]
 
 jobs:
   publish:
