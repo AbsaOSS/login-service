@@ -21,6 +21,7 @@ ThisBuild / organization := "za.co.absa.login-service"
 lazy val scala212 = "2.12.17"
 
 ThisBuild / scalaVersion := scala212
+ThisBuild / versionScheme := Some("early-semver")
 
 lazy val commonJacocoReportSettings: JacocoReportSettings = JacocoReportSettings(
   formats = Seq(JacocoReportFormats.HTML, JacocoReportFormats.XML)
