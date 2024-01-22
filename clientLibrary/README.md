@@ -1,3 +1,5 @@
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/za.co.absa/login-service-client-library_2.12/badge.svg)](https://maven-badges.herokuapp.com/maven-central/za.co.absa/login-service-client-library_2.12/)
+
 # Login-service client library
 
 This library provides client-functionality for the login-service.
@@ -10,12 +12,12 @@ Include the library in your project:
 `<dependency>
     <groupId>za.co.absa</groupId>
     <artifactId>login-service-client-library_2.12</artifactId>
-    <version>$VERSION</version>
+    <version>1.0.0</version>
 </dependency>`
 
 ### SBT
 
-`libraryDependencies += "za.co.absa" % "login-service-client-library_2.12" % "0.1.0-SNAPSHOT"`
+`libraryDependencies += "za.co.absa" % "login-service-client-library_2.12" % "1.0.0"`
 
 See the [examples](examples)
 for a more detailed view of how to use the library.
