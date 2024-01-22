@@ -1,3 +1,5 @@
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/za.co.absa/login-service-client-library_2.12/badge.svg)](https://maven-badges.herokuapp.com/maven-central/za.co.absa/login-service-client-library_2.12)
+
 # login-service
 AbsaOSS Common Login service using JWT Public key signatures
 
