@@ -111,6 +111,8 @@ object Dependencies {
     jwtDecoder,
 
     jjwtApi,
+    jjwtImpl,
+    jjwtJackson,
 
     jsonParser,
 
