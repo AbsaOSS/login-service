@@ -34,6 +34,14 @@ lazy val commonJacocoExcludes: Seq[String] = Seq(
 
 lazy val commonJavacOptions = Seq("-source", "1.8", "-target", "1.8", "-Xlint")
 
+lazy val parent = (project in file("."))
+  .aggregate(api, clientLibrary, examples)
+  .settings(
+    name := "login-service",
+    javacOptions ++= commonJavacOptions,
+    publish / skip := true
+  )
+
 lazy val api = project // no need to define file, because path is same as val name
   .settings(
     name := "login-service-api",
@@ -52,6 +60,7 @@ lazy val clientLibrary = project // no need to define file, because path is same
     name := "login-service-client-library",
     libraryDependencies ++= clientLibDependencies,
     javacOptions ++= commonJavacOptions,
+    crossScalaVersions := Seq(scala212, "2.13.12")
   ).enablePlugins(AutomateHeaderPlugin)
 
 lazy val examples = project // no need to define file, because path is same as val name
