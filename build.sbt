@@ -19,6 +19,7 @@ import com.github.sbt.jacoco.report.JacocoReportSettings
 ThisBuild / organization := "za.co.absa"
 
 lazy val scala212 = "2.12.17"
+lazy val scala213 = "2.13.12"
 
 ThisBuild / scalaVersion := scala212
 ThisBuild / versionScheme := Some("early-semver")
@@ -33,6 +34,14 @@ lazy val commonJacocoExcludes: Seq[String] = Seq(
 )
 
 lazy val commonJavacOptions = Seq("-source", "1.8", "-target", "1.8", "-Xlint")
+
+lazy val parent = (project in file("."))
+  .aggregate(api, clientLibrary, examples)
+  .settings(
+    name := "login-service",
+    javacOptions ++= commonJavacOptions,
+    publish / skip := true
+  )
 
 lazy val api = project // no need to define file, because path is same as val name
   .settings(
@@ -52,6 +61,7 @@ lazy val clientLibrary = project // no need to define file, because path is same
     name := "login-service-client-library",
     libraryDependencies ++= clientLibDependencies,
     javacOptions ++= commonJavacOptions,
+    crossScalaVersions := Seq(scala212, scala213)
   ).enablePlugins(AutomateHeaderPlugin)
 
 lazy val examples = project // no need to define file, because path is same as val name

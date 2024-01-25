@@ -16,9 +16,8 @@
 
 package za.co.absa.loginclient.authorization
 
-import org.springframework.security.oauth2.jwt.{Jwt, JwtDecoder, NimbusJwtDecoder}
+import org.springframework.security.oauth2.jwt.{JwtDecoder, NimbusJwtDecoder}
 import za.co.absa.loginclient.publicKeyRetrieval.model.PublicKey
-import za.co.absa.loginclient.tokenRetrieval.model.{AccessToken, RefreshToken}
 
 import java.security.KeyFactory
 import java.security.interfaces.RSAPublicKey
