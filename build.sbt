@@ -32,7 +32,7 @@ lazy val commonJacocoExcludes: Seq[String] = Seq(
   //    "za.co.absa.loginsvc.rest.config.BaseConfig" // class only
 )
 
-lazy val commonJavacOptions = Seq("-source", "1.8", "-target", "1.8", "-Xlint")
+lazy val commonJavacOptions = Seq("-source", "1.8", "-target", "1.8", "-Xlint") // deliberately making backwards compatible with J8
 
 lazy val api = project // no need to define file, because path is same as val name
   .settings(
