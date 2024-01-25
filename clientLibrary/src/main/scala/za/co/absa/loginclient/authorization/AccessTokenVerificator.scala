@@ -16,7 +16,7 @@
 
 package za.co.absa.loginclient.authorization
 
-import org.springframework.security.oauth2.jwt.{Jwt, JwtDecoder, NimbusJwtDecoder}
+import org.springframework.security.oauth2.jwt.{Jwt, JwtDecoder}
 import za.co.absa.loginclient.exceptions.LsJwtException
 import za.co.absa.loginclient.tokenRetrieval.model.AccessToken
 

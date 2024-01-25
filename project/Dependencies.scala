@@ -53,7 +53,6 @@ object Dependencies {
 
   lazy val jwtDecoder = "org.springframework.security" % "spring-security-oauth2-jose" % Versions.spring
   lazy val nimbusJoseJwt = "com.nimbusds" % "nimbus-jose-jwt" % Versions.nimbusJoseJwt
-  lazy val bouncyCastle = "org.bouncycastle" % "bcprov-jdk15on" % "1.70"
 
   lazy val pureConfig = "com.github.pureconfig" %% "pureconfig" % Versions.pureConfig
   lazy val pureConfigYaml = "com.github.pureconfig" %% "pureconfig-yaml" % Versions.pureConfig
@@ -110,7 +109,6 @@ object Dependencies {
 
     nimbusJoseJwt,
     jwtDecoder,
-    bouncyCastle,
 
     jjwtApi,
     jjwtImpl,
