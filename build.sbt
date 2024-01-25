@@ -19,6 +19,7 @@ import com.github.sbt.jacoco.report.JacocoReportSettings
 ThisBuild / organization := "za.co.absa"
 
 lazy val scala212 = "2.12.17"
+lazy val scala213 = "2.13.12"
 
 ThisBuild / scalaVersion := scala212
 ThisBuild / versionScheme := Some("early-semver")
@@ -60,7 +61,7 @@ lazy val clientLibrary = project // no need to define file, because path is same
     name := "login-service-client-library",
     libraryDependencies ++= clientLibDependencies,
     javacOptions ++= commonJavacOptions,
-    crossScalaVersions := Seq(scala212, "2.13.12")
+    crossScalaVersions := Seq(scala212, scala213)
   ).enablePlugins(AutomateHeaderPlugin)
 
 lazy val examples = project // no need to define file, because path is same as val name
