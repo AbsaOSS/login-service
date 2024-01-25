@@ -50,6 +50,7 @@ RUN mkdir -p /opt/certs
 # just PEMs are supported
 COPY $LDAP_SSL_CERTS_PATH/*.pem /opt/certs/
 
+# Java 11 paths used
 RUN for file in `ls /opt/certs/*.pem`; \
 do \
     echo yes | keytool -import -file $file -alias ldaps$RANDOM -keystore $JAVA_HOME/lib/security/cacerts -storepass changeit; \
