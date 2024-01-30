@@ -76,8 +76,11 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider) {
       .setIssuedAt(issuedAt)
       .claim("kid", publicKeyThumbprint)
       .claim("groups", groupsClaim)
-      .applyIfDefined(user.email)((builder, value: String) => builder.claim("email", value))
-      .applyIfDefined(user.displayName)((builder, value: String) => builder.claim("displayname", value))
+      .addClaims(
+        user.optionalAttributes.collect {
+          case (key, Some(value)) => key -> value
+        }.asJava
+      )
       .claim("type", Token.TokenType.Access.toString)
       .signWith(keyPair.getPrivate)
       .compact()
@@ -196,9 +199,10 @@ object JWTService {
   def extractUserFrom(claims: Claims): User = {
     val name = claims.getSubject
     val groups = claims.get("groups", classOf[java.util.List[String]]).asScala
-    val email = Option(claims.get("email", classOf[String]))
-    val displayName = Option(claims.get("displayname", classOf[String]))
+    val optionalAttributes = claims.asScala.collect {
+      case (key, value) if key != "groups" && key != "sub" => key -> Option(value)
+    }.toMap
 
-    User(name, email, displayName, groups)
+    User(name, groups, optionalAttributes)
   }
 }

@@ -43,7 +43,7 @@ class ActiveDirectoryLDAPAuthenticationProvider(config: ActiveDirectoryLDAPConfi
     val impl = new SpringSecurityActiveDirectoryLdapAuthenticationProvider(config.domain, config.url)
 
     impl.setSearchFilter(config.searchFilter)
-    impl.setUserDetailsContextMapper(new LDAPUserDetailsContextMapperWithEmail())
+    impl.setUserDetailsContextMapper(new LDAPUserDetailsContextMapperWithEmail(config.attributes))
 
     impl
   }
@@ -68,9 +68,8 @@ class ActiveDirectoryLDAPAuthenticationProvider(config: ActiveDirectoryLDAPConfi
     val fromBasePrincipal = fromBase.getPrincipal.asInstanceOf[UserDetailsWithExtras]
     val principal = User(
       fromBasePrincipal.getUsername,
-      fromBasePrincipal.email,
-      fromBasePrincipal.displayName,
-      fromBasePrincipal.getAuthorities.asScala.map(_.getAuthority).toSeq
+      fromBasePrincipal.getAuthorities.asScala.map(_.getAuthority).toSeq,
+      fromBasePrincipal.extraAttributes
     )
 
     val token = new UsernamePasswordAuthenticationToken(principal, fromBasePrincipal.getPassword, fromBasePrincipal.getAuthorities)
@@ -81,7 +80,7 @@ class ActiveDirectoryLDAPAuthenticationProvider(config: ActiveDirectoryLDAPConfi
   override def supports(authentication: Class[_]): Boolean = baseImplementation.supports(authentication)
 
 
-  private case class UserDetailsWithExtras(userDetails: UserDetails, email: Option[String], displayName: Option[String]) extends UserDetails {
+  private case class UserDetailsWithExtras(userDetails: UserDetails, extraAttributes: Map[String, Option[AnyRef]]) extends UserDetails {
     override def getAuthorities: util.Collection[_ <: GrantedAuthority] = userDetails.getAuthorities
     override def getPassword: String = userDetails.getPassword
     override def getUsername: String = userDetails.getUsername
@@ -91,7 +90,7 @@ class ActiveDirectoryLDAPAuthenticationProvider(config: ActiveDirectoryLDAPConfi
     override def isEnabled: Boolean = userDetails.isEnabled
   }
 
-  private class LDAPUserDetailsContextMapperWithEmail extends LdapUserDetailsMapper {
+  private class LDAPUserDetailsContextMapperWithEmail(attributes: Array[String]) extends LdapUserDetailsMapper {
 
     override def mapUserFromContext(
                                      ctx: DirContextOperations,
@@ -99,10 +98,12 @@ class ActiveDirectoryLDAPAuthenticationProvider(config: ActiveDirectoryLDAPConfi
                                      authorities: util.Collection[_ <: GrantedAuthority]
                                    ): UserDetails = {
       val fromBase = super.mapUserFromContext(ctx, username, authorities)
-      val email = Option(ctx.getAttributes().get("mail")).map(_.get().toString)
-      val displayName = Option(ctx.getAttributes().get("displayname")).map(_.get().toString)
+      val extraAttributes = attributes.map { attr =>
+        val value = Option(ctx.getAttributes().get(attr)).map(_.get())
+        attr -> value
+      }.toMap
 
-      UserDetailsWithExtras(fromBase, email, displayName)
+      UserDetailsWithExtras(fromBase, extraAttributes)
     }
 
   }
