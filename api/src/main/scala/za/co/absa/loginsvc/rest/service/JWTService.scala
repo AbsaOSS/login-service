@@ -196,11 +196,20 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider) {
 }
 
 object JWTService {
+
+  private val requiredClaims =
+    Seq("sub",
+    "groups",
+    "type",
+    "exp",
+    "iat",
+    "kid")
+
   def extractUserFrom(claims: Claims): User = {
     val name = claims.getSubject
     val groups = claims.get("groups", classOf[java.util.List[String]]).asScala
     val optionalAttributes = claims.asScala.collect {
-      case (key, value) if key != "groups" && key != "sub" => key -> Option(value)
+      case (key, value) if !requiredClaims.contains(key) => key -> Option(value)
     }.toMap
 
     User(name, groups, optionalAttributes)

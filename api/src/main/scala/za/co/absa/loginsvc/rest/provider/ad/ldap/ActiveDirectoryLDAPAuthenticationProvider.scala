@@ -43,7 +43,7 @@ class ActiveDirectoryLDAPAuthenticationProvider(config: ActiveDirectoryLDAPConfi
     val impl = new SpringSecurityActiveDirectoryLdapAuthenticationProvider(config.domain, config.url)
 
     impl.setSearchFilter(config.searchFilter)
-    impl.setUserDetailsContextMapper(new LDAPUserDetailsContextMapperWithEmail(config.attributes))
+    impl.setUserDetailsContextMapper(new LDAPUserDetailsContextMapperWithOptions(config.attributes.getOrElse(Array.empty)))
 
     impl
   }
@@ -90,7 +90,7 @@ class ActiveDirectoryLDAPAuthenticationProvider(config: ActiveDirectoryLDAPConfi
     override def isEnabled: Boolean = userDetails.isEnabled
   }
 
-  private class LDAPUserDetailsContextMapperWithEmail(attributes: Array[String]) extends LdapUserDetailsMapper {
+  private class LDAPUserDetailsContextMapperWithOptions(attributes: Array[String]) extends LdapUserDetailsMapper {
 
     override def mapUserFromContext(
                                      ctx: DirContextOperations,

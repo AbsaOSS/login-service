@@ -23,7 +23,7 @@ import za.co.absa.loginsvc.rest.config.validation.ConfigValidationResult.{Config
 
 class UsersConfigTest extends AnyFlatSpec with Matchers {
 
-  private val userCfg = UserConfig("user1", "password1", Option("mail@here.tld"), Option("Fake Name"), Array("group1", "group2"))
+  private val userCfg = UserConfig("user1", "password1", Some("mail@here.tld"), Some("Fake Name"), Array("group1", "group2"))
 
   "UserConfig" should "validate expected filled content" in {
     userCfg.validate() shouldBe ConfigValidationSuccess

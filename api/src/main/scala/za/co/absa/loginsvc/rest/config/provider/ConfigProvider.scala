@@ -74,7 +74,7 @@ class ConfigProvider(@Value("${spring.config.location}") yamlPath: String)
         ldapConfig.throwErrors()
         ldapConfig
       }
-    else ActiveDirectoryLDAPConfig("", "", "", 0, Array.empty[String])
+    else ActiveDirectoryLDAPConfig("", "", "", 0, None)
   }
 
   def getUsersConfig : UsersConfig = {

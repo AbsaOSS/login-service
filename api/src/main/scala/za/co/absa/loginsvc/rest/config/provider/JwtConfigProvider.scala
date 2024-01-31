@@ -21,5 +21,4 @@ import za.co.absa.loginsvc.rest.config.jwt.KeyConfig
 
 trait JwtConfigProvider {
   def getJwtKeyConfig: KeyConfig
-  def getLdapConfig : ActiveDirectoryLDAPConfig
 }
