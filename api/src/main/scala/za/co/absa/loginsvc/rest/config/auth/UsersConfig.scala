@@ -58,13 +58,12 @@ case class UsersConfig(knownUsers: Array[UserConfig], order: Int)
 
 case class UserConfig(username: String,
                        password: String,
-                       email: Option[String],
-                       displayname: Option[String],
-                       groups: Array[String]
+                       groups: Array[String],
+                       attributes: Option[Map[String, String]]
                      ) extends ConfigValidatable {
 
   override def toString: String = {
-    s"UserConfig($username, $password, ${email.getOrElse("")}, ${displayname.getOrElse("")}, ${Option(groups).map(_.toList)})"
+    s"UserConfig($username, $password, ${Option(groups).map(_.toList)}, ${attributes.getOrElse(Map.empty).mkString(",")}))}"
   }
 
   override def validate(): ConfigValidationResult = {

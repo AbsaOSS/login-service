@@ -23,7 +23,7 @@ import za.co.absa.loginsvc.rest.config.validation.ConfigValidationResult.{Config
 
 class UsersConfigTest extends AnyFlatSpec with Matchers {
 
-  private val userCfg = UserConfig("user1", "password1", Some("mail@here.tld"), Some("Fake Name"), Array("group1", "group2"))
+  private val userCfg = UserConfig("user1", "password1", Array("group1", "group2"), Some(Map("mail" -> "mail@here.tld", "displayname" -> "Fake Name")))
 
   "UserConfig" should "validate expected filled content" in {
     userCfg.validate() shouldBe ConfigValidationSuccess
@@ -47,8 +47,8 @@ class UsersConfigTest extends AnyFlatSpec with Matchers {
     userCfg.copy(groups = Array.empty).validate() shouldBe ConfigValidationSuccess
   }
 
-  it should "succeed missing email (it is optional)" in {
-    userCfg.copy(email = Option(null)).validate() shouldBe ConfigValidationSuccess
+  it should "succeed missing attributes (it is optional)" in {
+    userCfg.copy(attributes = Option(Map.empty)).validate() shouldBe ConfigValidationSuccess
   }
 
   private val usersCfg = UsersConfig(knownUsers = Array(userCfg), 1)
@@ -67,13 +67,13 @@ class UsersConfigTest extends AnyFlatSpec with Matchers {
 
   it should "fail on duplicate knownUsers" in {
     val duplicateValidationResult = UsersConfig(knownUsers = Array(
-      UserConfig("sameUser", "password1", Option("mail@here.tld"), Option("Fake1"), Array("group1", "group2")),
-      UserConfig("sameUser", "password2", Option("anotherMail@here.tld"), Option("Fake2"), Array()),
+      UserConfig("sameUser", "password1", Array("group1", "group2"), Option(Map("mail" -> "mail@here.tld", "displayname" -> "Fake1"))),
+      UserConfig("sameUser", "password2", Array(), Option(Map("mail" -> "anotherMail@here.tld", "displayname" -> "Fake2"))),
 
-      UserConfig("sameUser2", "passwordX", Option("abc@def"), Option("Fake1"), Array()),
-      UserConfig("sameUser2", "passwordA", Option(null), Option(null), Array()),
+      UserConfig("sameUser2", "passwordX", Array(), Option(Map("mail" -> "abc@def", "displayname" -> "Fake1"))),
+      UserConfig("sameUser2", "passwordA", Array(), Option(Map.empty)),
 
-      UserConfig("okUser", "passwordO", Option("ooo@"),  Option("Fake1"), Array())
+      UserConfig("okUser", "passwordO", Array(), Option(Map("mail" -> "ooo@", "displayname" -> "Fake1")))
     ), 1).validate()
 
     duplicateValidationResult shouldBe a[ConfigValidationError]
@@ -86,13 +86,13 @@ class UsersConfigTest extends AnyFlatSpec with Matchers {
 
   it should "fail multiple errors" in {
     val multiErrorsResult = UsersConfig(knownUsers = Array(
-      UserConfig("sameUser", "password1", Option("mail@here.tld"), Option("Fake1"), Array("group1", "group2")),
-      UserConfig("sameUser", "password2", Option("anotherMail@here.tld"), Option("Fake2"), Array()),
+      UserConfig("sameUser", "password1", Array("group1", "group2"), Option(Map("mail" -> "mail@here.tld", "displayname" -> "Fake1"))),
+      UserConfig("sameUser", "password2", Array(), Option(Map("mail" -> "anotherMail@here.tld", "displayname" -> "Fake2"))),
 
-      UserConfig("userNoPass", null, Option("abc@def"), Option("FakeName"), Array()),
-      UserConfig("noMailIsFine", "password2", Option(null), Option(null), Array()),
-      UserConfig("userNoMissingGroups", "passwordO", Option("ooo@"),  Option("Fake2"), null)
-    ), 1).validate()
+      UserConfig("userNoPass", null, Array(), Option(Map("mail" -> "abc@def", "displayname" -> "FakeName"))),
+      UserConfig("noMailIsFine", "password2", Array(), Option(Map.empty)),
+      UserConfig("userNoMissingGroups", "passwordO", null, Option(Map("mail" -> "ooo@", "displayname" -> "Fake2")))
+      ), 1).validate()
 
     multiErrorsResult shouldBe a[ConfigValidationError]
     multiErrorsResult.errors should have size 3
