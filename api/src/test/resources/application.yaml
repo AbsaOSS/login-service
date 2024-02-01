@@ -31,10 +31,11 @@ loginsvc:
                 - "group1"
             - username: "user2"
               password: "password2"
-              displayname: "User Two"
-              email: "user@two.org"
               groups:
                 - "group2"
+              attributes:
+                displayname: "User Two"
+                mail: "user@two.org"
 
 # App Config
 spring:
