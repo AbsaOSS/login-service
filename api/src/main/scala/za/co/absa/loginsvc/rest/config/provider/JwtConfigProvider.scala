@@ -16,7 +16,6 @@
 
 package za.co.absa.loginsvc.rest.config.provider
 
-import za.co.absa.loginsvc.rest.config.auth.ActiveDirectoryLDAPConfig
 import za.co.absa.loginsvc.rest.config.jwt.KeyConfig
 
 trait JwtConfigProvider {

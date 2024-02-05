@@ -33,7 +33,6 @@ object ClaimsParserTest {
 
 }
 
-
 class AccessClaimsParserTest extends AnyFlatSpec with Matchers {
 
   private val accessJwt = ClaimsParserTest.decoder.decode(FakeTokens.validAccessToken)
@@ -80,24 +79,14 @@ class AccessClaimsParserTest extends AnyFlatSpec with Matchers {
     exception.getMessage shouldBe "Issue time not found"
   }
 
-  it should "return the email address" in {
-    val email = AccessTokenClaimsParser.getOptionalClaims(accessJwt)
-    assert(email("email").toString.equals(FakeTokens.email))
+  it should "return the optional fields" in {
+    val optionalClaims = AccessTokenClaimsParser.getOptionalClaims(accessJwt)
+    assert(optionalClaims == Map("email" -> FakeTokens.email, "displayname" -> FakeTokens.displayName))
   }
 
-  it should "return an empty email if email claim is not present at all" in {
-    val email = AccessTokenClaimsParser.getOptionalClaims(missingAllClaimsButSubjectJwt) // does not throw
-    email shouldBe Map.empty
-  }
-
-  it should "return the display name" in {
-    val displayName = AccessTokenClaimsParser.getOptionalClaims(accessJwt)
-    assert(displayName("displayname").toString.equals(FakeTokens.displayName))
-  }
-
-  it should "return an empty display name if displayname claim is not present at all" in {
-    val dn = AccessTokenClaimsParser.getOptionalClaims(missingAllClaimsButSubjectJwt) // does not throw
-    dn shouldBe Map.empty
+  it should "return an empty map if the optional claims are not present at all" in {
+    val optionalClaims = AccessTokenClaimsParser.getOptionalClaims(missingAllClaimsButSubjectJwt) // does not throw
+    optionalClaims shouldBe Map.empty
   }
 
   it should "return the token type" in {
