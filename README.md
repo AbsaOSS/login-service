@@ -116,6 +116,23 @@ Please ensure at least one auth method is enabled.
 The config also allows the user to specify additional claims to be added to the JWT token. 
 These can be sourced from ldap or specified directly in the config depending on the auth provider used.
 
+Format of attributes list under LDAP in config is:
+```
+        ldap:
+          # Auth Protocol
+          # Set the order of the protocol starting from 1
+          # Set to 0 to disable or simply exclude the ldap tag from config
+          # NOTE: At least 1 auth protocol needs to be enabled
+          order: 2
+          domain: "some.domain.com"
+          url: "ldaps://some.domain.com:636/"
+          search-filter: "(samaccountname={1})"
+          attributes:
+            <ldapFieldName>: "<claimName>"
+```
+
+`ldapFieldName` is the name of the field in the LDAP server and `claimName` is the name of the claim that will be added to the JWT token.
+
 ### ActiveDirectoryLDAPAuthenticationProvider
 Uses LDAP(s) to authenticate user in Active Directory and to fetch groups that this user belongs to.
 

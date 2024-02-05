@@ -52,7 +52,7 @@ class ConfigProviderTest extends AnyFlatSpec with Matchers  {
       activeDirectoryLDAPConfig.domain  == "some.domain.com" &&
       activeDirectoryLDAPConfig.searchFilter  == "(samaccountname={1})" &&
       activeDirectoryLDAPConfig.order  == 1 &&
-      (activeDirectoryLDAPConfig.attributes.get sameElements Array("mail", "displayname")))
+      activeDirectoryLDAPConfig.attributes.get.equals(Map("mail" -> "email", "displayname" -> "displayname")))
   }
 
   "The usersConfig properties" should "be loaded correctly" in {
