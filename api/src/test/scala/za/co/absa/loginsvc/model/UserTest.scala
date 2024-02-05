@@ -21,14 +21,14 @@ import org.scalatest.matchers.should.Matchers
 
 class UserTest extends AnyFlatSpec with Matchers {
 
-  val testUser = User("testUser", None, None, groups = Seq(
+  val testUser: User = User("testUser", groups = Seq(
     "blue-123",
     "blue-256",
     "red-ABC",
     "reddish-DEF",
     "black",
     "black-and-white"
-  ))
+  ), Map.empty[String, Option[AnyRef]])
 
   "User" should "filterGroups by prefixes" in {
     testUser.filterGroupsByPrefixes(Set("red", "black", "yellow")) shouldBe

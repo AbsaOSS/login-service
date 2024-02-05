@@ -46,11 +46,12 @@ loginsvc:
               groups: []
             - username: "TestUser"
               password: "password123"
-              displayname: "Test User, A.C.E."
-              email: "test@abs.com"
               groups:
                 - "groupA"
                 - "groupB"
+              attributes:
+                displayname: "Test User, A.C.E."
+                mail: "test@abs.com"
         ldap:
           # Auth Protocol
           # Set the order of the protocol starting from 1
@@ -60,6 +61,9 @@ loginsvc:
           domain: "some.domain.com"
           url: "ldaps://some.domain.com:636/"
           search-filter: "(samaccountname={1})"
+          attributes:
+            - "mail"
+            - "displayname"
 
 # App Config
 spring:

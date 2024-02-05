@@ -18,20 +18,20 @@ package za.co.absa.loginclient.authorization
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+import org.springframework.security.oauth2.jwt.{Jwt, JwtDecoder}
 import za.co.absa.loginclient.exceptions.LsJwtException
 
 import java.time.Instant
 import java.util.Base64
 
 object ClaimsParserTest {
-  val publicKeyString = Base64.getEncoder.encodeToString(FakeTokens.keys.getPublic.getEncoded)
-  val decoder = JwtDecoderProvider.getDecoderFromPublicKeyString(publicKeyString)
+  val publicKeyString: String = Base64.getEncoder.encodeToString(FakeTokens.keys.getPublic.getEncoded)
+  val decoder: JwtDecoder = JwtDecoderProvider.getDecoderFromPublicKeyString(publicKeyString)
 
-  val missingTokenTypeJwt = decoder.decode(FakeTokens.missingTokenTypeToken)
-  val missingAllClaimsButSubjectJwt = decoder.decode(FakeTokens.missingAllClaimsButSubjectToken)
+  val missingTokenTypeJwt: Jwt = decoder.decode(FakeTokens.missingTokenTypeToken)
+  val missingAllClaimsButSubjectJwt: Jwt = decoder.decode(FakeTokens.missingAllClaimsButSubjectToken)
 
 }
-
 
 class AccessClaimsParserTest extends AnyFlatSpec with Matchers {
 
@@ -79,24 +79,14 @@ class AccessClaimsParserTest extends AnyFlatSpec with Matchers {
     exception.getMessage shouldBe "Issue time not found"
   }
 
-  it should "return the email address" in {
-    val email = AccessTokenClaimsParser.getEmail(accessJwt)
-    assert(email.get.equals(FakeTokens.email))
+  it should "return the optional fields" in {
+    val optionalClaims = AccessTokenClaimsParser.getOptionalClaims(accessJwt)
+    assert(optionalClaims == Map("email" -> FakeTokens.email, "displayname" -> FakeTokens.displayName))
   }
 
-  it should "return an empty email if email claim is not present at all" in {
-    val email = AccessTokenClaimsParser.getEmail(missingAllClaimsButSubjectJwt) // does not throw
-    email shouldBe None
-  }
-
-  it should "return the display name" in {
-    val displayName = AccessTokenClaimsParser.getDisplayName(accessJwt)
-    assert(displayName.get.equals(FakeTokens.displayName))
-  }
-
-  it should "return an empty display name if displayname claim is not present at all" in {
-    val dn = AccessTokenClaimsParser.getDisplayName(missingAllClaimsButSubjectJwt) // does not throw
-    dn shouldBe None
+  it should "return an empty map if the optional claims are not present at all" in {
+    val optionalClaims = AccessTokenClaimsParser.getOptionalClaims(missingAllClaimsButSubjectJwt) // does not throw
+    optionalClaims shouldBe Map.empty
   }
 
   it should "return the token type" in {

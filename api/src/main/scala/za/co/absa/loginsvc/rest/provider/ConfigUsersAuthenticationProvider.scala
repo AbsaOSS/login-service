@@ -39,7 +39,10 @@ class ConfigUsersAuthenticationProvider(usersConfig: UsersConfig) extends Authen
     usersConfig.knownUsersMap.get(username).map { usersConfig =>
       if (usersConfig.password == password) {
         logger.info(s"Config-based: user login: $username - ok")
-        val principal = User(username, usersConfig.email, usersConfig.displayname, usersConfig.groups.toList)
+        val attributeMap: Map[String, Option[AnyRef]] = usersConfig.attributes.getOrElse(Map.empty).map {
+          case (k, v) => (k, Some(v))
+        }
+        val principal = User(username, usersConfig.groups.toList, attributeMap)
         new UsernamePasswordAuthenticationToken(principal, password,
           usersConfig.groups.map(new SimpleGrantedAuthority(_)).toList.asJava)
       } else {

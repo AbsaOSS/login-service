@@ -40,13 +40,12 @@ class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
 
   private val userWithoutEmailAndGroups: User = User(
     name = "testUser",
-    email = None,
-    displayName = None,
-    groups = Seq.empty
+    groups = Seq.empty,
+    optionalAttributes = Map.empty
   )
 
   private val userWithoutGroups: User = userWithoutEmailAndGroups.copy(
-    email = Some("test@gmail.com")
+    optionalAttributes = Map("mail" -> Some("test@gmail.com"))
   )
 
   private val userWithGroups: User = userWithoutGroups.copy(
@@ -94,10 +93,10 @@ class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
     val parsedJWT = parseJWT(jwt)
 
     val actualEmail = parsedJWT
-      .map(_.getBody.get("email", classOf[String]))
+      .map(_.getBody.get("mail", classOf[String]))
       .get
 
-    assert(userWithoutGroups.email contains actualEmail)
+    userWithoutGroups.optionalAttributes("mail").get shouldBe actualEmail
   }
 
   it should "return an access JWT without email claim if User.email is None" in {
@@ -179,15 +178,16 @@ class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
 
     val (refreshedAccessJwt, _) = jwtService.refreshTokens(accessJwt, refreshJwt)
     val parsedRefreshedAccessJWT = parseJWT(refreshedAccessJwt)
+    assert(parsedRefreshedAccessJWT.isSuccess)
 
     parsedRefreshedAccessJWT match {
       case Success(validJwt) =>
         val jwtBody = validJwt.getBody
 
-        jwtBody.getSubject shouldBe userWithoutGroups.name
+        jwtBody.getSubject shouldBe userWithGroups.name
         jwtBody.get("type", classOf[String]) shouldBe "access"
-        Option(jwtBody.get("email", classOf[String])) shouldBe userWithGroups.email
-        Option(jwtBody.get("displayname", classOf[String])) shouldBe userWithGroups.displayName
+        Option(jwtBody.get("mail", classOf[String])) shouldBe userWithGroups.optionalAttributes.getOrElse("mail", None)
+        Option(jwtBody.get("displayname", classOf[String])) shouldBe userWithGroups.optionalAttributes.getOrElse("displayname", None)
         jwtBody.get("groups", classOf[java.util.List[String]]).asScala shouldBe userWithGroups.groups
 
       case Failure(t) => fail(s"Invalid refreshed access JWT: $t", t)
@@ -229,10 +229,10 @@ class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
       case Success(validJwt) =>
         val jwtBody = validJwt.getBody
 
-        jwtBody.getSubject shouldBe userWithoutGroups.name
+        jwtBody.getSubject shouldBe userWithGroups.name
         jwtBody.get("type", classOf[String]) shouldBe "access"
-        Option(jwtBody.get("email", classOf[String])) shouldBe userWithGroups.email
-        Option(jwtBody.get("displayname", classOf[String])) shouldBe userWithGroups.displayName
+        Option(jwtBody.get("mail", classOf[String])) shouldBe userWithGroups.optionalAttributes.getOrElse("mail", None)
+        Option(jwtBody.get("displayname", classOf[String])) shouldBe userWithGroups.optionalAttributes.getOrElse("displayname", None)
         jwtBody.get("groups", classOf[java.util.List[String]]).asScala shouldBe userWithGroups.groups
 
       case Failure(t) => fail(s"Invalid refreshed access JWT: $t", t)

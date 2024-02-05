@@ -129,28 +129,17 @@ object AccessTokenClaimsParser extends ClaimsParser {
   }
 
   /**
-   * Returns the email of the user that the JWT was issued to.
+   * Returns the map of optional claims of the user that the JWT was issued to.
+   *
    * @param jwt The JWT to parse.
-   * @return The email of the user that the JWT was issued to.
+   * @return The map of optional claims of the user that the JWT was issued to.
    */
-  def getEmail(jwt: Jwt): Option[String] = {
-    getClaim(jwt, "email") match {
-      case Some(email) => Some(email.toString)
-      case None => None
-    }
+  def getOptionalClaims(jwt: Jwt) : Map[String, Any] = {
+    val claims = getAllClaims(jwt)
+    val requiredClaims = List("sub", "groups", "type", "exp", "iat", "kid")
+    claims -- requiredClaims
   }
 
-  /**
-   * Returns the display name of the user that the JWT was issued to.
-   * @param jwt The JWT to parse.
-   * @return The display name of the user that the JWT was issued to.
-   */
-  def getDisplayName(jwt: Jwt): Option[String] = {
-    getClaim(jwt, "displayname") match {
-      case Some(displayName) => Some(displayName.toString)
-      case None => None
-    }
-  }
 
   /**
    * Checks the type of JWT to be 'access'

@@ -113,6 +113,9 @@ In order to disable an authentication protocol, set the `order` property to `0`
 or just exclude the properties from the config for that auth provider.
 Please ensure at least one auth method is enabled.
 
+The config also allows the user to specify additional claims to be added to the JWT token. 
+These can be sourced from ldap or specified directly in the config depending on the auth provider used.
+
 ### ActiveDirectoryLDAPAuthenticationProvider
 Uses LDAP(s) to authenticate user in Active Directory and to fetch groups that this user belongs to.
 

@@ -23,7 +23,7 @@ import za.co.absa.loginsvc.rest.config.validation.ConfigValidationResult.{Config
 
 class ActiveDirectoryLDAPConfigTest extends AnyFlatSpec with Matchers {
 
-  private val ldapCfg = ActiveDirectoryLDAPConfig("some.domain.com", "ldaps://some.domain.com:636/","SomeAccount", 1)
+  private val ldapCfg = ActiveDirectoryLDAPConfig("some.domain.com", "ldaps://some.domain.com:636/","SomeAccount", 1, None)
 
   "ActiveDirectoryLDAPConfig" should "validate expected filled content" in {
     ldapCfg.validate() shouldBe ConfigValidationSuccess
@@ -41,6 +41,6 @@ class ActiveDirectoryLDAPConfigTest extends AnyFlatSpec with Matchers {
   }
 
   it should "pass validation if disabled despite missing values" in {
-    ActiveDirectoryLDAPConfig(null, null, null, 0).validate() shouldBe ConfigValidationSuccess
+    ActiveDirectoryLDAPConfig(null, null, null, 0, None).validate() shouldBe ConfigValidationSuccess
   }
 }

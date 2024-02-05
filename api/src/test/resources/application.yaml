@@ -18,6 +18,9 @@ loginsvc:
           domain: "some.domain.com"
           url: "ldaps://some.domain.com:636/"
           search-filter: "(samaccountname={1})"
+          attributes:
+            - "mail"
+            - "displayname"
         # Users (config-defined)
         users:
           order: 0
@@ -28,10 +31,11 @@ loginsvc:
                 - "group1"
             - username: "user2"
               password: "password2"
-              displayname: "User Two"
-              email: "user@two.org"
               groups:
                 - "group2"
+              attributes:
+                displayname: "User Two"
+                mail: "user@two.org"
 
 # App Config
 spring:
