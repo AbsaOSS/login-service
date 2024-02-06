@@ -98,9 +98,9 @@ class ActiveDirectoryLDAPAuthenticationProvider(config: ActiveDirectoryLDAPConfi
                                      authorities: util.Collection[_ <: GrantedAuthority]
                                    ): UserDetails = {
       val fromBase = super.mapUserFromContext(ctx, username, authorities)
-      val extraAttributes = attributes.map { attr =>
-        val value = Option(ctx.getAttributes().get(attr._1)).map(_.get())
-        attr._2 -> value
+      val extraAttributes = attributes.map { case (fieldName, claimName) =>
+        val value = Option(ctx.getAttributes().get(fieldName)).map(_.get())
+        claimName -> value
       }
 
       UserDetailsWithExtras(fromBase, extraAttributes)

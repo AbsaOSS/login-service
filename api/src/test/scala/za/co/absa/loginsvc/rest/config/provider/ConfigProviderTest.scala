@@ -34,40 +34,38 @@ class ConfigProviderTest extends AnyFlatSpec with Matchers  {
 
   "The baseConfig properties" should "Match" in {
     val baseConfig: BaseConfig = configProvider.getBaseConfig
-    assert(baseConfig.someKey == "BETA")
+    baseConfig.someKey shouldBe "BETA"
   }
 
   "The jwtConfig properties" should "Match" in {
     val keyConfig: KeyConfig = configProvider.getJwtKeyConfig
-    assert(keyConfig.algName == "RS256" &&
-      keyConfig.accessExpTime == FiniteDuration(15, TimeUnit.MINUTES) &&
-      keyConfig.refreshExpTime == FiniteDuration(10, TimeUnit.HOURS) &&
-      keyConfig.keyRotationTime.get == FiniteDuration(5, TimeUnit.SECONDS)
-    )
+    keyConfig.algName shouldBe "RS256"
+    keyConfig.accessExpTime shouldBe FiniteDuration(15, TimeUnit.MINUTES)
+    keyConfig.refreshExpTime shouldBe FiniteDuration(10, TimeUnit.HOURS)
+    keyConfig.keyRotationTime.get shouldBe FiniteDuration(5, TimeUnit.SECONDS)
   }
 
   "The ldapConfig properties" should "Match" in {
     val activeDirectoryLDAPConfig: ActiveDirectoryLDAPConfig = configProvider.getLdapConfig
-    assert(activeDirectoryLDAPConfig.url == "ldaps://some.domain.com:636/" &&
-      activeDirectoryLDAPConfig.domain  == "some.domain.com" &&
-      activeDirectoryLDAPConfig.searchFilter  == "(samaccountname={1})" &&
-      activeDirectoryLDAPConfig.order  == 1 &&
-      activeDirectoryLDAPConfig.attributes.get.equals(Map("mail" -> "email", "displayname" -> "displayname")))
+    activeDirectoryLDAPConfig.url shouldBe "ldaps://some.domain.com:636/"
+    activeDirectoryLDAPConfig.domain shouldBe "some.domain.com"
+    activeDirectoryLDAPConfig.searchFilter shouldBe "(samaccountname={1})"
+    activeDirectoryLDAPConfig.order shouldBe 1
+    activeDirectoryLDAPConfig.attributes shouldBe Some(Map("mail" -> "email", "displayname" -> "displayname"))
   }
 
   "The usersConfig properties" should "be loaded correctly" in {
     val usersConfig: UsersConfig = configProvider.getUsersConfig
-    assert(usersConfig.order == 0)
+    usersConfig.order shouldBe 0
 
-    assert(usersConfig.knownUsers(0).groups(0) == "group1" &&
-      usersConfig.knownUsers(0).attributes.isEmpty &&
-      usersConfig.knownUsers(0).password == "password1" &&
-      usersConfig.knownUsers(0).username == "user1")
+    usersConfig.knownUsers(0).groups(0) shouldBe "group1"
+    usersConfig.knownUsers(0).attributes shouldBe None
+    usersConfig.knownUsers(0).password shouldBe "password1"
+    usersConfig.knownUsers(0).username shouldBe "user1"
 
-    assert(usersConfig.knownUsers(1).groups(0) == "group2" &&
-      usersConfig.knownUsers(1).attributes.get.equals(
-        Map("mail" -> "user@two.org", "displayname" -> "User Two")
-      ) && usersConfig.knownUsers(1).password == "password2" &&
-      usersConfig.knownUsers(1).username == "user2")
+    usersConfig.knownUsers(1).groups(0) shouldBe "group2"
+    usersConfig.knownUsers(1).attributes shouldBe Some(Map("mail" -> "user@two.org", "displayname" -> "User Two"))
+    usersConfig.knownUsers(1).password shouldBe "password2"
+    usersConfig.knownUsers(1).username shouldBe "user2"
   }
 }

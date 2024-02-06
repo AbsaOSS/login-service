@@ -62,6 +62,8 @@ loginsvc:
           url: "ldaps://some.domain.com:636/"
           search-filter: "(samaccountname={1})"
           attributes:
+            # The FieldName is the key used to search ldap and the value is the value used to name the JWT claim.
+            # ldapFieldName: claimFieldName
             mail: "email"
             displayname: "displayname"
 
