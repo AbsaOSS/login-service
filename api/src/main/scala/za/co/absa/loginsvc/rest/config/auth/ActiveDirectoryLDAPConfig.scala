@@ -27,7 +27,7 @@ import za.co.absa.loginsvc.rest.config.validation.{ConfigValidatable, ConfigVali
  * @param url URL to AD LDAP, ex. "ldaps://some.domain.com:636/"
  * @param searchFilter LDAP filter used when searching for groups, ex. "(samaccountname={1})"
  */
-case class ActiveDirectoryLDAPConfig(domain: String, url: String, searchFilter: String, order: Int, attributes: Option[Array[String]])
+case class ActiveDirectoryLDAPConfig(domain: String, url: String, searchFilter: String, order: Int, attributes: Option[Map[String, String]])
   extends ConfigValidatable with DynamicAuthOrder
 {
 

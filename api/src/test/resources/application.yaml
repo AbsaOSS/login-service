@@ -19,8 +19,8 @@ loginsvc:
           url: "ldaps://some.domain.com:636/"
           search-filter: "(samaccountname={1})"
           attributes:
-            - "mail"
-            - "displayname"
+            mail: "email"
+            displayname: "displayname"
         # Users (config-defined)
         users:
           order: 0

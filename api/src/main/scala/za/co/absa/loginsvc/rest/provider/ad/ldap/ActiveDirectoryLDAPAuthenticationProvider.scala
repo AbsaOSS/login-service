@@ -43,7 +43,7 @@ class ActiveDirectoryLDAPAuthenticationProvider(config: ActiveDirectoryLDAPConfi
     val impl = new SpringSecurityActiveDirectoryLdapAuthenticationProvider(config.domain, config.url)
 
     impl.setSearchFilter(config.searchFilter)
-    impl.setUserDetailsContextMapper(new LDAPUserDetailsContextMapperWithOptions(config.attributes.getOrElse(Array.empty)))
+    impl.setUserDetailsContextMapper(new LDAPUserDetailsContextMapperWithOptions(config.attributes.getOrElse(Map.empty)))
 
     impl
   }
@@ -90,7 +90,7 @@ class ActiveDirectoryLDAPAuthenticationProvider(config: ActiveDirectoryLDAPConfi
     override def isEnabled: Boolean = userDetails.isEnabled
   }
 
-  private class LDAPUserDetailsContextMapperWithOptions(attributes: Array[String]) extends LdapUserDetailsMapper {
+  private class LDAPUserDetailsContextMapperWithOptions(attributes: Map[String, String]) extends LdapUserDetailsMapper {
 
     override def mapUserFromContext(
                                      ctx: DirContextOperations,
@@ -98,10 +98,10 @@ class ActiveDirectoryLDAPAuthenticationProvider(config: ActiveDirectoryLDAPConfi
                                      authorities: util.Collection[_ <: GrantedAuthority]
                                    ): UserDetails = {
       val fromBase = super.mapUserFromContext(ctx, username, authorities)
-      val extraAttributes = attributes.map { attr =>
-        val value = Option(ctx.getAttributes().get(attr)).map(_.get())
-        attr -> value
-      }.toMap
+      val extraAttributes = attributes.map { case (fieldName, claimName) =>
+        val value = Option(ctx.getAttributes().get(fieldName)).map(_.get())
+        claimName -> value
+      }
 
       UserDetailsWithExtras(fromBase, extraAttributes)
     }
