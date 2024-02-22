@@ -74,7 +74,10 @@ class ConfigProvider(@Value("${spring.config.location}") yamlPath: String)
         ldapConfig.throwErrors()
         ldapConfig
       }
-    else ActiveDirectoryLDAPConfig("", "", "", 0, None)
+    else{
+      val emptyServiceAccount = ServiceAccountConfig("", Option(IntegratedLdapUserConfig("","")), None)
+      ActiveDirectoryLDAPConfig("", "", "", 0, emptyServiceAccount, None)
+    }
   }
 
   def getUsersConfig : UsersConfig = {

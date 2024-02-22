@@ -27,7 +27,12 @@ import za.co.absa.loginsvc.rest.config.validation.{ConfigValidatable, ConfigVali
  * @param url URL to AD LDAP, ex. "ldaps://some.domain.com:636/"
  * @param searchFilter LDAP filter used when searching for groups, ex. "(samaccountname={1})"
  */
-case class ActiveDirectoryLDAPConfig(domain: String, url: String, searchFilter: String, order: Int, attributes: Option[Map[String, String]])
+case class ActiveDirectoryLDAPConfig(domain: String,
+                                     url: String,
+                                     searchFilter: String,
+                                     order: Int,
+                                     serviceAccount: ServiceAccountConfig,
+                                     attributes: Option[Map[String, String]])
   extends ConfigValidatable with DynamicAuthOrder
 {
 
@@ -55,5 +60,53 @@ case class ActiveDirectoryLDAPConfig(domain: String, url: String, searchFilter: 
       results.foldLeft[ConfigValidationResult](ConfigValidationSuccess)(ConfigValidationResult.merge)
     }
     else ConfigValidationSuccess
+  }
+}
+
+case class ServiceAccountConfig(private val accountPattern: String,
+                                private val inConfigAccount: Option[IntegratedLdapUserConfig],
+                                private val awsSecretsManagerAccount: Option[AwsSecretsLdapUserConfig])
+{
+  private val ldapUserDetails: LdapUser = (inConfigAccount, awsSecretsManagerAccount) match {
+    case (Some(_), Some(_)) =>
+      throw ConfigValidationException("Both integratedLdapUserConfig and awsSecretsLdapUserConfig exist. Please choose only one.")
+
+    case (None, None) =>
+      throw ConfigValidationException("Neither integratedLdapUserConfig nor awsSecretsLdapUserConfig exists. One of them should exist.")
+
+    case _ =>
+      val ldapConfig: LdapUser = inConfigAccount.orElse(awsSecretsManagerAccount).get
+      ldapConfig.throwErrors()
+
+      ldapConfig
+  }
+
+  val username: String = String.format(accountPattern, ldapUserDetails.username)
+  val password: String = ldapUserDetails.password
+}
+
+case class IntegratedLdapUserConfig(username: String, password: String) extends LdapUser
+{
+  def throwErrors(): Unit = this.validate().throwOnErrors()
+}
+
+case class AwsSecretsLdapUserConfig(private val secretName: String,
+                                    private val region: String,
+                                    private val usernameFieldName: String,
+                                    private val passwordFieldName: String) extends LdapUser {
+
+  def username: String = ""
+  def password: String = ""
+  def throwErrors(): Unit = this.validate().throwOnErrors()
+}
+
+trait LdapUser extends ConfigValidatable {
+  def username: String
+  def password: String
+
+  def throwErrors(): Unit
+
+  override def validate(): ConfigValidationResult = {
+    ConfigValidationSuccess
   }
 }

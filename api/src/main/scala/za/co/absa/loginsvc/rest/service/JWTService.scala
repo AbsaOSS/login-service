@@ -26,7 +26,6 @@ import za.co.absa.loginsvc.model.User
 import za.co.absa.loginsvc.rest.config.provider.JwtConfigProvider
 import za.co.absa.loginsvc.rest.model.{AccessToken, RefreshToken, Token}
 import za.co.absa.loginsvc.rest.service.JWTService.extractUserFrom
-import za.co.absa.loginsvc.utils.OptionUtils.ImplicitBuilderExt
 
 import java.security.interfaces.RSAPublicKey
 import java.security.{KeyPair, PublicKey}
@@ -38,7 +37,7 @@ import scala.compat.java8.DurationConverters._
 import scala.concurrent.duration.FiniteDuration
 
 @Service
-class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider) {
+class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider, authSearchService: AuthSearchService) {
 
   private val logger = LoggerFactory.getLogger(classOf[JWTService])
   private val scheduler = Executors.newSingleThreadScheduledExecutor(r => {
@@ -116,6 +115,9 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider) {
       .parseClaimsJws(accessToken.token) // checks requirements: type=access, signature, custom validity window
 
     val userFromOldAccessToken: User = extractUserFrom(oldAccessJws.getBody)
+
+    val checkUser = authSearchService.searchUser(userFromOldAccessToken.name) // check if user still exists
+    logger.info(checkUser.toString)
 
     Jwts.parserBuilder()
       .require("type", Token.TokenType.Refresh.toString)

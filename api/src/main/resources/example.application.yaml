@@ -61,6 +61,16 @@ loginsvc:
           domain: "some.domain.com"
           url: "ldaps://some.domain.com:636/"
           search-filter: "(samaccountname={1})"
+          service-account:
+            account-pattern: "CN=%s,OU=Users,OU=CORP Accounts,DC=corp,DC=dsarena,DC=com"
+            in-config-account:
+                username: "svc-ldap"
+                password: "password"
+          #aws-secrets-manager-account:
+              #secret-name: "secret"
+              #region: "region"
+              #username-field-name: "username"
+              #password-field-name: "password"
           attributes:
             # The FieldName is the key used to search ldap and the value is the value used to name the JWT claim.
             # ldapFieldName: claimFieldName
