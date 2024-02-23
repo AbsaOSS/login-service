@@ -37,9 +37,10 @@ class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
 
   private val testConfig : ConfigProvider = new ConfigProvider("api/src/test/resources/application.yaml")
   private var jwtService: JWTService = _
+  private var authSearchService: AuthSearchService = _
 
   private val userWithoutEmailAndGroups: User = User(
-    name = "testUser",
+    name = "user1",
     groups = Seq.empty,
     optionalAttributes = Map.empty
   )
@@ -49,7 +50,7 @@ class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
   )
 
   private val userWithGroups: User = userWithoutGroups.copy(
-    groups = Seq("testGroup1", "testGroup2")
+    groups = Seq("Group1")
   )
 
   private def parseJWT(jwt: Token, publicKey: PublicKey = jwtService.publicKey): Try[Jws[Claims]] = Try {
@@ -57,7 +58,8 @@ class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
   }
 
   override def beforeEach(): Unit = {
-    jwtService = new JWTService(testConfig)
+    authSearchService = new AuthSearchService(testConfig)
+    jwtService = new JWTService(testConfig, authSearchService)
   }
 
   override def afterEach(): Unit = {
@@ -207,7 +209,7 @@ class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
       )
     }
 
-    new JWTService(configP)
+    new JWTService(configP, authSearchService)
   }
 
   import scala.concurrent.duration._

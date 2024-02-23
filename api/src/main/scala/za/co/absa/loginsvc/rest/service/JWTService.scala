@@ -116,9 +116,6 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider, authSearchSe
 
     val userFromOldAccessToken: User = extractUserFrom(oldAccessJws.getBody)
 
-    val checkUser = authSearchService.searchUser(userFromOldAccessToken.name) // check if user still exists
-    logger.info(checkUser.toString)
-
     Jwts.parserBuilder()
       .require("type", Token.TokenType.Refresh.toString)
       .requireSubject(userFromOldAccessToken.name)
@@ -126,8 +123,14 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider, authSearchSe
       .build()
       .parseClaimsJws(refreshToken.token) // checks username, validity, and signature.
 
+    val userUpdatedDetails = {
+      try authSearchService.searchUser(userFromOldAccessToken.name)
+      catch {
+        case _: Throwable => throw new UnsupportedJwtException(s"User ${userFromOldAccessToken.name} not found")
+      }
+    } // check if user still exists
 
-    val refreshedAccessToken = generateAccessToken(userFromOldAccessToken, isRefresh = true) // same process as with normal generation, but different msg
+    val refreshedAccessToken = generateAccessToken(userUpdatedDetails, isRefresh = true) // same process as with normal generation, but different msg
 
     // we are giving the original still-valid refreshToken back - potentially making room here to revoke or regenerate refreshTokens later
     (refreshedAccessToken, refreshToken)

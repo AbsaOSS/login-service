@@ -58,6 +58,10 @@ case class ActiveDirectoryLDAPConfig(domain: String,
           .map(_ => ConfigValidationSuccess)
           .getOrElse(ConfigValidationError(ConfigValidationException("url is empty"))),
 
+        Option(serviceAccount)
+          .map(_ => ConfigValidationSuccess)
+          .getOrElse(ConfigValidationError(ConfigValidationException("serviceAccount is empty"))),
+
         Option(searchFilter)
           .map(_ => ConfigValidationSuccess)
           .getOrElse(ConfigValidationError(ConfigValidationException("searchFilter is empty")))
