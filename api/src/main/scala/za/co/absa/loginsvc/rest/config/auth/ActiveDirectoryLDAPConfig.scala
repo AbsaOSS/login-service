@@ -16,6 +16,12 @@
 
 package za.co.absa.loginsvc.rest.config.auth
 
+import com.fasterxml.jackson.databind.{JsonNode, ObjectMapper}
+import org.slf4j.LoggerFactory
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
+import software.amazon.awssdk.regions.Region
+import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient
+import software.amazon.awssdk.services.secretsmanager.model.{GetSecretValueRequest, GetSecretValueResponse}
 import za.co.absa.loginsvc.rest.config.validation.ConfigValidationResult.{ConfigValidationError, ConfigValidationSuccess}
 import za.co.absa.loginsvc.rest.config.validation.{ConfigValidatable, ConfigValidationException, ConfigValidationResult}
 
@@ -95,9 +101,59 @@ case class AwsSecretsLdapUserConfig(private val secretName: String,
                                     private val usernameFieldName: String,
                                     private val passwordFieldName: String) extends LdapUser {
 
-  def username: String = ""
-  def password: String = ""
+  private val logger = LoggerFactory.getLogger(classOf[LdapUser])
+
+  val (username, password) = getUsernameAndPasswordFromSecret
   def throwErrors(): Unit = this.validate().throwOnErrors()
+  override def validate(): ConfigValidationResult = {
+    val results = Seq(
+      Option(secretName)
+        .map(_ => ConfigValidationSuccess)
+        .getOrElse(ConfigValidationError(ConfigValidationException("secretName is empty"))),
+
+      Option(region)
+        .map(_ => ConfigValidationSuccess)
+        .getOrElse(ConfigValidationError(ConfigValidationException("region is empty"))),
+
+      Option(usernameFieldName)
+        .map(_ => ConfigValidationSuccess)
+        .getOrElse(ConfigValidationError(ConfigValidationException("usernameFieldName is empty"))),
+
+      Option(passwordFieldName)
+        .map(_ => ConfigValidationSuccess)
+        .getOrElse(ConfigValidationError(ConfigValidationException("passwordFieldName is empty")))
+    )
+
+    val awsSecretsResultsMerge = results.foldLeft[ConfigValidationResult](ConfigValidationSuccess)(ConfigValidationResult.merge)
+    awsSecretsResultsMerge.merge(super.validate())
+  }
+
+  private def getUsernameAndPasswordFromSecret: (String, String) = {
+
+    val default = DefaultCredentialsProvider.create
+
+    val client = SecretsManagerClient.builder
+      .region(Region.of(region))
+      .credentialsProvider(default)
+      .build
+
+    val getSecretValueRequest = GetSecretValueRequest.builder.secretId(secretName).build
+
+    try {
+      logger.info("Attempting to fetch account data from AWS Secrets Manager")
+      val getSecretValueResponse: GetSecretValueResponse = client.getSecretValue(getSecretValueRequest)
+      val secret = getSecretValueResponse.secretString
+      logger.info("account data retrieved.")
+      val rootNode: JsonNode = new ObjectMapper().readTree(secret)
+
+      (rootNode.get(usernameFieldName).asText(), rootNode.get(passwordFieldName).asText())
+    }
+    catch {
+      case e: Throwable =>
+        logger.error(s"Error occurred retrieving account data from AWS Secrets Manager", e)
+        throw e
+    }
+  }
 }
 
 trait LdapUser extends ConfigValidatable {
@@ -107,6 +163,11 @@ trait LdapUser extends ConfigValidatable {
   def throwErrors(): Unit
 
   override def validate(): ConfigValidationResult = {
-    ConfigValidationSuccess
+    if(username.isEmpty)
+      ConfigValidationError(ConfigValidationException("username is empty"))
+    else if(password.isEmpty)
+      ConfigValidationError(ConfigValidationException("password is empty"))
+    else
+      ConfigValidationSuccess
   }
 }
