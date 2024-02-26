@@ -124,8 +124,12 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider, authSearchSe
       .parseClaimsJws(refreshToken.token) // checks username, validity, and signature.
 
     val userUpdatedDetails = {
-      try authSearchService.searchUser(userFromOldAccessToken.name)
-      catch {
+      try {
+        val searchedUser = authSearchService.searchUser(userFromOldAccessToken.name)
+        val prefixedGroups = searchedUser.groups.intersect(userFromOldAccessToken.groups) // only keep groups that were in old token
+
+        User(searchedUser.name, prefixedGroups, searchedUser.optionalAttributes)
+      } catch {
         case _: Throwable => throw new UnsupportedJwtException(s"User ${userFromOldAccessToken.name} not found")
       }
     } // check if user still exists

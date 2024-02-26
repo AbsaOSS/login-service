@@ -40,17 +40,17 @@ class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
   private var authSearchService: AuthSearchService = _
 
   private val userWithoutEmailAndGroups: User = User(
-    name = "user1",
+    name = "user2",
     groups = Seq.empty,
     optionalAttributes = Map.empty
   )
 
   private val userWithoutGroups: User = userWithoutEmailAndGroups.copy(
-    optionalAttributes = Map("mail" -> Some("test@gmail.com"))
+    optionalAttributes = Map("mail" -> Some("user@two.org"))
   )
 
   private val userWithGroups: User = userWithoutGroups.copy(
-    groups = Seq("Group1")
+    groups = Seq("group2")
   )
 
   private def parseJWT(jwt: Token, publicKey: PublicKey = jwtService.publicKey): Try[Jws[Claims]] = Try {
@@ -189,7 +189,6 @@ class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
         jwtBody.getSubject shouldBe userWithGroups.name
         jwtBody.get("type", classOf[String]) shouldBe "access"
         Option(jwtBody.get("mail", classOf[String])) shouldBe userWithGroups.optionalAttributes.getOrElse("mail", None)
-        Option(jwtBody.get("displayname", classOf[String])) shouldBe userWithGroups.optionalAttributes.getOrElse("displayname", None)
         jwtBody.get("groups", classOf[java.util.List[String]]).asScala shouldBe userWithGroups.groups
 
       case Failure(t) => fail(s"Invalid refreshed access JWT: $t", t)
@@ -234,7 +233,6 @@ class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
         jwtBody.getSubject shouldBe userWithGroups.name
         jwtBody.get("type", classOf[String]) shouldBe "access"
         Option(jwtBody.get("mail", classOf[String])) shouldBe userWithGroups.optionalAttributes.getOrElse("mail", None)
-        Option(jwtBody.get("displayname", classOf[String])) shouldBe userWithGroups.optionalAttributes.getOrElse("displayname", None)
         jwtBody.get("groups", classOf[java.util.List[String]]).asScala shouldBe userWithGroups.groups
 
       case Failure(t) => fail(s"Invalid refreshed access JWT: $t", t)

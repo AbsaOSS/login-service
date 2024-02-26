@@ -167,11 +167,15 @@ trait LdapUser extends ConfigValidatable {
   def throwErrors(): Unit
 
   override def validate(): ConfigValidationResult = {
-    if(username.isEmpty)
-      ConfigValidationError(ConfigValidationException("username is empty"))
-    else if(password.isEmpty)
-      ConfigValidationError(ConfigValidationException("password is empty"))
-    else
-      ConfigValidationSuccess
+    val results = Seq(
+      Option(username)
+        .map(_ => ConfigValidationSuccess)
+        .getOrElse(ConfigValidationError(ConfigValidationException("username is empty"))),
+      Option(password)
+        .map(_ => ConfigValidationSuccess)
+        .getOrElse(ConfigValidationError(ConfigValidationException("password is empty")))
+    )
+
+    results.foldLeft[ConfigValidationResult](ConfigValidationSuccess)(ConfigValidationResult.merge)
   }
 }

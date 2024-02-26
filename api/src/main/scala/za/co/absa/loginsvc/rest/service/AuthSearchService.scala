@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service
 import za.co.absa.loginsvc.model.User
 import za.co.absa.loginsvc.rest.config.auth.{ActiveDirectoryLDAPConfig, UsersConfig}
 import za.co.absa.loginsvc.rest.config.provider.AuthConfigProvider
+import za.co.absa.loginsvc.rest.config.validation.ConfigValidationException
 
 import java.util
 import javax.naming.Context
@@ -38,8 +39,11 @@ class AuthSearchService @Autowired()(authConfigProvider: AuthConfigProvider) {
   private val adLDAPConfig = authConfigProvider.getLdapConfig
 
   private val configs = Array(usersConfig, adLDAPConfig).filter(_.order != 0).sortBy(_.order)
+  if (configs.isEmpty)
+    throw ConfigValidationException("No authentication method enabled in config")
 
   def searchUser(username: String): User = {
+
     configs.foreach {
       case u: UsersConfig =>
         val result = searchUsersConfig(username)

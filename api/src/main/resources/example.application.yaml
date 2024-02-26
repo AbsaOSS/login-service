@@ -62,10 +62,13 @@ loginsvc:
           url: "ldaps://some.domain.com:636/"
           search-filter: "(samaccountname={1})"
           service-account:
+            # The account-pattern is used to format the username of the user to be used to authenticate with the ldap server.
             account-pattern: "CN=%s,OU=Users,OU=CORP Accounts,DC=corp,DC=dsarena,DC=com"
+            # The in-config-account is used to authenticate with the ldap server.
             in-config-account:
                 username: "svc-ldap"
                 password: "password"
+          # Instead of using the in-config-account, the application can fetch the username and password from AWS Secrets Manager.
           #aws-secrets-manager-account:
               #secret-name: "secret"
               #region: "region"
