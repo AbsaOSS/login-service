@@ -46,7 +46,7 @@ class ConfigProviderTest extends AnyFlatSpec with Matchers  {
   }
 
   "The ldapConfig properties" should "Match" in {
-    val activeDirectoryLDAPConfig: ActiveDirectoryLDAPConfig = configProvider.getLdapConfig
+    val activeDirectoryLDAPConfig: ActiveDirectoryLDAPConfig = configProvider.getLdapConfig.get
     activeDirectoryLDAPConfig.url shouldBe "ldaps://some.domain.com:636/"
     activeDirectoryLDAPConfig.domain shouldBe "some.domain.com"
     activeDirectoryLDAPConfig.searchFilter shouldBe "(samaccountname={1})"
@@ -57,7 +57,7 @@ class ConfigProviderTest extends AnyFlatSpec with Matchers  {
   }
 
   "The usersConfig properties" should "be loaded correctly" in {
-    val usersConfig: UsersConfig = configProvider.getUsersConfig
+    val usersConfig: UsersConfig = configProvider.getUsersConfig.get
     usersConfig.order shouldBe 1
 
     usersConfig.knownUsers(0).groups(0) shouldBe "group1"

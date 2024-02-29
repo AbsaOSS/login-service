@@ -23,7 +23,7 @@ import za.co.absa.loginsvc.rest.config.validation.ConfigValidationResult.{Config
 
 class ActiveDirectoryLDAPConfigTest extends AnyFlatSpec with Matchers {
 
-  private val integratedCfg = IntegratedLdapUserConfig("svc-ldap", "password")
+  private val integratedCfg = LdapUserCredentialsConfig("svc-ldap", "password")
   private val serviceAccountCfg = ServiceAccountConfig(
     "CN=%s,OU=Users,OU=CORP Accounts,DC=corp,DC=dsarena,DC=com",
     Option(integratedCfg),

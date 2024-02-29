@@ -74,7 +74,7 @@ case class ActiveDirectoryLDAPConfig(domain: String,
 }
 
 case class ServiceAccountConfig(private val accountPattern: String,
-                                private val inConfigAccount: Option[IntegratedLdapUserConfig],
+                                private val inConfigAccount: Option[LdapUserCredentialsConfig],
                                 private val awsSecretsManagerAccount: Option[AwsSecretsLdapUserConfig])
 {
   private val ldapUserDetails: LdapUser = (inConfigAccount, awsSecretsManagerAccount) match {
@@ -82,22 +82,31 @@ case class ServiceAccountConfig(private val accountPattern: String,
       throw ConfigValidationException("Both integratedLdapUserConfig and awsSecretsLdapUserConfig exist. Please choose only one.")
 
     case (None, None) =>
-      throw ConfigValidationException("Neither integratedLdapUserConfig nor awsSecretsLdapUserConfig exists. One of them should exist.")
+      throw ConfigValidationException("Neither integratedLdapUserConfig nor awsSecretsLdapUserConfig exists. Exactly one of them should be present.")
 
-    case _ =>
-      val ldapConfig: LdapUser = inConfigAccount.orElse(awsSecretsManagerAccount).get
-      ldapConfig.throwErrors()
+    case (inConfig@Some(_), None) =>
+      val ldapConfig: LdapUser = inConfig.get
+      ldapConfig.throwOnErrors()
 
       ldapConfig
+
+    case (None, awsConfig@Some(_)) =>
+      val ldapConfig: LdapUser = awsConfig.get
+      ldapConfig.throwOnErrors()
+
+      ldapConfig
+
+    case _ =>
+      throw ConfigValidationException("Error with current config concerning integratedLdapUserConfig or awsSecretsLdapUserConfig")
   }
 
   val username: String = String.format(accountPattern, ldapUserDetails.username)
   val password: String = ldapUserDetails.password
 }
 
-case class IntegratedLdapUserConfig(username: String, password: String) extends LdapUser
+case class LdapUserCredentialsConfig (username: String, password: String) extends LdapUser
 {
-  def throwErrors(): Unit = this.validate().throwOnErrors()
+  def throwOnErrors(): Unit = this.validate().throwOnErrors()
 }
 
 case class AwsSecretsLdapUserConfig(private val secretName: String,
@@ -108,7 +117,7 @@ case class AwsSecretsLdapUserConfig(private val secretName: String,
   private val logger = LoggerFactory.getLogger(classOf[LdapUser])
 
   val (username, password) = getUsernameAndPasswordFromSecret
-  def throwErrors(): Unit = this.validate().throwOnErrors()
+  def throwOnErrors(): Unit = this.validate().throwOnErrors()
   override def validate(): ConfigValidationResult = {
     val results = Seq(
       Option(secretName)
@@ -163,8 +172,7 @@ case class AwsSecretsLdapUserConfig(private val secretName: String,
 trait LdapUser extends ConfigValidatable {
   def username: String
   def password: String
-
-  def throwErrors(): Unit
+  def throwOnErrors(): Unit
 
   override def validate(): ConfigValidationResult = {
     val results = Seq(

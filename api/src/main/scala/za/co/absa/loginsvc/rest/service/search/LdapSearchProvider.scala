@@ -14,15 +14,11 @@
  * limitations under the License.
  */
 
-package za.co.absa.loginsvc.rest.service
+package za.co.absa.loginsvc.rest.service.search
 
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.stereotype.Service
 import za.co.absa.loginsvc.model.User
-import za.co.absa.loginsvc.rest.config.auth.{ActiveDirectoryLDAPConfig, UsersConfig}
-import za.co.absa.loginsvc.rest.config.provider.AuthConfigProvider
-import za.co.absa.loginsvc.rest.config.validation.ConfigValidationException
+import za.co.absa.loginsvc.rest.config.auth.ActiveDirectoryLDAPConfig
 
 import java.util
 import javax.naming.Context
@@ -30,66 +26,39 @@ import javax.naming.directory.{Attributes, DirContext, SearchControls, SearchRes
 import javax.naming.ldap.{Control, InitialLdapContext, PagedResultsControl}
 import scala.collection.JavaConverters.enumerationAsScalaIteratorConverter
 
-@Service
-class AuthSearchService @Autowired()(authConfigProvider: AuthConfigProvider) {
+class LdapSearchProvider(activeDirectoryLDAPConfig: ActiveDirectoryLDAPConfig)
+  extends AuthSearchProvider {
 
-  private val logger = LoggerFactory.getLogger(classOf[AuthSearchService])
+  private val logger = LoggerFactory.getLogger(classOf[LdapSearchProvider])
 
-  private val usersConfig = authConfigProvider.getUsersConfig
-  private val adLDAPConfig = authConfigProvider.getLdapConfig
-
-  private val configs = Array(usersConfig, adLDAPConfig).filter(_.order != 0).sortBy(_.order)
-  if (configs.isEmpty)
-    throw ConfigValidationException("No authentication method enabled in config")
-
-  def searchUser(username: String): User = {
-
-    configs.foreach {
-      case u: UsersConfig =>
-        val result = searchUsersConfig(username)
-        if (result.isDefined) return result.get
-      case l: ActiveDirectoryLDAPConfig =>
-        val result = searchLDAP(username)
-        if (result.isDefined) return result.get
-      case _ => //ignore for now
-    }
-    throw new NoSuchElementException(s"Value not found in any object.")
-  }
-
-  private def searchUsersConfig(username: String): Option[User] = {
-    usersConfig.knownUsersMap.get(username).flatMap { userConfig =>
-      val optionalAttributes: Map[String, Option[AnyRef]] = userConfig.attributes.getOrElse(Map.empty).map {
-        case (k, v) => (k, Some(v))
-      }
-      Some(User(username, userConfig.groups.toList, optionalAttributes))
-    }
-  }
-
-  private def searchLDAP(username: String): Option[User] = {
-    val serviceAccount = adLDAPConfig.serviceAccount
+  def searchForUser(username: String): Option[User] = {
+    logger.info(s"Searching for user in Ldap: $username")
+    val serviceAccount = activeDirectoryLDAPConfig.serviceAccount
     val context = getDirContext(serviceAccount.username, serviceAccount.password)
-      try {
-        val users = context
-          .search(adLDAPConfig.domain.split("\\.").map(part => s"dc=$part").mkString(","),
-            adLDAPConfig.searchFilter.replace("{1}", username),
-            getSimpleSearchControls)
-          .asScala.filter(filterSearchResults).map(resultToUserEntry).toList
+    try {
+      val users = context
+        .search(activeDirectoryLDAPConfig.domain.split("\\.").map(part => s"dc=$part").mkString(","),
+          activeDirectoryLDAPConfig.searchFilter.replace("{1}", username),
+          getSimpleSearchControls)
+        .asScala.filter(filterSearchResults).map(resultToUserEntry).toList
 
-        if (users.nonEmpty) {
-          println("User found in LDAP")
-          Option(users.head)
-        }
-        else
-          throw new Exception(s"$username not found in LDAP")
-      } finally {
-        context.close()
+      if (users.nonEmpty) {
+        logger.info(s"User found in Ldap: $username")
+        Option(users.head)
       }
+      else {
+        logger.info(s"User could not be found in Ldap: $username")
+        None
+      }
+    } finally {
+      context.close()
+    }
   }
 
   private def getDirContext(principal: String, credential: String): DirContext = {
-    logger.info(String.format("principal: %s", principal))
+    logger.info(String.format("Service Account Principal: %s", principal))
     val env: util.Hashtable[String, String] = new util.Hashtable[String, String]
-    env.put(Context.PROVIDER_URL, adLDAPConfig.url)
+    env.put(Context.PROVIDER_URL, activeDirectoryLDAPConfig.url)
     env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory")
     env.put(Context.SECURITY_AUTHENTICATION, "simple")
     env.put(Context.SECURITY_PRINCIPAL, principal)
@@ -124,7 +93,7 @@ class AuthSearchService @Autowired()(authConfigProvider: AuthConfigProvider) {
 
   private def resultToUserEntry(result: SearchResult): User = {
     val attrs: Attributes = result.getAttributes
-    val optionalAttr= adLDAPConfig.attributes.getOrElse(Map.empty)
+    val optionalAttr = activeDirectoryLDAPConfig.attributes.getOrElse(Map.empty)
 
     val username = attrs.get("sAMAccountName").get.toString
     val groups = attrs.get("memberOf").getAll.asScala.map(group => {

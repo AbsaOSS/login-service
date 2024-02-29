@@ -20,18 +20,19 @@ import org.scalatest.BeforeAndAfterEach
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import za.co.absa.loginsvc.model.User
-import za.co.absa.loginsvc.rest.config.auth.{ActiveDirectoryLDAPConfig, IntegratedLdapUserConfig, ServiceAccountConfig, UserConfig, UsersConfig}
-import za.co.absa.loginsvc.rest.config.provider.{AuthConfigProvider, ConfigProvider, JwtConfigProvider}
+import za.co.absa.loginsvc.rest.config.auth.{ActiveDirectoryLDAPConfig, LdapUserCredentialsConfig, ServiceAccountConfig, UserConfig, UsersConfig}
+import za.co.absa.loginsvc.rest.config.provider.{AuthConfigProvider, ConfigProvider}
 import za.co.absa.loginsvc.rest.config.validation.ConfigValidationException
+import za.co.absa.loginsvc.rest.service.search.AuthSearchService
 
 class AuthSearchServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
 
   private val testConfig: ConfigProvider = new ConfigProvider("api/src/test/resources/application.yaml")
-  private val emptyServiceAccount = ServiceAccountConfig("", Option(IntegratedLdapUserConfig("", "")), None)
+  private val emptyServiceAccount = ServiceAccountConfig("", Option(LdapUserCredentialsConfig("", "")), None)
 
   private val authConfigProvider: AuthConfigProvider = new AuthConfigProvider {
-    override def getLdapConfig: ActiveDirectoryLDAPConfig = ActiveDirectoryLDAPConfig("", "", "", 0, emptyServiceAccount, None)
-    override def getUsersConfig: UsersConfig = testConfig.getUsersConfig
+    override def getLdapConfig: Option[ActiveDirectoryLDAPConfig] = Option(ActiveDirectoryLDAPConfig("", "", "", 0, emptyServiceAccount, None))
+    override def getUsersConfig: Option[UsersConfig] = testConfig.getUsersConfig
   }
   private val authSearchService: AuthSearchService = new AuthSearchService(authConfigProvider)
 
@@ -56,8 +57,8 @@ class AuthSearchServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Mat
 
   it should "fail if no auth config is provided" in {
     val emptyAuthConfigProvider: AuthConfigProvider = new AuthConfigProvider {
-      override def getLdapConfig: ActiveDirectoryLDAPConfig = ActiveDirectoryLDAPConfig("", "", "", 0, emptyServiceAccount, None)
-      override def getUsersConfig: UsersConfig = UsersConfig(Array.empty[UserConfig], 0)
+      override def getLdapConfig: Option[ActiveDirectoryLDAPConfig] = Option(ActiveDirectoryLDAPConfig("", "", "", 0, emptyServiceAccount, None))
+      override def getUsersConfig: Option[UsersConfig] = Option(UsersConfig(Array.empty[UserConfig], 0))
     }
 
     an [ConfigValidationException] should be thrownBy {

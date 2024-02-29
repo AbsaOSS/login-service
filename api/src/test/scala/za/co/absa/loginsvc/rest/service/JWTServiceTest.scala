@@ -26,6 +26,8 @@ import za.co.absa.loginsvc.model.User
 import za.co.absa.loginsvc.rest.config.jwt.{InMemoryKeyConfig, KeyConfig}
 import za.co.absa.loginsvc.rest.config.provider.{ConfigProvider, JwtConfigProvider}
 import za.co.absa.loginsvc.rest.model.{AccessToken, RefreshToken, Token}
+import za.co.absa.loginsvc.rest.service.jwt.JWTService
+import za.co.absa.loginsvc.rest.service.search.AuthSearchService
 
 import java.security.PublicKey
 import java.util

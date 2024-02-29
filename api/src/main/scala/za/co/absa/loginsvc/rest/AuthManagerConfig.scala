@@ -33,8 +33,8 @@ import scala.collection.immutable.SortedMap
 @Configuration
 class AuthManagerConfig @Autowired()(authConfigProvider: AuthConfigProvider){
 
-  private val usersConfig: UsersConfig = authConfigProvider.getUsersConfig
-  private val adLDAPConfig: ActiveDirectoryLDAPConfig = authConfigProvider.getLdapConfig
+  private val usersConfig: Option[UsersConfig] = authConfigProvider.getUsersConfig
+  private val adLDAPConfig: Option[ActiveDirectoryLDAPConfig] = authConfigProvider.getLdapConfig
 
   private val logger = LoggerFactory.getLogger(classOf[AuthManagerConfig])
 
@@ -42,25 +42,25 @@ class AuthManagerConfig @Autowired()(authConfigProvider: AuthConfigProvider){
   def authManager(http: HttpSecurity): AuthenticationManager = {
 
     val authenticationManagerBuilder = http.getSharedObject(classOf[AuthenticationManagerBuilder]).parentAuthenticationManager(null)
-    val configs: Array[DynamicAuthOrder] = Array(usersConfig, adLDAPConfig)
+    val configs: Array[DynamicAuthOrder] = Array(usersConfig, adLDAPConfig).flatten
     val orderedProviders = createProviders(configs)
 
     if(orderedProviders.isEmpty)
       throw ConfigValidationException("No authentication method enabled in config")
 
-    orderedProviders.foreach(
+    orderedProviders.zipWithIndex.foreach(
       auth => {
-        logger.info(s"Authentication method ${auth._2.getClass.getSimpleName} has been initialized at order ${auth._1}")
-        authenticationManagerBuilder.authenticationProvider(auth._2)
+        logger.info(s"Authentication method ${auth._1.getClass.getSimpleName} has been initialized at order ${auth._2 + 1}")
+        authenticationManagerBuilder.authenticationProvider(auth._1)
       })
     authenticationManagerBuilder.build
   }
 
-  private def createProviders(configs: Array[DynamicAuthOrder]): SortedMap[Int, AuthenticationProvider] = {
-    SortedMap.empty[Int, AuthenticationProvider] ++ configs.filter(_.order > 0)
+  private def createProviders(configs: Array[DynamicAuthOrder]): Array[AuthenticationProvider] = {
+    Array.empty[AuthenticationProvider] ++ configs.filter(_.order > 0).sortBy(_.order)
       .map {
-        case c: UsersConfig => (c.order, new ConfigUsersAuthenticationProvider(c))
-        case c: ActiveDirectoryLDAPConfig => (c.order, new ActiveDirectoryLDAPAuthenticationProvider(c))
+        case c: UsersConfig => new ConfigUsersAuthenticationProvider(c)
+        case c: ActiveDirectoryLDAPConfig => new ActiveDirectoryLDAPAuthenticationProvider(c)
         case other => throw new IllegalStateException(s"unsupported config $other")
       }
   }

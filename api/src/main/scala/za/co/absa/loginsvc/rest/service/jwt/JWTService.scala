@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package za.co.absa.loginsvc.rest.service
+package za.co.absa.loginsvc.rest.service.jwt
 
 import com.nimbusds.jose.JWSAlgorithm
 import com.nimbusds.jose.jwk.{JWKSet, KeyUse, RSAKey}
@@ -25,7 +25,8 @@ import org.springframework.stereotype.Service
 import za.co.absa.loginsvc.model.User
 import za.co.absa.loginsvc.rest.config.provider.JwtConfigProvider
 import za.co.absa.loginsvc.rest.model.{AccessToken, RefreshToken, Token}
-import za.co.absa.loginsvc.rest.service.JWTService.extractUserFrom
+import za.co.absa.loginsvc.rest.service.jwt.JWTService.extractUserFrom
+import za.co.absa.loginsvc.rest.service.search.AuthSearchService
 
 import java.security.interfaces.RSAPublicKey
 import java.security.{KeyPair, PublicKey}
@@ -127,7 +128,6 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider, authSearchSe
       try {
         val searchedUser = authSearchService.searchUser(userFromOldAccessToken.name)
         val prefixedGroups = searchedUser.groups.intersect(userFromOldAccessToken.groups) // only keep groups that were in old token
-
         User(searchedUser.name, prefixedGroups, searchedUser.optionalAttributes)
       } catch {
         case _: Throwable => throw new UnsupportedJwtException(s"User ${userFromOldAccessToken.name} not found")
