@@ -51,7 +51,7 @@ class ConfigProviderTest extends AnyFlatSpec with Matchers  {
     activeDirectoryLDAPConfig.domain shouldBe "some.domain.com"
     activeDirectoryLDAPConfig.searchFilter shouldBe "(samaccountname={1})"
     activeDirectoryLDAPConfig.order shouldBe 2
-    activeDirectoryLDAPConfig.serviceAccount.username shouldBe "CN=svc-ldap,OU=Users,OU=CORP Accounts,DC=corp,DC=dsarena,DC=com"
+    activeDirectoryLDAPConfig.serviceAccount.username shouldBe "CN=%s,OU=Users,OU=CORP Accounts,DC=corp,DC=dsarena,DC=com"
     activeDirectoryLDAPConfig.serviceAccount.password shouldBe "password"
     activeDirectoryLDAPConfig.attributes shouldBe Some(Map("mail" -> "email", "displayname" -> "displayname"))
   }

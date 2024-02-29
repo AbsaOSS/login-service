@@ -19,7 +19,7 @@ loginsvc:
           url: "ldaps://some.domain.com:636/"
           search-filter: "(samaccountname={1})"
           service-account:
-            account-pattern: "CN=%s,OU=Users,OU=Organization1,DC=my,DC=domain,DC=com"
+            account-pattern: "CN=%s,OU=Users,OU=CORP Accounts,DC=corp,DC=dsarena,DC=com"
             in-config-account:
               username: "svc-ldap"
               password: "password"
