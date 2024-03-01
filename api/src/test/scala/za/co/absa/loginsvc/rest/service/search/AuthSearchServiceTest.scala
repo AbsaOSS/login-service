@@ -14,16 +14,15 @@
  * limitations under the License.
  */
 
-package za.co.absa.loginsvc.rest.service
+package za.co.absa.loginsvc.rest.service.search
 
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import za.co.absa.loginsvc.model.User
-import za.co.absa.loginsvc.rest.config.auth.{ActiveDirectoryLDAPConfig, LdapUserCredentialsConfig, ServiceAccountConfig, UserConfig, UsersConfig}
+import za.co.absa.loginsvc.rest.config.auth._
 import za.co.absa.loginsvc.rest.config.provider.{AuthConfigProvider, ConfigProvider}
 import za.co.absa.loginsvc.rest.config.validation.ConfigValidationException
-import za.co.absa.loginsvc.rest.service.search.AuthSearchService
 
 class AuthSearchServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
 

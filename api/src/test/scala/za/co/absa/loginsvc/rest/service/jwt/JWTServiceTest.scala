@@ -14,26 +14,25 @@
  * limitations under the License.
  */
 
-package za.co.absa.loginsvc.rest.service
+package za.co.absa.loginsvc.rest.service.jwt
 
 import com.nimbusds.jose.JWSAlgorithm
 import com.nimbusds.jose.jwk.KeyUse
-import io.jsonwebtoken.{Claims, ExpiredJwtException, Jws, Jwts, MalformedJwtException}
-import org.scalatest.flatspec.AnyFlatSpec
+import io.jsonwebtoken._
 import org.scalatest.BeforeAndAfterEach
+import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import za.co.absa.loginsvc.model.User
 import za.co.absa.loginsvc.rest.config.jwt.{InMemoryKeyConfig, KeyConfig}
 import za.co.absa.loginsvc.rest.config.provider.{ConfigProvider, JwtConfigProvider}
 import za.co.absa.loginsvc.rest.model.{AccessToken, RefreshToken, Token}
-import za.co.absa.loginsvc.rest.service.jwt.JWTService
 import za.co.absa.loginsvc.rest.service.search.AuthSearchService
 
 import java.security.PublicKey
 import java.util
+import scala.collection.JavaConverters._
 import scala.concurrent.duration.FiniteDuration
 import scala.util.{Failure, Success, Try}
-import scala.collection.JavaConverters._
 
 class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
 
