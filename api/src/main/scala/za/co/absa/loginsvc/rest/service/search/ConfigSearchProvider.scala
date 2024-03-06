@@ -27,9 +27,7 @@ class ConfigSearchProvider(usersConfig: UsersConfig)
   def searchForUser(username: String): Option[User] = {
     logger.info(s"Searching for user in config: $username")
     usersConfig.knownUsersMap.get(username).flatMap { userConfig =>
-      val optionalAttributes: Map[String, Option[AnyRef]] = userConfig.attributes.getOrElse(Map.empty).map {
-        case (k, v) => (k, Some(v))
-      }
+      val optionalAttributes: Map[String, Option[AnyRef]] = userConfig.attributes.getOrElse(Map.empty).mapValues(Some(_))
       logger.info(s"User found in config: $username")
       Option(User(userConfig.username, userConfig.groups.toList, optionalAttributes))
     }

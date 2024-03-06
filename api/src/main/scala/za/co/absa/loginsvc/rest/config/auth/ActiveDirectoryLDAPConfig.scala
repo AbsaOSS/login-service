@@ -16,14 +16,10 @@
 
 package za.co.absa.loginsvc.rest.config.auth
 
-import com.fasterxml.jackson.databind.{JsonNode, ObjectMapper}
 import org.slf4j.LoggerFactory
-import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
-import software.amazon.awssdk.regions.Region
-import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient
-import software.amazon.awssdk.services.secretsmanager.model.{GetSecretValueRequest, GetSecretValueResponse}
 import za.co.absa.loginsvc.rest.config.validation.ConfigValidationResult.{ConfigValidationError, ConfigValidationSuccess}
 import za.co.absa.loginsvc.rest.config.validation.{ConfigValidatable, ConfigValidationException, ConfigValidationResult}
+import za.co.absa.loginsvc.utils.AwsSecretsUtils
 
 
 /**
@@ -79,25 +75,21 @@ case class ServiceAccountConfig(private val accountPattern: String,
 {
   private val ldapUserDetails: LdapUser = (inConfigAccount, awsSecretsManagerAccount) match {
     case (Some(_), Some(_)) =>
-      throw ConfigValidationException("Both integratedLdapUserConfig and awsSecretsLdapUserConfig exist. Please choose only one.")
+      throw ConfigValidationException("Both inConfigAccount and awsSecretsLdapUserConfig exist. Please choose only one.")
 
     case (None, None) =>
       throw ConfigValidationException("Neither integratedLdapUserConfig nor awsSecretsLdapUserConfig exists. Exactly one of them should be present.")
 
-    case (inConfig@Some(_), None) =>
-      val ldapConfig: LdapUser = inConfig.get
-      ldapConfig.throwOnErrors()
+    case (Some(inConfig), None) =>
+      inConfig.throwOnErrors()
+      inConfig
 
-      ldapConfig
-
-    case (None, awsConfig@Some(_)) =>
-      val ldapConfig: LdapUser = awsConfig.get
-      ldapConfig.throwOnErrors()
-
-      ldapConfig
+    case (None, Some(awsConfig)) =>
+      awsConfig.throwOnErrors()
+      awsConfig
 
     case _ =>
-      throw ConfigValidationException("Error with current config concerning integratedLdapUserConfig or awsSecretsLdapUserConfig")
+      throw ConfigValidationException("Error with current config concerning inConfigAccount or awsSecretsLdapUserConfig")
   }
 
   val username: String = String.format(accountPattern, ldapUserDetails.username)
@@ -142,24 +134,9 @@ case class AwsSecretsLdapUserConfig(private val secretName: String,
   }
 
   private def getUsernameAndPasswordFromSecret: (String, String) = {
-
-    val default = DefaultCredentialsProvider.create
-
-    val client = SecretsManagerClient.builder
-      .region(Region.of(region))
-      .credentialsProvider(default)
-      .build
-
-    val getSecretValueRequest = GetSecretValueRequest.builder.secretId(secretName).build
-
     try {
-      logger.info("Attempting to fetch account data from AWS Secrets Manager")
-      val getSecretValueResponse: GetSecretValueResponse = client.getSecretValue(getSecretValueRequest)
-      val secret = getSecretValueResponse.secretString
-      logger.info("account data retrieved.")
-      val rootNode: JsonNode = new ObjectMapper().readTree(secret)
-
-      (rootNode.get(usernameFieldName).asText(), rootNode.get(passwordFieldName).asText())
+      val secrets = AwsSecretsUtils.fetchSecret(secretName, region, Array(usernameFieldName, passwordFieldName))
+      (secrets(usernameFieldName), secrets(passwordFieldName))
     }
     catch {
       case e: Throwable =>

@@ -48,11 +48,10 @@ class AuthManagerConfig @Autowired()(authConfigProvider: AuthConfigProvider){
     if(orderedProviders.isEmpty)
       throw ConfigValidationException("No authentication method enabled in config")
 
-    orderedProviders.zipWithIndex.foreach(
-      auth => {
-        logger.info(s"Authentication method ${auth._1.getClass.getSimpleName} has been initialized at order ${auth._2 + 1}")
-        authenticationManagerBuilder.authenticationProvider(auth._1)
-      })
+    orderedProviders.zipWithIndex.foreach { case (authProvider, index) =>
+      logger.info(s"Authentication method ${authProvider.getClass.getSimpleName} has been initialized at order ${index + 1}")
+      authenticationManagerBuilder.authenticationProvider(authProvider)
+    }
     authenticationManagerBuilder.build
   }
 
