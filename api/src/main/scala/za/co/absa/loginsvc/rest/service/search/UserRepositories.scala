@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
-package za.co.absa.loginsvc.rest.config.auth
-trait DynamicAuthOrder {
-  def order : Int
+package za.co.absa.loginsvc.rest.service.search
+
+trait UserRepositories {
+
+  def orderedProviders: Seq[UserRepository]
 }

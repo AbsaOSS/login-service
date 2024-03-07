@@ -26,7 +26,7 @@ import za.co.absa.loginsvc.model.User
 import za.co.absa.loginsvc.rest.config.provider.JwtConfigProvider
 import za.co.absa.loginsvc.rest.model.{AccessToken, RefreshToken, Token}
 import za.co.absa.loginsvc.rest.service.jwt.JWTService.extractUserFrom
-import za.co.absa.loginsvc.rest.service.search.AuthSearchService
+import za.co.absa.loginsvc.rest.service.search.UserSearchService
 
 import java.security.interfaces.RSAPublicKey
 import java.security.{KeyPair, PublicKey}
@@ -38,7 +38,7 @@ import scala.compat.java8.DurationConverters._
 import scala.concurrent.duration.FiniteDuration
 
 @Service
-class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider, authSearchService: AuthSearchService) {
+class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider, authSearchService: UserSearchService) {
 
   private val logger = LoggerFactory.getLogger(classOf[JWTService])
   private val scheduler = Executors.newSingleThreadScheduledExecutor(r => {

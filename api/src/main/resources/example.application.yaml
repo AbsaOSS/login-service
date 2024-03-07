@@ -20,7 +20,6 @@ loginsvc:
         #poll-time: 5min
         #alg-name: "RS256"
     config:
-      some-key: "BETA"
       # Generates git.properties file for use on info endpoint.
       git-info:
         # Generate Git Information on each run of the application.

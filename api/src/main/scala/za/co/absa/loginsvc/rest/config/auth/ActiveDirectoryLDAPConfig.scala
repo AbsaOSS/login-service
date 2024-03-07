@@ -35,7 +35,7 @@ case class ActiveDirectoryLDAPConfig(domain: String,
                                      order: Int,
                                      serviceAccount: ServiceAccountConfig,
                                      attributes: Option[Map[String, String]])
-  extends ConfigValidatable with DynamicAuthOrder
+  extends ConfigValidatable with ConfigOrdering
 {
 
   def throwErrors(): Unit =

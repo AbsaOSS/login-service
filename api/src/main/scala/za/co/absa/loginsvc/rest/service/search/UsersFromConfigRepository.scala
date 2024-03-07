@@ -20,10 +20,10 @@ import org.slf4j.LoggerFactory
 import za.co.absa.loginsvc.model.User
 import za.co.absa.loginsvc.rest.config.auth.UsersConfig
 
-class ConfigSearchProvider(usersConfig: UsersConfig)
-  extends AuthSearchProvider {
+class UsersFromConfigRepository(usersConfig: UsersConfig)
+  extends UserRepository {
 
-  private val logger = LoggerFactory.getLogger(classOf[ConfigSearchProvider])
+  private val logger = LoggerFactory.getLogger(classOf[UsersFromConfigRepository])
   def searchForUser(username: String): Option[User] = {
     logger.info(s"Searching for user in config: $username")
     usersConfig.knownUsersMap.get(username).flatMap { userConfig =>

@@ -42,11 +42,6 @@ class ConfigProvider(@Value("${spring.config.location}") yamlPath: String)
   //GitConfig needs to be initialized at startup
   getGitConfig
 
-  def getBaseConfig : BaseConfig = {
-    createConfigClass[BaseConfig]("loginsvc.rest.config").
-      getOrElse(BaseConfig(""))
-  }
-
   def getJwtKeyConfig : KeyConfig = {
     val inMemoryKeyConfig: Option[InMemoryKeyConfig] = createConfigClass[InMemoryKeyConfig]("loginsvc.rest.jwt.generate-in-memory")
     val awsSecretsManagerKeyConfig: Option[AwsSecretsManagerKeyConfig] = createConfigClass[AwsSecretsManagerKeyConfig]("loginsvc.rest.jwt.aws-secrets-manager")

@@ -18,6 +18,6 @@ package za.co.absa.loginsvc.rest.service.search
 
 import za.co.absa.loginsvc.model.User
 
-trait AuthSearchProvider {
+trait UserRepository {
   def searchForUser(username: String): Option[User]
 }

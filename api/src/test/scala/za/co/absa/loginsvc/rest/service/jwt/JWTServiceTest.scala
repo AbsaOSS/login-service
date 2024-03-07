@@ -26,7 +26,7 @@ import za.co.absa.loginsvc.model.User
 import za.co.absa.loginsvc.rest.config.jwt.{InMemoryKeyConfig, KeyConfig}
 import za.co.absa.loginsvc.rest.config.provider.{ConfigProvider, JwtConfigProvider}
 import za.co.absa.loginsvc.rest.model.{AccessToken, RefreshToken, Token}
-import za.co.absa.loginsvc.rest.service.search.AuthSearchService
+import za.co.absa.loginsvc.rest.service.search.{DefaultUserRepositories, UserSearchService}
 
 import java.security.PublicKey
 import java.util
@@ -38,7 +38,7 @@ class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
 
   private val testConfig : ConfigProvider = new ConfigProvider("api/src/test/resources/application.yaml")
   private var jwtService: JWTService = _
-  private var authSearchService: AuthSearchService = _
+  private var authSearchService: UserSearchService = _
 
   private val userWithoutEmailAndGroups: User = User(
     name = "user2",
@@ -59,7 +59,7 @@ class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
   }
 
   override def beforeEach(): Unit = {
-    authSearchService = new AuthSearchService(testConfig)
+    authSearchService = new UserSearchService(new DefaultUserRepositories(testConfig))
     jwtService = new JWTService(testConfig, authSearchService)
   }
 
