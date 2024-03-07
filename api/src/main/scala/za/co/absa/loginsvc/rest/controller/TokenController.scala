@@ -28,7 +28,7 @@ import org.springframework.security.core.Authentication
 import org.springframework.web.bind.annotation._
 import za.co.absa.loginsvc.model.User
 import za.co.absa.loginsvc.rest.model.{PublicKey, TokensWrapper}
-import za.co.absa.loginsvc.rest.service.JWTService
+import za.co.absa.loginsvc.rest.service.jwt.JWTService
 import za.co.absa.loginsvc.utils.OptionUtils.ImplicitBuilderExt
 
 import java.util.concurrent.CompletableFuture

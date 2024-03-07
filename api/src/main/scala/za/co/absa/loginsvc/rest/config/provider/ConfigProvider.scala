@@ -42,11 +42,6 @@ class ConfigProvider(@Value("${spring.config.location}") yamlPath: String)
   //GitConfig needs to be initialized at startup
   getGitConfig
 
-  def getBaseConfig : BaseConfig = {
-    createConfigClass[BaseConfig]("loginsvc.rest.config").
-      getOrElse(BaseConfig(""))
-  }
-
   def getJwtKeyConfig : KeyConfig = {
     val inMemoryKeyConfig: Option[InMemoryKeyConfig] = createConfigClass[InMemoryKeyConfig]("loginsvc.rest.jwt.generate-in-memory")
     val awsSecretsManagerKeyConfig: Option[AwsSecretsManagerKeyConfig] = createConfigClass[AwsSecretsManagerKeyConfig]("loginsvc.rest.jwt.aws-secrets-manager")
@@ -58,33 +53,37 @@ class ConfigProvider(@Value("${spring.config.location}") yamlPath: String)
       case (None, None) =>
         throw ConfigValidationException("Neither inMemoryKeyConfig nor awsSecretsManagerKeyConfig exists. One of them should exist.")
 
-      case _ =>
-        val keyConfig: KeyConfig = inMemoryKeyConfig.orElse(awsSecretsManagerKeyConfig).get
+      case (inMemoryKeyConfig@Some(_), None) =>
+        val keyConfig: KeyConfig = inMemoryKeyConfig.get
         keyConfig.throwErrors()
 
         keyConfig
+
+      case (None, awsSecretsManagerKeyConfig@Some(_)) =>
+        val keyConfig: KeyConfig = awsSecretsManagerKeyConfig.get
+        keyConfig.throwErrors()
+
+        keyConfig
+
+      case _ =>
+        throw ConfigValidationException("Error with current config concerning inMemoryKeyConfig or awsSecretsManagerKeyConfig")
     }
   }
 
-  def getLdapConfig : ActiveDirectoryLDAPConfig = {
+  def getLdapConfig : Option[ActiveDirectoryLDAPConfig] = {
     val ldapConfigOption = createConfigClass[ActiveDirectoryLDAPConfig]("loginsvc.rest.auth.provider.ldap")
     if(ldapConfigOption.nonEmpty)
-      {
-        val ldapConfig = ldapConfigOption.get
-        ldapConfig.throwErrors()
-        ldapConfig
-      }
-    else ActiveDirectoryLDAPConfig("", "", "", 0, None)
+      ldapConfigOption.get.throwErrors()
+
+    ldapConfigOption
   }
 
-  def getUsersConfig : UsersConfig = {
+  def getUsersConfig : Option[UsersConfig] = {
     val userConfigOption = createConfigClass[UsersConfig]("loginsvc.rest.auth.provider.users")
-    if (userConfigOption.nonEmpty) {
-      val userConfig = userConfigOption.get
-      userConfig.throwErrors()
-      userConfig
-    }
-    else UsersConfig(Array.empty[UserConfig], 0)
+    if (userConfigOption.nonEmpty)
+      userConfigOption.get.throwErrors()
+
+    userConfigOption
   }
 
   private def getGitConfig: GitConfig = {

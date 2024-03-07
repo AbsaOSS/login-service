@@ -14,11 +14,7 @@
  * limitations under the License.
  */
 
-package za.co.absa.loginsvc.rest.config.provider
-
-import za.co.absa.loginsvc.rest.config.auth._
-
-trait AuthConfigProvider {
-  def getLdapConfig : Option[ActiveDirectoryLDAPConfig]
-  def getUsersConfig : Option[UsersConfig]
+package za.co.absa.loginsvc.rest.config.auth
+trait ConfigOrdering {
+  def order : Int
 }

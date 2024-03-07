@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package za.co.absa.loginsvc.rest.service
+package za.co.absa.loginsvc.rest.service.jwt
 
 import com.nimbusds.jose.JWSAlgorithm
 import com.nimbusds.jose.jwk.{JWKSet, KeyUse, RSAKey}
@@ -25,8 +25,8 @@ import org.springframework.stereotype.Service
 import za.co.absa.loginsvc.model.User
 import za.co.absa.loginsvc.rest.config.provider.JwtConfigProvider
 import za.co.absa.loginsvc.rest.model.{AccessToken, RefreshToken, Token}
-import za.co.absa.loginsvc.rest.service.JWTService.extractUserFrom
-import za.co.absa.loginsvc.utils.OptionUtils.ImplicitBuilderExt
+import za.co.absa.loginsvc.rest.service.jwt.JWTService.extractUserFrom
+import za.co.absa.loginsvc.rest.service.search.UserSearchService
 
 import java.security.interfaces.RSAPublicKey
 import java.security.{KeyPair, PublicKey}
@@ -38,7 +38,7 @@ import scala.compat.java8.DurationConverters._
 import scala.concurrent.duration.FiniteDuration
 
 @Service
-class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider) {
+class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider, authSearchService: UserSearchService) {
 
   private val logger = LoggerFactory.getLogger(classOf[JWTService])
   private val scheduler = Executors.newSingleThreadScheduledExecutor(r => {
@@ -124,8 +124,17 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider) {
       .build()
       .parseClaimsJws(refreshToken.token) // checks username, validity, and signature.
 
+    val userUpdatedDetails = {
+      try {
+        val searchedUser = authSearchService.searchUser(userFromOldAccessToken.name)
+        val prefixedGroups = searchedUser.groups.intersect(userFromOldAccessToken.groups) // only keep groups that were in old token
+        User(searchedUser.name, prefixedGroups, searchedUser.optionalAttributes)
+      } catch {
+        case _: Throwable => throw new UnsupportedJwtException(s"User ${userFromOldAccessToken.name} not found")
+      }
+    } // check if user still exists
 
-    val refreshedAccessToken = generateAccessToken(userFromOldAccessToken, isRefresh = true) // same process as with normal generation, but different msg
+    val refreshedAccessToken = generateAccessToken(userUpdatedDetails, isRefresh = true) // same process as with normal generation, but different msg
 
     // we are giving the original still-valid refreshToken back - potentially making room here to revoke or regenerate refreshTokens later
     (refreshedAccessToken, refreshToken)

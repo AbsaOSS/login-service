@@ -72,6 +72,8 @@ object Dependencies {
   lazy val springBootTest = "org.springframework.boot" % "spring-boot-starter-test" % Versions.springBoot % Test
   lazy val springBootSecurityTest = "org.springframework.security" % "spring-security-test" % Versions.spring % Test
 
+  lazy val scalaMockTest = "org.scalamock" %% "scalamock" % "5.2.0" % Test
+
   def apiDependencies: Seq[ModuleID] = Seq(
     jacksonModuleScala,
     jacksonDatabind,
@@ -101,7 +103,9 @@ object Dependencies {
 
     scalaTest,
     springBootTest,
-    springBootSecurityTest
+    springBootSecurityTest,
+
+    scalaMockTest
   )
 
   def clientLibDependencies: Seq[ModuleID] = Seq(

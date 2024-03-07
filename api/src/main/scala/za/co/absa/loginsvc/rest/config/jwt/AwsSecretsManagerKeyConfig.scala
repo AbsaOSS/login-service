@@ -16,20 +16,15 @@
 
 package za.co.absa.loginsvc.rest.config.jwt
 
-import com.fasterxml.jackson.databind.{JsonNode, ObjectMapper}
 import org.slf4j.LoggerFactory
-import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
-import software.amazon.awssdk.regions.Region
-import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient
-import software.amazon.awssdk.services.secretsmanager.model.{GetSecretValueRequest, GetSecretValueResponse}
 import za.co.absa.loginsvc.rest.config.validation.{ConfigValidationException, ConfigValidationResult}
 import za.co.absa.loginsvc.rest.config.validation.ConfigValidationResult.{ConfigValidationError, ConfigValidationSuccess}
+import za.co.absa.loginsvc.utils.AwsSecretsUtils
 
 import java.security.{KeyFactory, KeyPair}
 import java.security.spec.{PKCS8EncodedKeySpec, X509EncodedKeySpec}
 import java.util.Base64
 import scala.concurrent.duration.FiniteDuration
-
 
 case class AwsSecretsManagerKeyConfig(
   secretName: String,
@@ -46,31 +41,17 @@ case class AwsSecretsManagerKeyConfig(
 
   override def keyRotationTime : Option[FiniteDuration] = pollTime
   override def keyPair(): KeyPair = {
-
-    val default = DefaultCredentialsProvider.create
-
-    val client = SecretsManagerClient.builder
-      .region(Region.of(region))
-      .credentialsProvider(default)
-      .build
-
-    val getSecretValueRequest = GetSecretValueRequest.builder.secretId(secretName).build
-
     try {
-      logger.info("Attempting to fetch key data from AWS Secrets Manager")
-      val getSecretValueResponse: GetSecretValueResponse = client.getSecretValue(getSecretValueRequest)
-      val secret = getSecretValueResponse.secretString
-      logger.info("Key data retrieved. Attempting to Parse key data")
-      val rootNode: JsonNode = new ObjectMapper().readTree(secret)
+      val secrets = AwsSecretsUtils.fetchSecret(secretName, region, Array(privateKeyFieldName, publicKeyFieldName))
 
       val publicKeySpec: X509EncodedKeySpec = new X509EncodedKeySpec(
         Base64.getDecoder.decode(
-          rootNode.get(publicKeyFieldName).asText()
+          secrets(publicKeyFieldName)
         )
       )
       val privateKeySpec: PKCS8EncodedKeySpec = new PKCS8EncodedKeySpec(
         Base64.getDecoder.decode(
-          rootNode.get(privateKeyFieldName).asText()
+          secrets(privateKeyFieldName)
         )
       )
 
