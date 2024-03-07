@@ -32,11 +32,6 @@ class ConfigProviderTest extends AnyFlatSpec with Matchers  {
 
   private val configProvider : ConfigProvider = new ConfigProvider("api/src/test/resources/application.yaml")
 
-  "The baseConfig properties" should "Match" in {
-    val baseConfig: BaseConfig = configProvider.getBaseConfig
-    baseConfig.someKey shouldBe "BETA"
-  }
-
   "The jwtConfig properties" should "Match" in {
     val keyConfig: KeyConfig = configProvider.getJwtKeyConfig
     keyConfig.algName shouldBe "RS256"

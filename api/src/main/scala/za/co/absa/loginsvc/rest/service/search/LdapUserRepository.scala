@@ -26,10 +26,10 @@ import javax.naming.directory.{Attributes, DirContext, SearchControls, SearchRes
 import javax.naming.ldap.{Control, InitialLdapContext, PagedResultsControl}
 import scala.collection.JavaConverters.enumerationAsScalaIteratorConverter
 
-class LdapSearchProvider(activeDirectoryLDAPConfig: ActiveDirectoryLDAPConfig)
-  extends AuthSearchProvider {
+class LdapUserRepository(activeDirectoryLDAPConfig: ActiveDirectoryLDAPConfig)
+  extends UserRepository {
 
-  private val logger = LoggerFactory.getLogger(classOf[LdapSearchProvider])
+  private val logger = LoggerFactory.getLogger(classOf[LdapUserRepository])
 
   def searchForUser(username: String): Option[User] = {
     logger.info(s"Searching for user in Ldap: $username")

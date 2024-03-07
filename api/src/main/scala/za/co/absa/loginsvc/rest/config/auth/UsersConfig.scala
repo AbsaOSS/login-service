@@ -20,7 +20,7 @@ import za.co.absa.loginsvc.rest.config.validation.ConfigValidationResult.{Config
 import za.co.absa.loginsvc.rest.config.validation.{ConfigValidatable, ConfigValidationException, ConfigValidationResult}
 
 case class UsersConfig(knownUsers: Array[UserConfig], order: Int)
-  extends ConfigValidatable with DynamicAuthOrder {
+  extends ConfigValidatable with ConfigOrdering {
 
   lazy val knownUsersMap: Map[String, UserConfig] = knownUsers
     .map { entry => (entry.username, entry) }

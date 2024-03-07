@@ -23,12 +23,12 @@ import za.co.absa.loginsvc.model.User
 import za.co.absa.loginsvc.rest.config.auth.UsersConfig
 import za.co.absa.loginsvc.rest.config.provider.ConfigProvider
 
-class ConfigSearchProviderTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
+class UsersFromConfigRepositoryTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
 
   private val testConfig: ConfigProvider = new ConfigProvider("api/src/test/resources/application.yaml")
   private val usersConfig: UsersConfig = testConfig.getUsersConfig.get
 
-  private val configSearchProvider: ConfigSearchProvider = new ConfigSearchProvider(usersConfig)
+  private val configSearchProvider: UsersFromConfigRepository = new UsersFromConfigRepository(usersConfig)
 
   private val user: User = User(
     name = "user2",
