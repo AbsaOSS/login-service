@@ -14,42 +14,44 @@
  * limitations under the License.
  */
 
-package za.co.absa.loginsvc.rest.service
+package za.co.absa.loginsvc.rest.service.jwt
 
 import com.nimbusds.jose.JWSAlgorithm
 import com.nimbusds.jose.jwk.KeyUse
-import io.jsonwebtoken.{Claims, ExpiredJwtException, Jws, Jwts, MalformedJwtException}
-import org.scalatest.flatspec.AnyFlatSpec
+import io.jsonwebtoken._
 import org.scalatest.BeforeAndAfterEach
+import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import za.co.absa.loginsvc.model.User
 import za.co.absa.loginsvc.rest.config.jwt.{InMemoryKeyConfig, KeyConfig}
 import za.co.absa.loginsvc.rest.config.provider.{ConfigProvider, JwtConfigProvider}
 import za.co.absa.loginsvc.rest.model.{AccessToken, RefreshToken, Token}
+import za.co.absa.loginsvc.rest.service.search.{DefaultUserRepositories, UserSearchService}
 
 import java.security.PublicKey
 import java.util
+import scala.collection.JavaConverters._
 import scala.concurrent.duration.FiniteDuration
 import scala.util.{Failure, Success, Try}
-import scala.collection.JavaConverters._
 
 class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
 
   private val testConfig : ConfigProvider = new ConfigProvider("api/src/test/resources/application.yaml")
   private var jwtService: JWTService = _
+  private var authSearchService: UserSearchService = _
 
   private val userWithoutEmailAndGroups: User = User(
-    name = "testUser",
+    name = "user2",
     groups = Seq.empty,
     optionalAttributes = Map.empty
   )
 
   private val userWithoutGroups: User = userWithoutEmailAndGroups.copy(
-    optionalAttributes = Map("mail" -> Some("test@gmail.com"))
+    optionalAttributes = Map("mail" -> Some("user@two.org"))
   )
 
   private val userWithGroups: User = userWithoutGroups.copy(
-    groups = Seq("testGroup1", "testGroup2")
+    groups = Seq("group2")
   )
 
   private def parseJWT(jwt: Token, publicKey: PublicKey = jwtService.publicKey): Try[Jws[Claims]] = Try {
@@ -57,7 +59,8 @@ class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
   }
 
   override def beforeEach(): Unit = {
-    jwtService = new JWTService(testConfig)
+    authSearchService = new UserSearchService(new DefaultUserRepositories(testConfig))
+    jwtService = new JWTService(testConfig, authSearchService)
   }
 
   override def afterEach(): Unit = {
@@ -187,7 +190,6 @@ class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
         jwtBody.getSubject shouldBe userWithGroups.name
         jwtBody.get("type", classOf[String]) shouldBe "access"
         Option(jwtBody.get("mail", classOf[String])) shouldBe userWithGroups.optionalAttributes.getOrElse("mail", None)
-        Option(jwtBody.get("displayname", classOf[String])) shouldBe userWithGroups.optionalAttributes.getOrElse("displayname", None)
         jwtBody.get("groups", classOf[java.util.List[String]]).asScala shouldBe userWithGroups.groups
 
       case Failure(t) => fail(s"Invalid refreshed access JWT: $t", t)
@@ -207,7 +209,7 @@ class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
       )
     }
 
-    new JWTService(configP)
+    new JWTService(configP, authSearchService)
   }
 
   import scala.concurrent.duration._
@@ -232,7 +234,6 @@ class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
         jwtBody.getSubject shouldBe userWithGroups.name
         jwtBody.get("type", classOf[String]) shouldBe "access"
         Option(jwtBody.get("mail", classOf[String])) shouldBe userWithGroups.optionalAttributes.getOrElse("mail", None)
-        Option(jwtBody.get("displayname", classOf[String])) shouldBe userWithGroups.optionalAttributes.getOrElse("displayname", None)
         jwtBody.get("groups", classOf[java.util.List[String]]).asScala shouldBe userWithGroups.groups
 
       case Failure(t) => fail(s"Invalid refreshed access JWT: $t", t)

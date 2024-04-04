@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-package za.co.absa.loginsvc.rest.config.provider
+package za.co.absa.loginsvc.rest.service.search
 
-import za.co.absa.loginsvc.rest.config.auth._
+import za.co.absa.loginsvc.model.User
 
-trait AuthConfigProvider {
-  def getLdapConfig : Option[ActiveDirectoryLDAPConfig]
-  def getUsersConfig : Option[UsersConfig]
+trait UserRepository {
+  def searchForUser(username: String): Option[User]
 }

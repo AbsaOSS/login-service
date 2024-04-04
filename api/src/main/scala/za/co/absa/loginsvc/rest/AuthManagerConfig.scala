@@ -22,7 +22,7 @@ import org.springframework.context.annotation.{Bean, Configuration}
 import org.springframework.security.authentication.{AuthenticationManager, AuthenticationProvider}
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
-import za.co.absa.loginsvc.rest.config.auth.{ActiveDirectoryLDAPConfig, DynamicAuthOrder, UsersConfig}
+import za.co.absa.loginsvc.rest.config.auth.{ActiveDirectoryLDAPConfig, ConfigOrdering, UsersConfig}
 import za.co.absa.loginsvc.rest.config.provider.AuthConfigProvider
 import za.co.absa.loginsvc.rest.config.validation.ConfigValidationException
 import za.co.absa.loginsvc.rest.provider.ConfigUsersAuthenticationProvider
@@ -30,11 +30,16 @@ import za.co.absa.loginsvc.rest.provider.ad.ldap.ActiveDirectoryLDAPAuthenticati
 
 import scala.collection.immutable.SortedMap
 
+/**
+ * This class registers the authManager bean that is responsible for users to be able to "login" using their credentials
+ *  based on the config
+ * @param authConfigsProvider
+ */
 @Configuration
-class AuthManagerConfig @Autowired()(authConfigProvider: AuthConfigProvider){
+class AuthManagerConfig @Autowired()(authConfigsProvider: AuthConfigProvider){
 
-  private val usersConfig: UsersConfig = authConfigProvider.getUsersConfig
-  private val adLDAPConfig: ActiveDirectoryLDAPConfig = authConfigProvider.getLdapConfig
+  private val usersConfig: Option[UsersConfig] = authConfigsProvider.getUsersConfig
+  private val adLDAPConfig: Option[ActiveDirectoryLDAPConfig] = authConfigsProvider.getLdapConfig
 
   private val logger = LoggerFactory.getLogger(classOf[AuthManagerConfig])
 
@@ -42,25 +47,24 @@ class AuthManagerConfig @Autowired()(authConfigProvider: AuthConfigProvider){
   def authManager(http: HttpSecurity): AuthenticationManager = {
 
     val authenticationManagerBuilder = http.getSharedObject(classOf[AuthenticationManagerBuilder]).parentAuthenticationManager(null)
-    val configs: Array[DynamicAuthOrder] = Array(usersConfig, adLDAPConfig)
-    val orderedProviders = createProviders(configs)
+    val configs: Array[ConfigOrdering] = Array(usersConfig, adLDAPConfig).flatten
+    val orderedProviders = createAuthProviders(configs)
 
     if(orderedProviders.isEmpty)
       throw ConfigValidationException("No authentication method enabled in config")
 
-    orderedProviders.foreach(
-      auth => {
-        logger.info(s"Authentication method ${auth._2.getClass.getSimpleName} has been initialized at order ${auth._1}")
-        authenticationManagerBuilder.authenticationProvider(auth._2)
-      })
+    orderedProviders.zipWithIndex.foreach { case (authProvider, index) =>
+      logger.info(s"Authentication method ${authProvider.getClass.getSimpleName} has been initialized at order ${index + 1}")
+      authenticationManagerBuilder.authenticationProvider(authProvider)
+    }
     authenticationManagerBuilder.build
   }
 
-  private def createProviders(configs: Array[DynamicAuthOrder]): SortedMap[Int, AuthenticationProvider] = {
-    SortedMap.empty[Int, AuthenticationProvider] ++ configs.filter(_.order > 0)
+  private def createAuthProviders(configs: Array[ConfigOrdering]): Array[AuthenticationProvider] = {
+    Array.empty[AuthenticationProvider] ++ configs.filter(_.order > 0).sortBy(_.order)
       .map {
-        case c: UsersConfig => (c.order, new ConfigUsersAuthenticationProvider(c))
-        case c: ActiveDirectoryLDAPConfig => (c.order, new ActiveDirectoryLDAPAuthenticationProvider(c))
+        case c: UsersConfig => new ConfigUsersAuthenticationProvider(c)
+        case c: ActiveDirectoryLDAPConfig => new ActiveDirectoryLDAPAuthenticationProvider(c)
         case other => throw new IllegalStateException(s"unsupported config $other")
       }
   }

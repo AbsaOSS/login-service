@@ -113,6 +113,9 @@ In order to disable an authentication protocol, set the `order` property to `0`
 or just exclude the properties from the config for that auth provider.
 Please ensure at least one auth method is enabled.
 
+For the service account used to search Ldap, the Service Account Name and password may be specified in the config file.
+For a more secure approach, the service account name and password may be specified in AWS Secrets Manager and the application will fetch them from there.
+
 The config also allows the user to specify additional claims to be added to the JWT token. 
 These can be sourced from ldap or specified directly in the config depending on the auth provider used.
 
@@ -127,6 +130,11 @@ Format of attributes list under LDAP in config is:
           domain: "some.domain.com"
           url: "ldaps://some.domain.com:636/"
           search-filter: "(samaccountname={1})"
+          service-account:
+            account-pattern: "CN=%s,OU=Users,OU=CORP Accounts,DC=corp,DC=dsarena,DC=com"
+            in-config-account:
+                username: "svc-ldap"
+                password: "password"
           attributes:
             <ldapFieldName>: "<claimName>"
 ```

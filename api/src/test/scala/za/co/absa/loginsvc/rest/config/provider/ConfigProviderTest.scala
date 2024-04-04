@@ -32,11 +32,6 @@ class ConfigProviderTest extends AnyFlatSpec with Matchers  {
 
   private val configProvider : ConfigProvider = new ConfigProvider("api/src/test/resources/application.yaml")
 
-  "The baseConfig properties" should "Match" in {
-    val baseConfig: BaseConfig = configProvider.getBaseConfig
-    baseConfig.someKey shouldBe "BETA"
-  }
-
   "The jwtConfig properties" should "Match" in {
     val keyConfig: KeyConfig = configProvider.getJwtKeyConfig
     keyConfig.algName shouldBe "RS256"
@@ -46,17 +41,19 @@ class ConfigProviderTest extends AnyFlatSpec with Matchers  {
   }
 
   "The ldapConfig properties" should "Match" in {
-    val activeDirectoryLDAPConfig: ActiveDirectoryLDAPConfig = configProvider.getLdapConfig
+    val activeDirectoryLDAPConfig: ActiveDirectoryLDAPConfig = configProvider.getLdapConfig.get
     activeDirectoryLDAPConfig.url shouldBe "ldaps://some.domain.com:636/"
     activeDirectoryLDAPConfig.domain shouldBe "some.domain.com"
     activeDirectoryLDAPConfig.searchFilter shouldBe "(samaccountname={1})"
-    activeDirectoryLDAPConfig.order shouldBe 1
+    activeDirectoryLDAPConfig.order shouldBe 2
+    activeDirectoryLDAPConfig.serviceAccount.username shouldBe "CN=svc-ldap,OU=Users,OU=CORP Accounts,DC=corp,DC=dsarena,DC=com"
+    activeDirectoryLDAPConfig.serviceAccount.password shouldBe "password"
     activeDirectoryLDAPConfig.attributes shouldBe Some(Map("mail" -> "email", "displayname" -> "displayname"))
   }
 
   "The usersConfig properties" should "be loaded correctly" in {
-    val usersConfig: UsersConfig = configProvider.getUsersConfig
-    usersConfig.order shouldBe 0
+    val usersConfig: UsersConfig = configProvider.getUsersConfig.get
+    usersConfig.order shouldBe 1
 
     usersConfig.knownUsers(0).groups(0) shouldBe "group1"
     usersConfig.knownUsers(0).attributes shouldBe None

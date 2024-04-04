@@ -20,7 +20,6 @@ loginsvc:
         #poll-time: 5min
         #alg-name: "RS256"
     config:
-      some-key: "BETA"
       # Generates git.properties file for use on info endpoint.
       git-info:
         # Generate Git Information on each run of the application.
@@ -57,10 +56,23 @@ loginsvc:
           # Set the order of the protocol starting from 1
           # Set to 0 to disable or simply exclude the ldap tag from config
           # NOTE: At least 1 auth protocol needs to be enabled
-          order: 2
+          order: 0
           domain: "some.domain.com"
           url: "ldaps://some.domain.com:636/"
           search-filter: "(samaccountname={1})"
+          service-account:
+            # The account-pattern is used to format the username of the user to be used to authenticate with the ldap server.
+            account-pattern: "CN=%s,OU=Users,OU=Organization1,DC=my,DC=domain,DC=com"
+            # The in-config-account is used to authenticate with the ldap server.
+            in-config-account:
+                username: "svc-ldap"
+                password: "password"
+          # Instead of using the in-config-account, the application can fetch the username and password from AWS Secrets Manager.
+          #aws-secrets-manager-account:
+              #secret-name: "secret"
+              #region: "region"
+              #username-field-name: "username"
+              #password-field-name: "password"
           attributes:
             # The FieldName is the key used to search ldap and the value is the value used to name the JWT claim.
             # ldapFieldName: claimFieldName

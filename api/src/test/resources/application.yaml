@@ -7,23 +7,26 @@ loginsvc:
         refresh-exp-time: 10h
         key-rotation-time: 5sec
         alg-name: "RS256"
-    config:
-      some-key: "BETA"
 
     # Rest Auth Config (AD)
     auth:
       provider:
         ldap:
-          order: 1
+          order: 2
           domain: "some.domain.com"
           url: "ldaps://some.domain.com:636/"
           search-filter: "(samaccountname={1})"
+          service-account:
+            account-pattern: "CN=%s,OU=Users,OU=CORP Accounts,DC=corp,DC=dsarena,DC=com"
+            in-config-account:
+              username: "svc-ldap"
+              password: "password"
           attributes:
             mail: "email"
             displayname: "displayname"
         # Users (config-defined)
         users:
-          order: 0
+          order: 1
           known-users:
             - username: "user1"
               password: "password1"
