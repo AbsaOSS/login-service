@@ -56,7 +56,7 @@ loginsvc:
           # Set the order of the protocol starting from 1
           # Set to 0 to disable or simply exclude the ldap tag from config
           # NOTE: At least 1 auth protocol needs to be enabled
-          order: 0
+          order: 2
           domain: "some.domain.com"
           url: "ldaps://some.domain.com:636/"
           search-filter: "(samaccountname={1})"

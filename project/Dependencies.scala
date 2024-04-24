@@ -44,6 +44,9 @@ object Dependencies {
   lazy val springBootSecurity =       "org.springframework.boot" % "spring-boot-starter-security" % Versions.springBoot
 
   lazy val springSecurityLDAP = "org.springframework.security" % "spring-security-ldap" % Versions.spring
+  lazy val springSecurityKerberosClient = "org.springframework.security.kerberos" % "spring-security-kerberos-client" % "1.0.1.RELEASE"
+  lazy val springSecurityKerberosWeb = "org.springframework.security.kerberos" % "spring-security-kerberos-web" % "1.0.1.RELEASE"
+
 
   lazy val jjwtApi = "io.jsonwebtoken" % "jjwt-api" % Versions.jjwt
   lazy val jjwtImpl = "io.jsonwebtoken" % "jjwt-impl" % Versions.jjwt % Runtime
@@ -84,6 +87,8 @@ object Dependencies {
     springBootSecurity,
 
     springSecurityLDAP,
+    springSecurityKerberosClient,
+    springSecurityKerberosWeb,
 
     jjwtApi,
     jjwtImpl,
