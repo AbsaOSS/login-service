@@ -14,7 +14,7 @@ import org.springframework.security.kerberos.client.ldap.KerberosLdapContextSour
 import org.springframework.security.kerberos.web.authentication.SpnegoAuthenticationProcessingFilter
 import org.springframework.security.ldap.search.FilterBasedLdapUserSearch
 import org.springframework.security.ldap.userdetails.{LdapAuthoritiesPopulator, LdapUserDetailsMapper, LdapUserDetailsService}
-import org.springframework.security.web.authentication.{AuthenticationFailureHandler, AuthenticationSuccessHandler}
+import org.springframework.security.web.authentication.AuthenticationSuccessHandler
 
 import java.util
 import javax.naming.ldap.LdapName
@@ -60,7 +60,7 @@ class KerberosSPNEGOAuthenticationProvider {
     service
   }
 
-  private def kerberosServiceAuthenticationProvider(): KerberosServiceAuthenticationProvider = {
+  def kerberosServiceAuthenticationProvider(): KerberosServiceAuthenticationProvider = {
     val provider = new KerberosServiceAuthenticationProvider()
     provider.setTicketValidator(sunJaasKerberosTicketValidator())
     provider.setUserDetailsService(ldapUserDetailsService())

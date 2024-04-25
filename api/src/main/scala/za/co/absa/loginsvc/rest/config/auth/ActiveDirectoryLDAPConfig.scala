@@ -34,6 +34,7 @@ case class ActiveDirectoryLDAPConfig(domain: String,
                                      searchFilter: String,
                                      order: Int,
                                      serviceAccount: ServiceAccountConfig,
+                                     enableKerberos: Option[KerberosConfig],
                                      attributes: Option[Map[String, String]])
   extends ConfigValidatable with ConfigOrdering
 {
@@ -63,9 +64,29 @@ case class ActiveDirectoryLDAPConfig(domain: String,
           .getOrElse(ConfigValidationError(ConfigValidationException("searchFilter is empty")))
       )
 
-      results.foldLeft[ConfigValidationResult](ConfigValidationSuccess)(ConfigValidationResult.merge)
+      val requiredResults = results.foldLeft[ConfigValidationResult](ConfigValidationSuccess)(ConfigValidationResult.merge)
+      val kerberosResults = enableKerberos match {
+        case Some(x) => x.validate()
+        case None => ConfigValidationSuccess
+      }
+      requiredResults.merge(kerberosResults)
     }
     else ConfigValidationSuccess
+  }
+}
+
+case class KerberosConfig(krbFileLocation: String, keytabFileLocation: String, debug: Option[Boolean]) extends ConfigValidatable {
+
+  override def validate(): ConfigValidationResult = {
+    val results = Seq(
+      Option(krbFileLocation)
+        .map(_ => ConfigValidationSuccess)
+        .getOrElse(ConfigValidationError(ConfigValidationException("krbFileLocation is empty"))),
+      Option(keytabFileLocation)
+        .map(_ => ConfigValidationSuccess)
+        .getOrElse(ConfigValidationError(ConfigValidationException("keytabFileLocation is empty")))
+    )
+    results.foldLeft[ConfigValidationResult](ConfigValidationSuccess)(ConfigValidationResult.merge)
   }
 }
 
