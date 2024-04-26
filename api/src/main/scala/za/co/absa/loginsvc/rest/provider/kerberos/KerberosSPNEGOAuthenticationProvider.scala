@@ -15,31 +15,35 @@ import org.springframework.security.kerberos.web.authentication.SpnegoAuthentica
 import org.springframework.security.ldap.search.FilterBasedLdapUserSearch
 import org.springframework.security.ldap.userdetails.{LdapAuthoritiesPopulator, LdapUserDetailsMapper, LdapUserDetailsService}
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler
+import za.co.absa.loginsvc.rest.config.auth.ActiveDirectoryLDAPConfig
 
 import java.util
 import javax.naming.ldap.LdapName
 import javax.servlet.http.{HttpServletRequest, HttpServletResponse}
 import scala.collection.JavaConverters._
 
-class KerberosSPNEGOAuthenticationProvider {
+class KerberosSPNEGOAuthenticationProvider(activeDirectoryLDAPConfig: ActiveDirectoryLDAPConfig) {
 
+  private val serviceAccount = activeDirectoryLDAPConfig.serviceAccount
+  private val kerberos = activeDirectoryLDAPConfig.enableKerberos.get
+  private val kerberosDebug = kerberos.debug.getOrElse(false)
   private val logger = LoggerFactory.getLogger(classOf[KerberosSPNEGOAuthenticationProvider])
   logger.debug(s"KerberosSPNEGOAuthenticationProvider init")
 
   private def sunJaasKerberosTicketValidator(): SunJaasKerberosTicketValidator = {
     val ticketValidator = new SunJaasKerberosTicketValidator()
-    ticketValidator.setServicePrincipal("TODO: Insert Service Principal")
-    ticketValidator.setKeyTabLocation(new FileSystemResource("TODO: Insert Keytab Loacation"))
-    ticketValidator.setDebug(true)
+    ticketValidator.setServicePrincipal(serviceAccount.username)
+    ticketValidator.setKeyTabLocation(new FileSystemResource(kerberos.keytabFileLocation))
+    ticketValidator.setDebug(kerberosDebug)
     ticketValidator.afterPropertiesSet()
     ticketValidator
   }
 
   private def loginConfig(): SunJaasKrb5LoginConfig = {
     val loginConfig = new SunJaasKrb5LoginConfig()
-    loginConfig.setServicePrincipal("TODO: Insert Service Principal")
-    loginConfig.setKeyTabLocation(new FileSystemResource("TODO: Insert Keytab Loacation"))
-    loginConfig.setDebug(true)
+    loginConfig.setServicePrincipal(serviceAccount.username)
+    loginConfig.setKeyTabLocation(new FileSystemResource(kerberos.keytabFileLocation))
+    loginConfig.setDebug(kerberosDebug)
     loginConfig.setIsInitiator(true)
     loginConfig.setUseTicketCache(false)
     loginConfig.afterPropertiesSet()
@@ -47,14 +51,14 @@ class KerberosSPNEGOAuthenticationProvider {
   }
 
   private def kerberosLdapContextSource(): KerberosLdapContextSource = {
-    val contextSource = new KerberosLdapContextSource("TODO: Add Ldap Server")
+    val contextSource = new KerberosLdapContextSource(activeDirectoryLDAPConfig.url)
     contextSource.setLoginConfig(loginConfig())
     contextSource.afterPropertiesSet()
     contextSource
   }
 
   private def ldapUserDetailsService(): LdapUserDetailsService = {
-    val userSearch = new kerberosLdapSearch("TODO: ldapSearchBase", "TODO: ldapSearchFilter", kerberosLdapContextSource())
+    val userSearch = new kerberosLdapSearch(activeDirectoryLDAPConfig.domain, activeDirectoryLDAPConfig.searchFilter, kerberosLdapContextSource())
     val service = new LdapUserDetailsService(userSearch, new ActiveDirectoryLdapAuthoritiesPopulator)
     service.setUserDetailsMapper(new LdapUserDetailsMapper())
     service
