@@ -24,6 +24,7 @@ import scala.collection.JavaConverters._
 
 class KerberosSPNEGOAuthenticationProvider(activeDirectoryLDAPConfig: ActiveDirectoryLDAPConfig) {
 
+  //TODO: Split into Multiple files for neater implementation
   private val serviceAccount = activeDirectoryLDAPConfig.serviceAccount
   private val kerberos = activeDirectoryLDAPConfig.enableKerberos.get
   private val kerberosDebug = kerberos.debug.getOrElse(false)
@@ -75,14 +76,10 @@ class KerberosSPNEGOAuthenticationProvider(activeDirectoryLDAPConfig: ActiveDire
 object RestApiKerberosAuthentication {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
-  def spnegoAuthenticationProcessingFilter(authenticationManager: AuthenticationManager, authenticationSuccessHandler: AuthenticationSuccessHandler): SpnegoAuthenticationProcessingFilter = {
+  def spnegoAuthenticationProcessingFilter(authenticationManager: AuthenticationManager): SpnegoAuthenticationProcessingFilter = {
     val filter = new SpnegoAuthenticationProcessingFilter()
     filter.setAuthenticationManager(authenticationManager)
     filter.setSkipIfAlreadyAuthenticated(true)
-    filter.setSuccessHandler(authenticationSuccessHandler)
-    filter.setFailureHandler((request: HttpServletRequest, response: HttpServletResponse, exception: AuthenticationException) => {
-      logger.error(exception.getStackTrace.toString)
-    })
     filter
   }
 }

@@ -16,18 +16,23 @@
 
 package za.co.absa.loginsvc.rest
 
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.{Bean, Configuration}
-import org.springframework.security.authentication.AuthenticationManager
+import org.springframework.security.authentication.{AuthenticationManager, ProviderManager}
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.config.http.SessionCreationPolicy
-import org.springframework.security.kerberos.web.authentication.SpnegoAuthenticationProcessingFilter
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter
+import za.co.absa.loginsvc.rest.config.provider.AuthConfigProvider
+import za.co.absa.loginsvc.rest.provider.kerberos.{KerberosSPNEGOAuthenticationProvider, RestApiKerberosAuthentication}
 
 @Configuration
 @EnableWebSecurity
-class SecurityConfig {
+class SecurityConfig@Autowired()(authConfigsProvider: AuthConfigProvider) {
+
+  //TODO: Neaten up checking for Config
+  private val KerberosConfig = authConfigsProvider.getLdapConfig.orNull
 
   @Bean
   def filterChain(http: HttpSecurity): SecurityFilterChain = {
@@ -51,8 +56,18 @@ class SecurityConfig {
         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
         .and()
       .httpBasic()
-      //.and()
-      //.addFilterBefore(spnegoAuthenticationProcessingFilter(authenticationManager), classOf[BasicAuthenticationFilter])
+
+    //TODO: Neaten up checking for Config
+    if(KerberosConfig != null)
+      {
+        if(KerberosConfig.enableKerberos.isDefined)
+          {
+            val kerberos = new KerberosSPNEGOAuthenticationProvider(KerberosConfig)
+            http.addFilterBefore(
+              RestApiKerberosAuthentication.spnegoAuthenticationProcessingFilter(
+                new ProviderManager(kerberos.kerberosServiceAuthenticationProvider())), classOf[BasicAuthenticationFilter])
+          }
+      }
 
     http.build()
   }
