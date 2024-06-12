@@ -31,9 +31,17 @@ class KerberosSPNEGOAuthenticationProvider(activeDirectoryLDAPConfig: ActiveDire
   private val logger = LoggerFactory.getLogger(classOf[KerberosSPNEGOAuthenticationProvider])
   logger.debug(s"KerberosSPNEGOAuthenticationProvider init")
 
+  System.setProperty("javax.net.debug", kerberosDebug.toString)
+  System.setProperty("sun.security.krb5.debug", kerberosDebug.toString)
+
+  if (kerberos.krbFileLocation.nonEmpty) {
+    logger.info(s"Using KRB5 CONF from ${kerberos.krbFileLocation}")
+    System.setProperty("java.security.krb5.conf", kerberos.krbFileLocation)
+  }
+
   private def sunJaasKerberosTicketValidator(): SunJaasKerberosTicketValidator = {
     val ticketValidator = new SunJaasKerberosTicketValidator()
-    ticketValidator.setServicePrincipal(serviceAccount.username)
+    ticketValidator.setServicePrincipal("SVC-CPS-LOGIN-LDAP@CORP.DSARENA.COM")
     ticketValidator.setKeyTabLocation(new FileSystemResource(kerberos.keytabFileLocation))
     ticketValidator.setDebug(kerberosDebug)
     ticketValidator.afterPropertiesSet()
@@ -42,7 +50,7 @@ class KerberosSPNEGOAuthenticationProvider(activeDirectoryLDAPConfig: ActiveDire
 
   private def loginConfig(): SunJaasKrb5LoginConfig = {
     val loginConfig = new SunJaasKrb5LoginConfig()
-    loginConfig.setServicePrincipal(serviceAccount.username)
+    loginConfig.setServicePrincipal("SVC-CPS-LOGIN-LDAP@CORP.DSARENA.COM")
     loginConfig.setKeyTabLocation(new FileSystemResource(kerberos.keytabFileLocation))
     loginConfig.setDebug(kerberosDebug)
     loginConfig.setIsInitiator(true)
