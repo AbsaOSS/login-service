@@ -25,7 +25,7 @@ import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter
 import za.co.absa.loginsvc.rest.config.provider.AuthConfigProvider
-import za.co.absa.loginsvc.rest.provider.kerberos.{KerberosSPNEGOAuthenticationProvider, RestApiKerberosAuthentication, RestApiKerberosAuthenticationProvider}
+import za.co.absa.loginsvc.rest.provider.kerberos.KerberosSPNEGOAuthenticationProvider
 
 @Configuration
 @EnableWebSecurity
@@ -63,10 +63,13 @@ class SecurityConfig@Autowired()(authConfigsProvider: AuthConfigProvider) {
         if(KerberosConfig.enableKerberos.isDefined)
           {
             val kerberos = new KerberosSPNEGOAuthenticationProvider(KerberosConfig)
-            val provider = new RestApiKerberosAuthenticationProvider(KerberosConfig.url, KerberosConfig.searchFilter, KerberosConfig.domain);
+
+            val provider = kerberos.kerberosAuthenticationProvider()
+            val serviceProvider = kerberos.kerberosServiceAuthenticationProvider()
+
             http.addFilterBefore(
-              RestApiKerberosAuthentication.spnegoAuthenticationProcessingFilter(
-                new ProviderManager(provider, kerberos.kerberosServiceAuthenticationProvider())),
+              kerberos.spnegoAuthenticationProcessingFilter(
+                new ProviderManager(provider, serviceProvider)),
               classOf[BasicAuthenticationFilter])
           }
       }
