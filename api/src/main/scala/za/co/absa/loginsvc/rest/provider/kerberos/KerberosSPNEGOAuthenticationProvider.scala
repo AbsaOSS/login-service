@@ -4,8 +4,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.core.io.FileSystemResource
 import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.core.authority.{AuthorityUtils, SimpleGrantedAuthority}
-import org.springframework.security.core.userdetails.User
-import org.springframework.security.core.userdetails.UserDetailsService
+import org.springframework.security.core.userdetails.{User, UserDetails, UserDetailsService}
 import org.springframework.security.kerberos.authentication.{KerberosAuthenticationProvider, KerberosServiceAuthenticationProvider}
 import org.springframework.security.kerberos.authentication.sun.{SunJaasKerberosClient, SunJaasKerberosTicketValidator}
 import org.springframework.security.kerberos.web.authentication.SpnegoAuthenticationProcessingFilter
@@ -57,7 +56,7 @@ class KerberosSPNEGOAuthenticationProvider(activeDirectoryLDAPConfig: ActiveDire
   private def sunJaasKerberosTicketValidator(): SunJaasKerberosTicketValidator =
     {
       val ticketValidator: SunJaasKerberosTicketValidator = new SunJaasKerberosTicketValidator()
-      ticketValidator.setServicePrincipal(serviceAccount.username)
+      ticketValidator.setServicePrincipal("HTTP/localhost")
       ticketValidator.setKeyTabLocation(new FileSystemResource(kerberos.keytabFileLocation))
       ticketValidator.setDebug(true)
       ticketValidator
@@ -67,5 +66,10 @@ class KerberosSPNEGOAuthenticationProvider(activeDirectoryLDAPConfig: ActiveDire
 }
 
 class DummyUserDetailsService extends UserDetailsService {
-  override def loadUserByUsername(username: String) = new User(username, "{noop}notUsed", true, true, true, true, AuthorityUtils.createAuthorityList("ROLE_USER"))
+  private val logger = LoggerFactory.getLogger(classOf[DummyUserDetailsService])
+  override def loadUserByUsername(username: String): UserDetails =
+    {
+      logger.info(s"returning dummy of $username")
+      new User(username, "{noop}notUsed", true, true, true, true, AuthorityUtils.createAuthorityList("ROLE_USER"))
+    }
 }
