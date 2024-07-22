@@ -30,10 +30,10 @@ class DefaultUserRepositoriesTest extends AnyFlatSpec with BeforeAndAfterEach wi
   private val testConfig: ConfigProvider = new ConfigProvider("api/src/test/resources/application.yaml")
   private val emptyServiceAccount = ServiceAccountConfig("", Option(LdapUserCredentialsConfig("", "")), None)
 
-  private val enabledLdapTestConfig = Some(ActiveDirectoryLDAPConfig("", "", "", order = 2, emptyServiceAccount, None))
+  private val enabledLdapTestConfig = Some(ActiveDirectoryLDAPConfig("", "", "", order = 2, emptyServiceAccount, None, None))
   private val enabledUsersConfig = testConfig.getUsersConfig // has order = 1
 
-  private val disabledLdapTestConfig = Some(ActiveDirectoryLDAPConfig("", "", "", order = 0, emptyServiceAccount, None))
+  private val disabledLdapTestConfig = Some(ActiveDirectoryLDAPConfig("", "", "", order = 0, emptyServiceAccount, None, None))
   private val disabledUsersConfig = Some(UsersConfig(Array.empty[UserConfig], order = 0))
 
   private def createAuthConfigProviderUsing(optLdapConfig: Option[ActiveDirectoryLDAPConfig], optUsersConfig: Option[UsersConfig]): AuthConfigProvider = {
