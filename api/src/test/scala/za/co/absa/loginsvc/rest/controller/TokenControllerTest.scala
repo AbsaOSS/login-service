@@ -26,8 +26,10 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.context.annotation.Import
+import org.springframework.test.context.TestPropertySource
 import org.springframework.test.web.servlet.MockMvc
 import za.co.absa.loginsvc.model.User
+import za.co.absa.loginsvc.rest.config.provider.ConfigProvider
 import za.co.absa.loginsvc.rest.model.{AccessToken, RefreshToken}
 import za.co.absa.loginsvc.rest.service.jwt.JWTService
 import za.co.absa.loginsvc.rest.{FakeAuthentication, RestResponseEntityExceptionHandler, SecurityConfig}
@@ -36,7 +38,8 @@ import java.security.interfaces.RSAPublicKey
 import java.util.Base64
 import scala.concurrent.duration._
 
-@Import(Array(classOf[SecurityConfig], classOf[RestResponseEntityExceptionHandler]))
+@TestPropertySource(properties = Array("spring.config.location=api/src/test/resources/application.yaml"))
+@Import(Array(classOf[ConfigProvider], classOf[SecurityConfig], classOf[RestResponseEntityExceptionHandler]))
 @WebMvcTest(controllers = Array(classOf[TokenController]))
 class TokenControllerTest extends AnyFlatSpec
   with ControllerIntegrationTestBase {
