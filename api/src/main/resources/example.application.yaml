@@ -76,6 +76,7 @@ loginsvc:
           enable-kerberos:
             krb-file-location: "/etc/krb5.conf"
             keytab-file-location: "/etc/keytab"
+            spn: "HTTP/Host"
             debug: true
           attributes:
             # The FieldName is the key used to search ldap and the value is the value used to name the JWT claim.

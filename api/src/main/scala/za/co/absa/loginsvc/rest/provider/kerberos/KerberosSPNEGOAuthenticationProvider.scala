@@ -19,7 +19,7 @@ package za.co.absa.loginsvc.rest.provider.kerberos
 import org.slf4j.LoggerFactory
 import org.springframework.core.io.FileSystemResource
 import org.springframework.security.authentication.AuthenticationManager
-import org.springframework.security.core.authority.{AuthorityUtils, SimpleGrantedAuthority}
+import org.springframework.security.core.authority.AuthorityUtils
 import org.springframework.security.core.userdetails.{User, UserDetails, UserDetailsService}
 import org.springframework.security.kerberos.authentication.{KerberosAuthenticationProvider, KerberosServiceAuthenticationProvider}
 import org.springframework.security.kerberos.authentication.sun.{SunJaasKerberosClient, SunJaasKerberosTicketValidator}
@@ -29,7 +29,6 @@ import za.co.absa.loginsvc.rest.config.auth.ActiveDirectoryLDAPConfig
 class KerberosSPNEGOAuthenticationProvider(activeDirectoryLDAPConfig: ActiveDirectoryLDAPConfig) {
 
   //TODO: Split into Multiple files for neater implementation
-  private val serviceAccount = activeDirectoryLDAPConfig.serviceAccount
   private val kerberos = activeDirectoryLDAPConfig.enableKerberos.get
   private val kerberosDebug = kerberos.debug.getOrElse(false)
   private val logger = LoggerFactory.getLogger(classOf[KerberosSPNEGOAuthenticationProvider])
@@ -72,7 +71,7 @@ class KerberosSPNEGOAuthenticationProvider(activeDirectoryLDAPConfig: ActiveDire
   private def sunJaasKerberosTicketValidator(): SunJaasKerberosTicketValidator =
     {
       val ticketValidator: SunJaasKerberosTicketValidator = new SunJaasKerberosTicketValidator()
-      ticketValidator.setServicePrincipal("HTTP/localhost")
+      ticketValidator.setServicePrincipal(kerberos.spn)
       ticketValidator.setKeyTabLocation(new FileSystemResource(kerberos.keytabFileLocation))
       ticketValidator.setDebug(true)
       ticketValidator

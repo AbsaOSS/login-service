@@ -19,7 +19,11 @@ package za.co.absa.loginsvc.rest.config.auth
 import za.co.absa.loginsvc.rest.config.validation.{ConfigValidatable, ConfigValidationException, ConfigValidationResult}
 import za.co.absa.loginsvc.rest.config.validation.ConfigValidationResult.{ConfigValidationError, ConfigValidationSuccess}
 
-case class KerberosConfig(krbFileLocation: String, keytabFileLocation: String, debug: Option[Boolean]) extends ConfigValidatable {
+case class KerberosConfig(
+  krbFileLocation: String,
+  keytabFileLocation: String,
+  spn: String,
+  debug: Option[Boolean]) extends ConfigValidatable {
 
   override def validate(): ConfigValidationResult = {
     val results = Seq(
@@ -28,7 +32,10 @@ case class KerberosConfig(krbFileLocation: String, keytabFileLocation: String, d
         .getOrElse(ConfigValidationError(ConfigValidationException("krbFileLocation is empty"))),
       Option(keytabFileLocation)
         .map(_ => ConfigValidationSuccess)
-        .getOrElse(ConfigValidationError(ConfigValidationException("keytabFileLocation is empty")))
+        .getOrElse(ConfigValidationError(ConfigValidationException("keytabFileLocation is empty"))),
+      Option(spn)
+        .map(_ => ConfigValidationSuccess)
+        .getOrElse(ConfigValidationError(ConfigValidationException("spn is empty")))
     )
     results.foldLeft[ConfigValidationResult](ConfigValidationSuccess)(ConfigValidationResult.merge)
   }
