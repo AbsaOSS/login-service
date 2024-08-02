@@ -30,10 +30,6 @@ ARG LDAP_SSL_CERTS_PATH
 # ARG SSL_DNAME is defined below in the SSL-enabled image
 # In case you build the Dockerfile from another location than the default 'service' dir, provide a prefix to reach it
 ARG LS_PREFIX=.
-# Provide path to the KRB5 location in .conf format
-ARG SPNEGO_KRB5
-# Provide path to the relevant keytab in .keytab format
-ARG SPNEGO_KEYTAB
 
 LABEL org.opencontainers.image.authors="ABSA"
 
@@ -53,12 +49,6 @@ ENV HTTPS_PROXY=$BUILD_PROXY
 RUN mkdir -p /opt/certs
 # just PEMs are supported
 COPY $LDAP_SSL_CERTS_PATH/*.pem /opt/certs/
-
-RUN mkdir -p /opt/spnego
-#Copy KRB5
-COPY $SPNEGO_KRB5 /opt/spnego/krb5.conf
-#Copy keytab
-COPY $SPNEGO_KEYTAB /opt/spnego/application.keytab
 
 # Java 11 paths used
 RUN for file in `ls /opt/certs/*.pem`; \
