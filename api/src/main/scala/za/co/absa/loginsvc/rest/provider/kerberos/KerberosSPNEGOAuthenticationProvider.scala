@@ -23,13 +23,18 @@ import org.springframework.security.core.authority.AuthorityUtils
 import org.springframework.security.core.userdetails.{User, UserDetails, UserDetailsService}
 import org.springframework.security.kerberos.authentication.{KerberosAuthenticationProvider, KerberosServiceAuthenticationProvider}
 import org.springframework.security.kerberos.authentication.sun.{SunJaasKerberosClient, SunJaasKerberosTicketValidator}
+import org.springframework.security.kerberos.client.config.SunJaasKrb5LoginConfig
+import org.springframework.security.kerberos.client.ldap.KerberosLdapContextSource
 import org.springframework.security.kerberos.web.authentication.SpnegoAuthenticationProcessingFilter
+import org.springframework.security.ldap.search.FilterBasedLdapUserSearch
+import org.springframework.security.ldap.userdetails.{LdapUserDetailsMapper, LdapUserDetailsService}
 import za.co.absa.loginsvc.rest.config.auth.ActiveDirectoryLDAPConfig
 
 class KerberosSPNEGOAuthenticationProvider(activeDirectoryLDAPConfig: ActiveDirectoryLDAPConfig) {
 
   //TODO: Split into Multiple files for neater implementation
-  private val kerberos = activeDirectoryLDAPConfig.enableKerberos.get
+  private val ldapConfig = activeDirectoryLDAPConfig
+  private val kerberos = ldapConfig.enableKerberos.get
   private val kerberosDebug = kerberos.debug.getOrElse(false)
   private val logger = LoggerFactory.getLogger(classOf[KerberosSPNEGOAuthenticationProvider])
   logger.debug(s"KerberosSPNEGOAuthenticationProvider init")
@@ -39,7 +44,7 @@ class KerberosSPNEGOAuthenticationProvider(activeDirectoryLDAPConfig: ActiveDire
 
   if (kerberos.krbFileLocation.nonEmpty) {
     logger.info(s"Using KRB5 CONF from ${kerberos.krbFileLocation}")
-    System.setProperty("java.security.krb5.conf", kerberos.krbFileLocation)
+    System.setProperty("java.security.krb5.ini", kerberos.krbFileLocation)
   }
 
   def kerberosAuthenticationProvider(): KerberosAuthenticationProvider =
@@ -76,6 +81,31 @@ class KerberosSPNEGOAuthenticationProvider(activeDirectoryLDAPConfig: ActiveDire
       ticketValidator.setDebug(true)
       ticketValidator
     }
+
+  private def loginConfig(): SunJaasKrb5LoginConfig = {
+    val loginConfig = new SunJaasKrb5LoginConfig()
+    loginConfig.setServicePrincipal(kerberos.spn)
+    loginConfig.setKeyTabLocation(new FileSystemResource(kerberos.keytabFileLocation))
+    loginConfig.setDebug(kerberosDebug)
+    loginConfig.setIsInitiator(true)
+    loginConfig.setUseTicketCache(false)
+    loginConfig.afterPropertiesSet()
+    loginConfig
+  }
+
+  private def kerberosLdapContextSource(): KerberosLdapContextSource = {
+    val contextSource = new KerberosLdapContextSource(ldapConfig.url)
+    contextSource.setLoginConfig(loginConfig())
+    contextSource.afterPropertiesSet()
+    contextSource
+  }
+
+  private def ldapUserDetailsService() = {
+    val userSearch = new FilterBasedLdapUserSearch(activeDirectoryLDAPConfig.domain, activeDirectoryLDAPConfig.searchFilter, kerberosLdapContextSource())
+    val service = new LdapUserDetailsService(userSearch, new ActiveDirectoryLdapAuthoritiesPopulator())
+    service.setUserDetailsMapper(new LdapUserDetailsMapper())
+    service
+  }
 
   private def dummyUserDetailsService = new DummyUserDetailsService
 }
