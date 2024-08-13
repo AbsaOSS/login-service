@@ -62,6 +62,7 @@ class KerberosSPNEGOAuthenticationProvider(activeDirectoryLDAPConfig: ActiveDire
     {
       val filter: SpnegoAuthenticationProcessingFilter = new SpnegoAuthenticationProcessingFilter()
       filter.setAuthenticationManager(authenticationManager)
+      filter.afterPropertiesSet()
       filter
     }
 
@@ -70,6 +71,7 @@ class KerberosSPNEGOAuthenticationProvider(activeDirectoryLDAPConfig: ActiveDire
       val provider: KerberosServiceAuthenticationProvider = new KerberosServiceAuthenticationProvider()
       provider.setTicketValidator(sunJaasKerberosTicketValidator())
       provider.setUserDetailsService(dummyUserDetailsService)
+      provider.afterPropertiesSet()
       provider
     }
 
@@ -79,6 +81,7 @@ class KerberosSPNEGOAuthenticationProvider(activeDirectoryLDAPConfig: ActiveDire
       ticketValidator.setServicePrincipal(kerberos.spn)
       ticketValidator.setKeyTabLocation(new FileSystemResource(kerberos.keytabFileLocation))
       ticketValidator.setDebug(true)
+      ticketValidator.afterPropertiesSet()
       ticketValidator
     }
 
