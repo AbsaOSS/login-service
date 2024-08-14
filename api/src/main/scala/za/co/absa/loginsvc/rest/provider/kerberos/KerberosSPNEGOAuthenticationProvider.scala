@@ -109,8 +109,13 @@ case class DummyUserDetailsService(activeDirectoryLDAPConfig: ActiveDirectoryLDA
   private val logger = LoggerFactory.getLogger(classOf[DummyUserDetailsService])
   override def loadUserByUsername(username: String): UserDetails =
     {
+      val userName = if(username.contains("@")) {
+        username.split("@").head
+      } else {
+        username
+      }
       val ldapContext = new LdapUserRepository(activeDirectoryLDAPConfig)
-      val user = ldapContext.searchForUser(username)
+      val user = ldapContext.searchForUser(userName)
       if(user.isEmpty)
         throw new BadCredentialsException("Cannot Find User in Ldap")
 
