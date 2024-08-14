@@ -29,6 +29,7 @@ import org.springframework.security.kerberos.web.authentication.SpnegoAuthentica
 import org.springframework.security.ldap.search.FilterBasedLdapUserSearch
 import org.springframework.security.ldap.userdetails.{LdapUserDetailsMapper, LdapUserDetailsService}
 import za.co.absa.loginsvc.rest.config.auth.ActiveDirectoryLDAPConfig
+import za.co.absa.loginsvc.rest.model.KerberosUserDetails
 import za.co.absa.loginsvc.rest.service.search.LdapUserRepository
 
 import scala.collection.JavaConverters._
@@ -122,10 +123,6 @@ case class DummyUserDetailsService(activeDirectoryLDAPConfig: ActiveDirectoryLDA
       val grantedAuthorities = user.get.groups.map(new SimpleGrantedAuthority(_)).toList.asJava
 
       logger.info("Found Kerberos User:" + user.get.name)
-      User.builder()
-        .username(user.get.name)
-        .password("")
-        .authorities(grantedAuthorities)
-        .build()
+      KerberosUserDetails(user.get.name, user.get.groups, user.get.optionalAttributes)
     }
 }
