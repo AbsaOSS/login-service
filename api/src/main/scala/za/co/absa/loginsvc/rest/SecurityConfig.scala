@@ -69,7 +69,7 @@ class SecurityConfig@Autowired()(authConfigsProvider: AuthConfigProvider) {
 
             http.addFilterBefore(
               kerberos.spnegoAuthenticationProcessingFilter(
-                new ProviderManager(provider, serviceProvider)),
+                new ProviderManager(provider)),
               classOf[BasicAuthenticationFilter])
           }
       }
