@@ -70,7 +70,7 @@ class KerberosSPNEGOAuthenticationProvider(activeDirectoryLDAPConfig: ActiveDire
     {
       val provider: KerberosServiceAuthenticationProvider = new KerberosServiceAuthenticationProvider()
       provider.setTicketValidator(sunJaasKerberosTicketValidator())
-      provider.setUserDetailsService(dummyUserDetailsService)
+      provider.setUserDetailsService(ldapUserDetailsService)
       provider.afterPropertiesSet()
       provider
     }
@@ -103,21 +103,10 @@ class KerberosSPNEGOAuthenticationProvider(activeDirectoryLDAPConfig: ActiveDire
     contextSource
   }
 
-  private def ldapUserDetailsService() = {
+  private def ldapUserDetailsService = {
     val userSearch = new FilterBasedLdapUserSearch(activeDirectoryLDAPConfig.domain, activeDirectoryLDAPConfig.searchFilter, kerberosLdapContextSource())
     val service = new LdapUserDetailsService(userSearch, new ActiveDirectoryLdapAuthoritiesPopulator())
     service.setUserDetailsMapper(new LdapUserDetailsMapper())
     service
   }
-
-  private def dummyUserDetailsService = new DummyUserDetailsService
-}
-
-class DummyUserDetailsService extends UserDetailsService {
-  private val logger = LoggerFactory.getLogger(classOf[DummyUserDetailsService])
-  override def loadUserByUsername(username: String): UserDetails =
-    {
-      logger.info(s"returning dummy of $username")
-      new User(username, "{noop}notUsed", true, true, true, true, AuthorityUtils.createAuthorityList("ROLE_USER"))
-    }
 }
