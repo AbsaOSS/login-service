@@ -64,12 +64,11 @@ class SecurityConfig@Autowired()(authConfigsProvider: AuthConfigProvider) {
           {
             val kerberos = new KerberosSPNEGOAuthenticationProvider(KerberosConfig)
 
-            val provider = kerberos.kerberosAuthenticationProvider()
             val serviceProvider = kerberos.kerberosServiceAuthenticationProvider()
 
             http.addFilterBefore(
               kerberos.spnegoAuthenticationProcessingFilter(
-                new ProviderManager(provider)),
+                new ProviderManager(serviceProvider)),
               classOf[BasicAuthenticationFilter])
           }
       }
