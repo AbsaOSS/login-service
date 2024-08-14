@@ -54,7 +54,7 @@ class KerberosSPNEGOAuthenticationProvider(activeDirectoryLDAPConfig: ActiveDire
 
       client.setDebug(true)
       provider.setKerberosClient(client)
-      provider.setUserDetailsService(dummyUserDetailsService)
+      provider.setUserDetailsService(ldapUserDetailsService)
       provider
     }
 
