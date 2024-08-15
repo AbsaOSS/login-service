@@ -40,11 +40,11 @@ class KerberosSPNEGOAuthenticationProvider(activeDirectoryLDAPConfig: ActiveDire
 
   System.setProperty("javax.net.debug", kerberosDebug.toString)
   System.setProperty("sun.security.krb5.debug", kerberosDebug.toString)
+  System.setProperty("sun.security.krb5.rcache", "none")
 
   if (kerberos.krbFileLocation.nonEmpty) {
     logger.info(s"Using KRB5 CONF from ${kerberos.krbFileLocation}")
     System.setProperty("java.security.krb5.conf", kerberos.krbFileLocation)
-    System.setProperty("KRB5RCACHETYPE","none")
   }
 
   def spnegoAuthenticationProcessingFilter(authenticationManager: AuthenticationManager): SpnegoAuthenticationProcessingFilter =
