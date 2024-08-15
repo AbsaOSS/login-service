@@ -44,23 +44,12 @@ class KerberosSPNEGOAuthenticationProvider(activeDirectoryLDAPConfig: ActiveDire
   def spnegoAuthenticationProcessingFilter: SpnegoAuthenticationProcessingFilter =
     {
       val filter: SpnegoAuthenticationProcessingFilter = new SpnegoAuthenticationProcessingFilter()
-      filter.setAuthenticationManager(new ProviderManager(kerberosAuthenticationProvider, kerberosServiceAuthenticationProvider))
+      filter.setAuthenticationManager(new ProviderManager(kerberosServiceAuthenticationProvider))
       filter.afterPropertiesSet()
       filter
     }
 
-  def kerberosAuthenticationProvider: KerberosAuthenticationProvider =
-  {
-    val provider: KerberosAuthenticationProvider  = new KerberosAuthenticationProvider()
-    val client: SunJaasKerberosClient = new SunJaasKerberosClient()
-
-    client.setDebug(kerberosDebug)
-    provider.setKerberosClient(client)
-    provider.setUserDetailsService(kerberosUserDetailsService)
-    provider
-  }
-
-  def kerberosServiceAuthenticationProvider: KerberosServiceAuthenticationProvider =
+  private def kerberosServiceAuthenticationProvider: KerberosServiceAuthenticationProvider =
     {
       val provider: KerberosServiceAuthenticationProvider = new KerberosServiceAuthenticationProvider()
       provider.setTicketValidator(sunJaasKerberosTicketValidator)
