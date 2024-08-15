@@ -23,7 +23,7 @@ import za.co.absa.loginsvc.rest.config.validation.ConfigValidationResult.{Config
 
 class KerberosConfigTest extends AnyFlatSpec with Matchers{
 
-  private val kerberosConfig = new KerberosConfig("krb5", "keytab", "spn", None)
+  private val kerberosConfig = KerberosConfig("krb5", "keytab", "spn", None)
 
   "kerberosConfig" should "return the correct validation results" in {
     kerberosConfig.validate() shouldBe ConfigValidationSuccess
