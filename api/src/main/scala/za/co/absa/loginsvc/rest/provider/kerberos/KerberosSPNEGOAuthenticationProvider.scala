@@ -18,25 +18,19 @@ package za.co.absa.loginsvc.rest.provider.kerberos
 
 import org.slf4j.LoggerFactory
 import org.springframework.core.io.FileSystemResource
-import org.springframework.security.authentication.{AuthenticationManager, BadCredentialsException}
-import org.springframework.security.core.userdetails.{UserDetails, UserDetailsService}
+import org.springframework.security.authentication.ProviderManager
 import org.springframework.security.kerberos.authentication.{KerberosAuthenticationProvider, KerberosServiceAuthenticationProvider}
 import org.springframework.security.kerberos.authentication.sun.{SunJaasKerberosClient, SunJaasKerberosTicketValidator}
 import org.springframework.security.kerberos.web.authentication.SpnegoAuthenticationProcessingFilter
 import za.co.absa.loginsvc.rest.config.auth.ActiveDirectoryLDAPConfig
-import za.co.absa.loginsvc.rest.model.KerberosUserDetails
-import za.co.absa.loginsvc.rest.service.search.LdapUserRepository
-
-import scala.collection.JavaConverters._
 
 class KerberosSPNEGOAuthenticationProvider(activeDirectoryLDAPConfig: ActiveDirectoryLDAPConfig) {
 
-  //TODO: Split into Multiple files for neater implementation
   private val ldapConfig = activeDirectoryLDAPConfig
   private val kerberos = ldapConfig.enableKerberos.get
   private val kerberosDebug = kerberos.debug.getOrElse(false)
   private val logger = LoggerFactory.getLogger(classOf[KerberosSPNEGOAuthenticationProvider])
-  logger.debug(s"KerberosSPNEGOAuthenticationProvider init")
+  logger.info(s"KerberosSPNEGOAuthenticationProvider init")
 
   System.setProperty("javax.net.debug", kerberosDebug.toString)
   System.setProperty("sun.security.krb5.debug", kerberosDebug.toString)
@@ -47,35 +41,35 @@ class KerberosSPNEGOAuthenticationProvider(activeDirectoryLDAPConfig: ActiveDire
     System.setProperty("java.security.krb5.conf", kerberos.krbFileLocation)
   }
 
-  def spnegoAuthenticationProcessingFilter(authenticationManager: AuthenticationManager): SpnegoAuthenticationProcessingFilter =
+  def spnegoAuthenticationProcessingFilter: SpnegoAuthenticationProcessingFilter =
     {
       val filter: SpnegoAuthenticationProcessingFilter = new SpnegoAuthenticationProcessingFilter()
-      filter.setAuthenticationManager(authenticationManager)
+      filter.setAuthenticationManager(new ProviderManager(kerberosAuthenticationProvider, kerberosServiceAuthenticationProvider))
       filter.afterPropertiesSet()
       filter
     }
 
-  def kerberosAuthenticationProvider(): KerberosAuthenticationProvider =
+  def kerberosAuthenticationProvider: KerberosAuthenticationProvider =
   {
     val provider: KerberosAuthenticationProvider  = new KerberosAuthenticationProvider()
     val client: SunJaasKerberosClient = new SunJaasKerberosClient()
 
     client.setDebug(kerberosDebug)
     provider.setKerberosClient(client)
-    provider.setUserDetailsService(dummyUserDetailsService)
+    provider.setUserDetailsService(kerberosUserDetailsService)
     provider
   }
 
-  def kerberosServiceAuthenticationProvider(): KerberosServiceAuthenticationProvider =
+  def kerberosServiceAuthenticationProvider: KerberosServiceAuthenticationProvider =
     {
       val provider: KerberosServiceAuthenticationProvider = new KerberosServiceAuthenticationProvider()
-      provider.setTicketValidator(sunJaasKerberosTicketValidator())
-      provider.setUserDetailsService(dummyUserDetailsService)
+      provider.setTicketValidator(sunJaasKerberosTicketValidator)
+      provider.setUserDetailsService(kerberosUserDetailsService)
       provider.afterPropertiesSet()
       provider
     }
 
-  private def sunJaasKerberosTicketValidator(): SunJaasKerberosTicketValidator =
+  private def sunJaasKerberosTicketValidator: SunJaasKerberosTicketValidator =
     {
       val ticketValidator: SunJaasKerberosTicketValidator = new SunJaasKerberosTicketValidator()
       ticketValidator.setServicePrincipal(kerberos.spn)
@@ -85,24 +79,5 @@ class KerberosSPNEGOAuthenticationProvider(activeDirectoryLDAPConfig: ActiveDire
       ticketValidator
     }
 
-  private def dummyUserDetailsService = DummyUserDetailsService(ldapConfig)
-}
-
-case class DummyUserDetailsService(activeDirectoryLDAPConfig: ActiveDirectoryLDAPConfig) extends UserDetailsService {
-  private val logger = LoggerFactory.getLogger(classOf[DummyUserDetailsService])
-  override def loadUserByUsername(username: String): UserDetails =
-    {
-      val userName = if(username.contains("@")) {
-        username.split("@").head
-      } else {
-        username
-      }
-      val ldapContext = new LdapUserRepository(activeDirectoryLDAPConfig)
-      val user = ldapContext.searchForUser(userName)
-      if(user.isEmpty)
-        throw new BadCredentialsException("Cannot Find User in Ldap")
-
-      logger.info("Found Kerberos User:" + user.get.name)
-      KerberosUserDetails(user.get.name, user.get.groups, user.get.optionalAttributes)
-    }
+  private def kerberosUserDetailsService = KerberosUserDetailsService(ldapConfig)
 }

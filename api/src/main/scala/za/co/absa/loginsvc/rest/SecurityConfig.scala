@@ -18,7 +18,6 @@ package za.co.absa.loginsvc.rest
 
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.{Bean, Configuration}
-import org.springframework.security.authentication.{AuthenticationManager, ProviderManager}
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.config.http.SessionCreationPolicy
@@ -29,10 +28,9 @@ import za.co.absa.loginsvc.rest.provider.kerberos.KerberosSPNEGOAuthenticationPr
 
 @Configuration
 @EnableWebSecurity
-class SecurityConfig@Autowired()(authConfigsProvider: AuthConfigProvider) {
+class SecurityConfig @Autowired()(authConfigsProvider: AuthConfigProvider) {
 
-  //TODO: Neaten up checking for Config
-  private val KerberosConfig = authConfigsProvider.getLdapConfig.orNull
+  private val ldapConfig = authConfigsProvider.getLdapConfig.orNull
 
   @Bean
   def filterChain(http: HttpSecurity): SecurityFilterChain = {
@@ -57,19 +55,14 @@ class SecurityConfig@Autowired()(authConfigsProvider: AuthConfigProvider) {
         .and()
       .httpBasic()
 
-    //TODO: Neaten up checking for Config
-    if(KerberosConfig != null)
+    if(ldapConfig != null)
       {
-        if(KerberosConfig.enableKerberos.isDefined)
+        if(ldapConfig.enableKerberos.isDefined)
           {
-            val kerberos = new KerberosSPNEGOAuthenticationProvider(KerberosConfig)
-
-            val provider = kerberos.kerberosAuthenticationProvider()
-            val serviceProvider = kerberos.kerberosServiceAuthenticationProvider()
+            val kerberos = new KerberosSPNEGOAuthenticationProvider(ldapConfig)
 
             http.addFilterBefore(
-              kerberos.spnegoAuthenticationProcessingFilter(
-                new ProviderManager(provider, serviceProvider)),
+              kerberos.spnegoAuthenticationProcessingFilter,
               classOf[BasicAuthenticationFilter])
           }
       }

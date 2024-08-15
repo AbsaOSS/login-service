@@ -72,9 +72,10 @@ class TokenController @Autowired()(jwtService: JWTService) {
   @ResponseStatus(HttpStatus.OK)
   @SecurityRequirement(name = "basicAuth")
   def generateToken(authentication: Authentication, @RequestParam("group-prefixes") groupPrefixes: Optional[String]): CompletableFuture[TokensWrapper] = {
+
     val user: User = authentication.getPrincipal match {
       case u: User => u
-      case k: KerberosUserDetails => User(k.username, k.groups, k.optionalAttributes);
+      case k: KerberosUserDetails => k.getUser
       case _ => throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not authenticated or unknown principal type")
     }
     val groupPrefixesStrScala = groupPrefixes.toScalaOption

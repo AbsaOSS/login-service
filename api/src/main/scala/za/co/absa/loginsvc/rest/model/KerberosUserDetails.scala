@@ -19,19 +19,20 @@ package za.co.absa.loginsvc.rest.model
 import org.springframework.security.core.GrantedAuthority
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.userdetails.UserDetails
+import za.co.absa.loginsvc.model.User
 
 import java.util
 import scala.collection.JavaConverters._
 
-case class KerberosUserDetails(username: String, groups: Seq[String], optionalAttributes: Map[String, Option[AnyRef]])
+case class KerberosUserDetails(user: User)
 extends UserDetails
 {
   override def getAuthorities: util.Collection[_ <: GrantedAuthority] =
-    groups.map(new SimpleGrantedAuthority(_)).toList.asJava
+    user.groups.map(new SimpleGrantedAuthority(_)).toList.asJava
 
   override def getPassword: String = ""
 
-  override def getUsername: String = username
+  override def getUsername: String = user.name
 
   override def isAccountNonExpired: Boolean = true
 
@@ -40,4 +41,6 @@ extends UserDetails
   override def isCredentialsNonExpired: Boolean = true
 
   override def isEnabled: Boolean = true
+
+  def getUser: User = user
 }
