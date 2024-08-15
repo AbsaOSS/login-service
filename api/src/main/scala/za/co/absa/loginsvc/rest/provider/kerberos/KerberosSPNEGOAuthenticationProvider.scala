@@ -20,8 +20,8 @@ import org.slf4j.LoggerFactory
 import org.springframework.core.io.FileSystemResource
 import org.springframework.security.authentication.{AuthenticationManager, BadCredentialsException}
 import org.springframework.security.core.userdetails.{UserDetails, UserDetailsService}
-import org.springframework.security.kerberos.authentication.KerberosServiceAuthenticationProvider
-import org.springframework.security.kerberos.authentication.sun.SunJaasKerberosTicketValidator
+import org.springframework.security.kerberos.authentication.{KerberosAuthenticationProvider, KerberosServiceAuthenticationProvider}
+import org.springframework.security.kerberos.authentication.sun.{SunJaasKerberosClient, SunJaasKerberosTicketValidator}
 import org.springframework.security.kerberos.web.authentication.SpnegoAuthenticationProcessingFilter
 import za.co.absa.loginsvc.rest.config.auth.ActiveDirectoryLDAPConfig
 import za.co.absa.loginsvc.rest.model.KerberosUserDetails
@@ -54,6 +54,17 @@ class KerberosSPNEGOAuthenticationProvider(activeDirectoryLDAPConfig: ActiveDire
       filter.afterPropertiesSet()
       filter
     }
+
+  def kerberosAuthenticationProvider(): KerberosAuthenticationProvider =
+  {
+    val provider: KerberosAuthenticationProvider  = new KerberosAuthenticationProvider()
+    val client: SunJaasKerberosClient = new SunJaasKerberosClient()
+
+    client.setDebug(kerberosDebug)
+    provider.setKerberosClient(client)
+    provider.setUserDetailsService(dummyUserDetailsService)
+    provider
+  }
 
   def kerberosServiceAuthenticationProvider(): KerberosServiceAuthenticationProvider =
     {
