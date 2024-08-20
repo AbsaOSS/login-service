@@ -26,8 +26,9 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.{HttpStatus, MediaType}
 import org.springframework.security.core.Authentication
 import org.springframework.web.bind.annotation._
+import org.springframework.web.server.ResponseStatusException
 import za.co.absa.loginsvc.model.User
-import za.co.absa.loginsvc.rest.model.{PublicKey, TokensWrapper}
+import za.co.absa.loginsvc.rest.model.{KerberosUserDetails, PublicKey, TokensWrapper}
 import za.co.absa.loginsvc.rest.service.jwt.JWTService
 import za.co.absa.loginsvc.utils.OptionUtils.ImplicitBuilderExt
 
@@ -71,7 +72,12 @@ class TokenController @Autowired()(jwtService: JWTService) {
   @ResponseStatus(HttpStatus.OK)
   @SecurityRequirement(name = "basicAuth")
   def generateToken(authentication: Authentication, @RequestParam("group-prefixes") groupPrefixes: Optional[String]): CompletableFuture[TokensWrapper] = {
-    val user = authentication.getPrincipal.asInstanceOf[User]
+
+    val user: User = authentication.getPrincipal match {
+      case u: User => u
+      case k: KerberosUserDetails => k.getUser
+      case _ => throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not authenticated or unknown principal type")
+    }
     val groupPrefixesStrScala = groupPrefixes.toScalaOption
 
     val filteredGroupsUser = user.applyIfDefined(groupPrefixesStrScala) { (user: User, prefixesStr: String) =>

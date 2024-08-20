@@ -16,15 +16,21 @@
 
 package za.co.absa.loginsvc.rest
 
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.{Bean, Configuration}
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.web.SecurityFilterChain
+import org.springframework.security.web.authentication.www.BasicAuthenticationFilter
+import za.co.absa.loginsvc.rest.config.provider.AuthConfigProvider
+import za.co.absa.loginsvc.rest.provider.kerberos.KerberosSPNEGOAuthenticationProvider
 
 @Configuration
 @EnableWebSecurity
-class SecurityConfig {
+class SecurityConfig @Autowired()(authConfigsProvider: AuthConfigProvider) {
+
+  private val ldapConfig = authConfigsProvider.getLdapConfig.orNull
 
   @Bean
   def filterChain(http: HttpSecurity): SecurityFilterChain = {
@@ -49,9 +55,19 @@ class SecurityConfig {
         .and()
       .httpBasic()
 
+    if(ldapConfig != null)
+      {
+        if(ldapConfig.enableKerberos.isDefined)
+          {
+            val kerberos = new KerberosSPNEGOAuthenticationProvider(ldapConfig)
+
+            http.addFilterBefore(
+              kerberos.spnegoAuthenticationProcessingFilter,
+              classOf[BasicAuthenticationFilter])
+          }
+      }
+
     http.build()
   }
-
-
 
 }

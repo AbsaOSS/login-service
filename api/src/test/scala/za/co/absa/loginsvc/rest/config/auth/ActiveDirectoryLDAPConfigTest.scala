@@ -25,10 +25,10 @@ class ActiveDirectoryLDAPConfigTest extends AnyFlatSpec with Matchers {
 
   private val integratedCfg = LdapUserCredentialsConfig("svc-ldap", "password")
   private val serviceAccountCfg = ServiceAccountConfig(
-    "CN=%s,OU=Users,OU=CORP Accounts,DC=corp,DC=dsarena,DC=com",
+    "CN=%s,OU=Users,OU=Accounts,DC=domain,DC=subdomain,DC=com",
     Option(integratedCfg),
     None)
-  private val ldapCfg = ActiveDirectoryLDAPConfig("some.domain.com", "ldaps://some.domain.com:636/","SomeAccount", 1, serviceAccountCfg, None)
+  private val ldapCfg = ActiveDirectoryLDAPConfig("some.domain.com", "ldaps://some.domain.com:636/","SomeAccount", 1, serviceAccountCfg, None, None)
 
   "ActiveDirectoryLDAPConfig" should "validate expected filled content" in {
     ldapCfg.validate() shouldBe ConfigValidationSuccess
@@ -46,6 +46,6 @@ class ActiveDirectoryLDAPConfigTest extends AnyFlatSpec with Matchers {
   }
 
   it should "pass validation if disabled despite missing values" in {
-    ActiveDirectoryLDAPConfig(null, null, null, 0, null, None).validate() shouldBe ConfigValidationSuccess
+    ActiveDirectoryLDAPConfig(null, null, null, 0, null, None, None).validate() shouldBe ConfigValidationSuccess
   }
 }

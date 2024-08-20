@@ -16,10 +16,13 @@
 
 package za.co.absa.loginsvc.rest
 
+import org.mockito.Mockito.mock
 import org.springframework.security.authentication.{AnonymousAuthenticationToken, UsernamePasswordAuthenticationToken}
 import org.springframework.security.core.authority.AuthorityUtils
 import org.springframework.security.core.{Authentication, GrantedAuthority}
+import org.springframework.security.kerberos.authentication.{KerberosServiceRequestToken, KerberosTicketValidation}
 import za.co.absa.loginsvc.model.User
+import za.co.absa.loginsvc.rest.model.KerberosUserDetails
 
 import java.util
 
@@ -36,6 +39,15 @@ object FakeAuthentication {
 
   val fakeAnonymousAuthentication: Authentication = new AnonymousAuthenticationToken(
     "key", "anonymous", AuthorityUtils.createAuthorityList("ROLE_ANONYMOUS")
+  )
+
+  val fakeUserDetails: KerberosUserDetails = KerberosUserDetails(fakeUser)
+
+  private val ticketValidation = mock(classOf[KerberosTicketValidation])
+  private val ticket = Array[Byte](1,2,3,4)
+
+  val fakeUserDetailsAuthentication: Authentication = new KerberosServiceRequestToken(
+    fakeUserDetails, ticketValidation, fakeUserDetails.getAuthorities, ticket
   )
 
 }
