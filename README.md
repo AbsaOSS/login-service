@@ -88,8 +88,6 @@ sbt
 service / Tomcat / start
 ```
 
-
-
 ## Authentication Providers
 ### Enabling and Selecting Authentication Providers
 The Login Service allows users to select which authentication providers they would like to use
@@ -140,6 +138,41 @@ Format of attributes list under LDAP in config is:
 ```
 
 `ldapFieldName` is the name of the field in the LDAP server and `claimName` is the name of the claim that will be added to the JWT token.
+
+### Enabling SPNEGO authentication with Ldap
+When Ldap authentication is used, there is the option of adding SPNEGO authentication via kerberos.
+This will allow users to authenticate via Basic Auth or Kerberos Tickets.
+The Config to enable this will look like this:
+```
+        ldap:
+          # Auth Protocol
+          # Set the order of the protocol starting from 1
+          # Set to 0 to disable or simply exclude the ldap tag from config
+          # NOTE: At least 1 auth protocol needs to be enabled
+          order: 2
+          domain: "some.domain.com"
+          url: "ldaps://some.domain.com:636/"
+          search-filter: "(samaccountname={1})"
+          service-account:
+            account-pattern: "CN=%s,OU=Users,OU=CORP Accounts,DC=corp,DC=dsarena,DC=com"
+            in-config-account:
+                username: "svc-ldap"
+                password: "password"
+          enable-kerberos:
+            krb-file-location: "/etc/krb5.conf"
+            keytab-file-location: "/etc/keytab"
+            spn: "HTTP/Host"
+            debug: true
+          attributes:
+            <ldapFieldName>: "<claimName>"
+```
+
+Adding the `enable-kerberos` property to the config will enable SPNEGO authentication.
+In order to facilitate the kerberos authentication, you will need to provide a krb5 file that includes 
+the kerberos configuration details such as domains and Kerberos distribution center address.
+A Keytab file needs to be created and attached to the service. The SPN needs to match that which
+is used in the keytab and matches the host of the Login Service. The `debug` property is used when
+additional information is required from the logs when testing the service.
 
 ### ActiveDirectoryLDAPAuthenticationProvider
 Uses LDAP(s) to authenticate user in Active Directory and to fetch groups that this user belongs to.
