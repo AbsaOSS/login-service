@@ -47,7 +47,6 @@ object Dependencies {
   lazy val springSecurityKerberosClient = "org.springframework.security.kerberos" % "spring-security-kerberos-client" % "1.0.1.RELEASE"
   lazy val springSecurityKerberosWeb = "org.springframework.security.kerberos" % "spring-security-kerberos-web" % "1.0.1.RELEASE"
 
-
   lazy val jjwtApi = "io.jsonwebtoken" % "jjwt-api" % Versions.jjwt
   lazy val jjwtImpl = "io.jsonwebtoken" % "jjwt-impl" % Versions.jjwt % Runtime
   lazy val jjwtJackson = "io.jsonwebtoken" % "jjwt-jackson" % Versions.jjwt % Runtime
@@ -127,6 +126,8 @@ object Dependencies {
 
     springBootWeb,
     springBootSecurity,
+
+    springSecurityKerberosClient,
 
     scalaTest
   )
