@@ -32,8 +32,7 @@ On the side of the integrator, in order to trust the access token, one should do
 2. verify that the access token
    1. is valid against this public-key (e.g. using `jwtt` library or similar)
    2. is not expired
-   3. has `type=access` 
-
+   3. has `type=access`
 
 ## API documentation:
 Swagger doc site is available at `http://localhost:port/swagger-ui.html`
@@ -240,6 +239,102 @@ There are a few important configuration values to be provided:
 - `alg-name` which indicates which algorithm is used to encode your keys.
   
 Please note that only one configuration option (`loginsvc.rest.jwt.{aws-secrets-manager|generate-in-memory}`) can be used at a time.
+
+## Generating Tokens via SPNEGO/Kerberos
+To securely authenticate and retrieve a JWT token from a server using Kerberos and SPNEGO, clients (both Windows and Linux) need to be properly configured for Kerberos authentication. 
+The process involves obtaining a Kerberos ticket and using it to authenticate to the endpoint.
+
+### Steps for Windows Clients
+#### 1) Kerberos Configuration:
+
+- Ensure the Windows client is joined to the appropriate Active Directory (AD) domain.
+- Verify that the Kerberos configuration is correct in the `krb5.ini` file, typically located in `C:\ProgramData\MIT\Kerberos5\` or `C:\Windows\`.
+The `krb5.ini` file should include the correct realm and KDC settings. An example configuration might look like this:
+```
+[libdefaults]
+    default_realm = YOURDOMAIN.COM
+    dns_lookup_realm = false
+    dns_lookup_kdc = true
+
+[realms]
+    YOURDOMAIN.COM = {
+        kdc = kdc.yourdomain.com
+        admin_server = kdc.yourdomain.com
+    }
+
+[domain_realm]
+    .yourdomain.com = YOURDOMAIN.COM
+    yourdomain.com = YOURDOMAIN.COM
+```
+#### 2) Optional: MIT Kerberos Installation:
+
+- While Windows has built-in Kerberos support, you may choose to install MIT Kerberos if you need advanced features or compatibility with specific applications.
+- Download the installer from the [MIT Kerberos website](https://web.mit.edu/kerberos/dist/).
+- Follow the installation instructions, and ensure the krb5.ini file is properly configured as mentioned above.
+
+#### 3) Check Kerberos Tickets:
+
+- Use the `klist` command in the Command Prompt or use MIT Kerberos to verify the presence of a valid Kerberos ticket.
+
+#### 4) Environment Setup:
+
+- Ensure that the required libraries (e.g., SPNEGO) are available in your application or tool (e.g., Postman, Curl).
+
+#### 5) Sending the POST Request:
+
+- Construct a POST request to the desired endpoint.
+- Example using Curl:
+```
+curl -i --negotiate -u : -X POST <endpoint-url>
+```
+
+#### 6) Receive the JWT:
+
+- On successful authentication, the server will respond with an access and refresh JWT tokens.
+
+### Steps for Linux Clients
+#### 1) Kerberos Installation:
+
+- Install the necessary Kerberos packages (e.g., krb5-libs).
+
+#### 2) Kerberos Configuration:
+
+- Locate and, if necessary, replace krb5.conf. The krb5.conf file is typically located in /etc/krb5.conf.
+- Ensure it includes the correct realm and KDC (Key Distribution Center) settings. A basic configuration might look like this:
+```
+[libdefaults]
+    default_realm = YOURDOMAIN.COM
+    dns_lookup_realm = false
+    dns_lookup_kdc = true
+
+[realms]
+    YOURDOMAIN.COM = {
+        kdc = kdc.yourdomain.com
+        admin_server = kdc.yourdomain.com
+    }
+
+[domain_realm]
+    .yourdomain.com = YOURDOMAIN.COM
+    yourdomain.com = YOURDOMAIN.COM
+```
+
+#### 3) Obtaining a Kerberos Ticket:
+
+- Use the following command to obtain a Kerberos ticket (A password may be required):
+```
+kinit username@YOURDOMAIN.COM
+```
+
+#### 4) Sending the POST Request:
+
+- Use a tool like Curl to send a POST request:
+```
+curl -i --negotiate -u : -X POST <endpoint-url>
+```
+
+#### 5) Receive the JWT:
+
+- On successful authentication, the server will respond with an access and refresh JWT tokens.
 
 ## How to generate Code coverage report
 ```
