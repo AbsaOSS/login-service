@@ -53,11 +53,20 @@ object Application {
       {
         while(true)
         {
-          println("Please choose authentication method:")
-          println("1) Basic Authentication")
-          println("2) SPNEGO")
-          print("Enter your choice: ")
-          authMethod = scanner.nextLine()
+          if(config.kerberos.nonEmpty)
+            {
+              val kerberosConfig = config.kerberos.get
+              tokenRetriever.setKerberosProperties(kerberosConfig.jaasFileLocation, kerberosConfig.krbFileLocation, kerberosConfig.debug)
+              println("Please choose authentication method:")
+              println("1) Basic Authentication")
+              println("2) SPNEGO")
+              print("Enter your choice: ")
+              authMethod = scanner.nextLine()
+            }
+          else
+            {
+              authMethod = "1"
+            }
           authMethod match {
             case "1" =>
               println("----------------------------------------------")

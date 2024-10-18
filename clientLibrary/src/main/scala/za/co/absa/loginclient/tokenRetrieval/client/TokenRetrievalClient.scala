@@ -24,7 +24,8 @@ import org.springframework.web.client.RestTemplate
 import za.co.absa.loginclient.tokenRetrieval.model.{AccessToken, RefreshToken}
 
 import java.net.URLEncoder
-import java.util.Collections
+import java.util.{Collections, Properties}
+import javax.security.auth.login.Configuration
 
 /**
  * This class is used to retrieve tokens from the login service.
@@ -173,6 +174,19 @@ case class TokenRetrievalClient(host: String) {
         logger.error(s"Error occurred refreshing and decoding Token from $issuerUri", e)
         throw e
     }
+  }
+
+  def setKerberosProperties(jaasFileLocation: String, krb5FileLocation: Option[String], debug: Option[Boolean]): Unit = {
+    val properties: Properties = new Properties()
+    properties.setProperty("java.security.auth.login.config", jaasFileLocation)
+    properties.setProperty("sun.security.krb5.debug", debug.getOrElse(false).toString)
+
+    if(krb5FileLocation.nonEmpty)
+    properties.setProperty("java.security.krb5.conf", krb5FileLocation.get)
+
+    Configuration.getConfiguration.refresh()
+
+    System.setProperties(properties)
   }
 
   private def fetchToken(issuerUri: String, username: String, password: String): String = {
