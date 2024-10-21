@@ -275,6 +275,17 @@ The `krb5.ini` file should include the correct realm and KDC settings. An exampl
 #### 3) Check Kerberos Tickets:
 
 - Use the `klist` command in the Command Prompt or use MIT Kerberos to verify the presence of a valid Kerberos ticket.
+```
+Credentials cache: API:1000
+        Principal: user@EXAMPLE.COM
+    Cache version: 5
+  Ticket cache: /tmp/krb5cc_1000
+  Default principal: user@EXAMPLE.COM
+
+Valid starting       Expires              Service principal
+10/20/2024 10:00:00 10/20/2024 20:00:00 krbtgt/EXAMPLE.COM@EXAMPLE.COM
+10/20/2024 10:00:00 10/20/2024 20:00:00 host/server.example.com@EXAMPLE.COM
+```
 
 #### 4) Environment Setup:
 
@@ -285,7 +296,7 @@ The `krb5.ini` file should include the correct realm and KDC settings. An exampl
 - Construct a POST request to the desired endpoint.
 - Example using Curl:
 ```
-curl -i --negotiate -u : -X POST <endpoint-url>
+curl -i --negotiate -u : -X POST <endpoint-url>/token/generate
 ```
 
 #### 6) Receive the JWT:
@@ -329,7 +340,7 @@ kinit username@YOURDOMAIN.COM
 
 - Use a tool like Curl to send a POST request:
 ```
-curl -i --negotiate -u : -X POST <endpoint-url>
+curl -i --negotiate -u : -X POST <endpoint-url>/token/generate
 ```
 
 #### 5) Receive the JWT:
