@@ -16,6 +16,5 @@
 
 package za.co.absa.clientexample.config
 
-import scala.concurrent.duration.FiniteDuration
-
-case class ExampleConfig(host: String)
+case class ExampleConfig(host: String, kerberos: Option[KerberosConfig])
+case class KerberosConfig(jaasFileLocation: String, krbFileLocation: Option[String], debug: Option[Boolean])

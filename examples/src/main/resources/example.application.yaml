@@ -2,3 +2,7 @@
 login-service:
   example:
     host: "http://localhost:9090"
+    #kerberos:
+      #jaas-file-location: "location/of/jaas.conf"
+      #krb-file-location: "location/of/krb5.conf"  #Optional
+      #debug: "true" #Optional

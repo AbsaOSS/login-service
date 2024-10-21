@@ -32,8 +32,7 @@ On the side of the integrator, in order to trust the access token, one should do
 2. verify that the access token
    1. is valid against this public-key (e.g. using `jwtt` library or similar)
    2. is not expired
-   3. has `type=access` 
-
+   3. has `type=access`
 
 ## API documentation:
 Swagger doc site is available at `http://localhost:port/swagger-ui.html`
@@ -88,8 +87,6 @@ sbt
 service / Tomcat / start
 ```
 
-
-
 ## Authentication Providers
 ### Enabling and Selecting Authentication Providers
 The Login Service allows users to select which authentication providers they would like to use
@@ -140,6 +137,41 @@ Format of attributes list under LDAP in config is:
 ```
 
 `ldapFieldName` is the name of the field in the LDAP server and `claimName` is the name of the claim that will be added to the JWT token.
+
+### Enabling SPNEGO authentication with Ldap
+When Ldap authentication is used, there is the option of adding SPNEGO authentication via kerberos.
+This will allow users to authenticate via Basic Auth or Kerberos Tickets.
+The Config to enable this will look like this:
+```
+        ldap:
+          # Auth Protocol
+          # Set the order of the protocol starting from 1
+          # Set to 0 to disable or simply exclude the ldap tag from config
+          # NOTE: At least 1 auth protocol needs to be enabled
+          order: 2
+          domain: "some.domain.com"
+          url: "ldaps://some.domain.com:636/"
+          search-filter: "(samaccountname={1})"
+          service-account:
+            account-pattern: "CN=%s,OU=Users,OU=CORP Accounts,DC=corp,DC=dsarena,DC=com"
+            in-config-account:
+                username: "svc-ldap"
+                password: "password"
+          enable-kerberos:
+            krb-file-location: "/etc/krb5.conf"
+            keytab-file-location: "/etc/keytab"
+            spn: "HTTP/Host"
+            debug: true
+          attributes:
+            <ldapFieldName>: "<claimName>"
+```
+
+Adding the `enable-kerberos` property to the config will enable SPNEGO authentication.
+In order to facilitate the kerberos authentication, you will need to provide a krb5 file that includes 
+the kerberos configuration details such as domains and Kerberos distribution center address.
+A Keytab file needs to be created and attached to the service. The SPN needs to match that which
+is used in the keytab and matches the host of the Login Service. The `debug` property is used when
+additional information is required from the logs when testing the service.
 
 ### ActiveDirectoryLDAPAuthenticationProvider
 Uses LDAP(s) to authenticate user in Active Directory and to fetch groups that this user belongs to.
@@ -207,6 +239,113 @@ There are a few important configuration values to be provided:
 - `alg-name` which indicates which algorithm is used to encode your keys.
   
 Please note that only one configuration option (`loginsvc.rest.jwt.{aws-secrets-manager|generate-in-memory}`) can be used at a time.
+
+## Generating Tokens via SPNEGO/Kerberos
+To securely authenticate and retrieve a JWT token from a server using Kerberos and SPNEGO, clients (both Windows and Linux) need to be properly configured for Kerberos authentication. 
+The process involves obtaining a Kerberos ticket and using it to authenticate to the endpoint.
+
+### Steps for Windows Clients
+#### 1) Kerberos Configuration:
+
+- Ensure the Windows client is joined to the appropriate Active Directory (AD) domain.
+- Verify that the Kerberos configuration is correct in the `krb5.ini` file, typically located in `C:\ProgramData\MIT\Kerberos5\` or `C:\Windows\`.
+The `krb5.ini` file should include the correct realm and KDC settings. An example configuration might look like this:
+```
+[libdefaults]
+    default_realm = YOURDOMAIN.COM
+    dns_lookup_realm = false
+    dns_lookup_kdc = true
+
+[realms]
+    YOURDOMAIN.COM = {
+        kdc = kdc.yourdomain.com
+        admin_server = kdc.yourdomain.com
+    }
+
+[domain_realm]
+    .yourdomain.com = YOURDOMAIN.COM
+    yourdomain.com = YOURDOMAIN.COM
+```
+#### 2) Optional: MIT Kerberos Installation:
+
+- While Windows has built-in Kerberos support, you may choose to install MIT Kerberos if you need advanced features or compatibility with specific applications.
+- Download the installer from the [MIT Kerberos website](https://web.mit.edu/kerberos/dist/).
+- Follow the installation instructions, and ensure the krb5.ini file is properly configured as mentioned above.
+
+#### 3) Check Kerberos Tickets:
+
+- Use the `klist` command in the Command Prompt or use MIT Kerberos to verify the presence of a valid Kerberos ticket.
+```
+Credentials cache: API:1000
+        Principal: user@EXAMPLE.COM
+    Cache version: 5
+  Ticket cache: /tmp/krb5cc_1000
+  Default principal: user@EXAMPLE.COM
+
+Valid starting       Expires              Service principal
+10/20/2024 10:00:00 10/20/2024 20:00:00 krbtgt/EXAMPLE.COM@EXAMPLE.COM
+10/20/2024 10:00:00 10/20/2024 20:00:00 host/server.example.com@EXAMPLE.COM
+```
+
+#### 4) Environment Setup:
+
+- Ensure that the required libraries (e.g., SPNEGO) are available in your application or tool (e.g., Postman, Curl).
+
+#### 5) Sending the POST Request:
+
+- Construct a POST request to the desired endpoint.
+- Example using Curl:
+```
+curl -i --negotiate -u : -X POST <endpoint-url>/token/generate
+```
+
+#### 6) Receive the JWT:
+
+- On successful authentication, the server will respond with an access and refresh JWT tokens.
+
+### Steps for Linux Clients
+#### 1) Kerberos Installation:
+
+- Install the necessary Kerberos packages (e.g., krb5-libs).
+
+#### 2) Kerberos Configuration:
+
+- Locate and, if necessary, replace krb5.conf. The krb5.conf file is typically located in /etc/krb5.conf.
+- Ensure it includes the correct realm and KDC (Key Distribution Center) settings. A basic configuration might look like this:
+```
+[libdefaults]
+    default_realm = YOURDOMAIN.COM
+    dns_lookup_realm = false
+    dns_lookup_kdc = true
+
+[realms]
+    YOURDOMAIN.COM = {
+        kdc = kdc.yourdomain.com
+        admin_server = kdc.yourdomain.com
+    }
+
+[domain_realm]
+    .yourdomain.com = YOURDOMAIN.COM
+    yourdomain.com = YOURDOMAIN.COM
+```
+
+#### 3) Obtaining a Kerberos Ticket:
+
+- Use the following command to obtain a Kerberos ticket (A password may be required):
+```
+kinit username@YOURDOMAIN.COM
+```
+
+#### 4) Sending the POST Request:
+
+- Use a tool like Curl to send a POST request:
+```
+curl -i --negotiate -u : -X POST <endpoint-url>/token/generate
+```
+
+#### 5) Receive the JWT:
+
+- On successful authentication, the server will respond with an access and refresh JWT tokens.
 
 ## How to generate Code coverage report
 ```

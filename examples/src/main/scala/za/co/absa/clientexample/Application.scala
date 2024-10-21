@@ -23,6 +23,7 @@ import za.co.absa.loginclient.tokenRetrieval.client.TokenRetrievalClient
 
 import java.nio.file.{Files, Paths}
 import java.util.Scanner
+import util.control.Breaks._
 
 object Application {
 
@@ -45,16 +46,55 @@ object Application {
     var loggedIn = false
 
     while (true) {
-      println("----------------------------------------------")
-      println("---------------PLEASE LOGIN-------------------")
-      println("----------------------------------------------")
-      print("Enter your username: ")
-      val username = scanner.nextLine()
-      print("Enter your password: ")
-      val password = scanner.nextLine()
+      var username = ""
+      var password = ""
+      var authMethod = ""
+      breakable
+      {
+        while(true)
+        {
+          if(config.kerberos.nonEmpty)
+            {
+              val kerberosConfig = config.kerberos.get
+              tokenRetriever.setKerberosProperties(kerberosConfig.jaasFileLocation, kerberosConfig.krbFileLocation, kerberosConfig.debug)
+              println("Please choose authentication method:")
+              println("1) Basic Authentication")
+              println("2) SPNEGO")
+              print("Enter your choice: ")
+              authMethod = scanner.nextLine()
+            }
+          else
+            {
+              authMethod = "1"
+            }
+          authMethod match {
+            case "1" =>
+              println("----------------------------------------------")
+              println("---------------PLEASE LOGIN-------------------")
+              println("----------------------------------------------")
+              println("")
+              print("Enter your username: ")
+              username = scanner.nextLine()
+              print("Enter your password: ")
+              password = scanner.nextLine()
+              break
+            case "2" =>
+              break
+            case _ =>
+              println("----------------------------------------------")
+              println(s"INVALID CHOICE. PLEASE TRY AGAIN")
+              println("----------------------------------------------")
+          }
+        }
+      }
 
       try {
-        val (accessToken, refreshToken) = tokenRetriever.fetchAccessAndRefreshToken(username, password)
+        val (accessToken, refreshToken) = authMethod match {
+          case "1" =>
+            tokenRetriever.fetchAccessAndRefreshToken(username, password, List.empty)
+          case "2" =>
+            tokenRetriever.fetchAccessAndRefreshToken(None, None, List.empty)
+        }
         val decodedAtJwt = accessVerificator.decodeAndVerifyAccessToken(accessToken) // throw Exception on verification fail
         loggedIn = true
 

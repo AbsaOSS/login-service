@@ -30,8 +30,14 @@ Public Key is available without authorization so just the relevant host needs to
 ## Token retrieval
 
 The library provides a `TokenRetrievalClient` class that can be used to retrieve access and refresh tokens.
-Refresh and Access Keys require authorization. Basic Auth is used for the initial retrieval so a valid username and password is required.
+Refresh and Access Keys require authorization. 
+There are 2 authentication methods available:
+1) Basic Auth is used for the initial retrieval so a valid username and password is required.
 Please see the [login-service documentation](README.md) for more information on what a valid username and password is.
+2) Spnego authentication. Please ensure that kerberos is enabled and configured correctly in your environment.
+In order to support kerberos, we allow for the use of Keytabs as well as the use of Ticketcache authentication.
+If required, you may specify a jaas configuration file and custom krb5 location programmatically using the `setKerberosProperties` function.
+
 Refresh token from initial retrieval is used to refresh the access token.
 
 ## Creating and Using a JWT Decoder
@@ -67,4 +73,3 @@ The example makes use of a [configuration file](examples/src/main/resources/exam
 
 Configurations required are:
 1. `host` - the url of the login-service (Including Port if required)
-2. 'refresh-period' - the period between refreshing the public-key used for verification. This Parameter is optional.

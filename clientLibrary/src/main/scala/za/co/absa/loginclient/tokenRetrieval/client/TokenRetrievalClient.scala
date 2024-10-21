@@ -19,11 +19,13 @@ package za.co.absa.loginclient.tokenRetrieval.client
 import com.google.gson.{JsonObject, JsonParser}
 import org.slf4j.{Logger, LoggerFactory}
 import org.springframework.http.{HttpEntity, HttpHeaders, HttpMethod, MediaType, ResponseEntity}
+import org.springframework.security.kerberos.client.KerberosRestTemplate
 import org.springframework.web.client.RestTemplate
 import za.co.absa.loginclient.tokenRetrieval.model.{AccessToken, RefreshToken}
 
 import java.net.URLEncoder
-import java.util.Collections
+import java.util.{Collections, Properties}
+import javax.security.auth.login.Configuration
 
 /**
  * This class is used to retrieve tokens from the login service.
@@ -45,8 +47,33 @@ case class TokenRetrievalClient(host: String) {
    * @param groups   An optional list of PAM groups. If provided, only JWTs associated with these groups are returned if the user belongs to them.
    * @return An AccessToken object representing the retrieved access token (JWT) from the login service.
    */
-  def fetchAccessToken(username: String, password: String, groups: List[String] = List.empty): AccessToken = {
+  def fetchAccessToken(username: String, password: String, groups: List[String]): AccessToken = {
     fetchAccessAndRefreshToken(username, password, groups)._1
+  }
+
+  /**
+   * This method requests an access token (JWT) from the login service using SPNEGO.
+   * This Token is used to access resources which utilize the login Service for authentication.
+   *
+   * @param keytabLocation  Optional location of the keytab file.
+   * @param userPrincipal   Optional userPrincipal name included in the above keytab file.
+   * @param groups          An optional list of PAM groups. If provided, only JWTs associated with these groups are returned if the user belongs to them.
+   * @return An AccessToken object representing the retrieved access token (JWT) from the login service.
+   */
+  def fetchAccessToken(keytabLocation: Option[String], userPrincipal: Option[String], groups: List[String]): AccessToken = {
+    fetchAccessAndRefreshToken(keytabLocation, userPrincipal, groups)._1
+  }
+
+  /**
+   * This method requests a refresh token from the login service using SPNEGO.
+   * This token may be used to acquire a new access token (JWT) when the current access token expires.
+   *
+   * @param keytabLocation  Optional location of the keytab file.
+   * @param userPrincipal   Optional userPrincipal name included in the above keytab file.
+   * @return A RefreshToken object representing the retrieved refresh token from the login service.
+   */
+  def fetchRefreshToken(keytabLocation: Option[String], userPrincipal: Option[String]): RefreshToken = {
+    fetchAccessAndRefreshToken(keytabLocation, userPrincipal, List.empty)._2
   }
 
   /**
@@ -58,7 +85,7 @@ case class TokenRetrievalClient(host: String) {
    * @return A RefreshToken object representing the retrieved refresh token from the login service.
    */
   def fetchRefreshToken(username: String, password: String): RefreshToken = {
-    fetchAccessAndRefreshToken(username, password)._2
+    fetchAccessAndRefreshToken(username, password, List.empty)._2
   }
 
   /**
@@ -71,7 +98,7 @@ case class TokenRetrievalClient(host: String) {
    * @param groups   An optional list of PAM groups. If provided, only JWTs associated with these groups are returned if the user belongs to them.
    * @return A tuple containing the AccessToken and RefreshToken objects representing the retrieved access and refresh tokens (JWTs) from the login service.
    */
-  def fetchAccessAndRefreshToken(username: String, password: String, groups: List[String] = List.empty): (AccessToken, RefreshToken) = {
+  def fetchAccessAndRefreshToken(username: String, password: String, groups: List[String]): (AccessToken, RefreshToken) = {
 
     val issuerUri = if(groups.nonEmpty) {
         val commaSeparatedString = groups.mkString(",")
@@ -80,6 +107,31 @@ case class TokenRetrievalClient(host: String) {
     } else s"$host/token/generate"
 
     val jsonString = fetchToken(issuerUri, username, password)
+    val jsonObject = JsonParser.parseString(jsonString).getAsJsonObject
+    val accessToken = jsonObject.get("token").getAsString
+    val refreshToken = jsonObject.get("refresh").getAsString
+    (AccessToken(accessToken), RefreshToken(refreshToken))
+  }
+
+  /**
+   * Fetches both an access token and a refresh token from the login service using SPNEGO.
+   * This method requests both an access token and a refresh token (JWTs) from the login service using kerberos, either with a keytab or the users cached ticket.
+   * Additionally, it allows specifying optional groups that act as filters for the JWT, returning only the JWTs associated with the provided groups if the user belongs to them.
+   *
+   * @param keytabLocation  Optional location of the keytab file.
+   * @param userPrincipal   Optional userPrincipal name included in the above keytab file.
+   * @param groups          An optional list of PAM groups. If provided, only JWTs associated with these groups are returned if the user belongs to them.
+   * @return A tuple containing the AccessToken and RefreshToken objects representing the retrieved access and refresh tokens (JWTs) from the login service.
+   */
+  def fetchAccessAndRefreshToken(keytabLocation: Option[String], userPrincipal: Option[String], groups: List[String]): (AccessToken, RefreshToken) = {
+
+    val issuerUri = if(groups.nonEmpty) {
+      val commaSeparatedString = groups.mkString(",")
+      val urlEncodedGroups = URLEncoder.encode(commaSeparatedString, "UTF-8")
+      s"$host/token/generate?group-prefixes=$urlEncodedGroups"
+    } else s"$host/token/generate"
+
+    val jsonString = fetchToken(issuerUri, keytabLocation, userPrincipal)
     val jsonObject = JsonParser.parseString(jsonString).getAsJsonObject
     val accessToken = jsonObject.get("token").getAsString
     val refreshToken = jsonObject.get("refresh").getAsString
@@ -124,6 +176,19 @@ case class TokenRetrievalClient(host: String) {
     }
   }
 
+  def setKerberosProperties(jaasFileLocation: String, krb5FileLocation: Option[String], debug: Option[Boolean]): Unit = {
+    val properties: Properties = new Properties()
+    properties.setProperty("java.security.auth.login.config", jaasFileLocation)
+    properties.setProperty("sun.security.krb5.debug", debug.getOrElse(false).toString)
+
+    if(krb5FileLocation.nonEmpty)
+    properties.setProperty("java.security.krb5.conf", krb5FileLocation.get)
+
+    Configuration.getConfiguration.refresh()
+
+    System.setProperties(properties)
+  }
+
   private def fetchToken(issuerUri: String, username: String, password: String): String = {
 
     logger.info(s"Fetching token from $issuerUri for user $username")
@@ -144,6 +209,37 @@ case class TokenRetrievalClient(host: String) {
         classOf[String]
       )
       logger.info("Successfully fetched token")
+      response.getBody
+    }
+    catch {
+      case e: Throwable =>
+        logger.error(s"Error occurred retrieving and decoding Token from $issuerUri", e)
+        throw e
+    }
+  }
+
+  private def fetchToken(issuerUri: String, keyTabLocation: Option[String], userPrincipal: Option[String]): String = {
+
+    val restTemplate: KerberosRestTemplate = (keyTabLocation, userPrincipal) match {
+      case (Some(_), Some(_)) =>
+        logger.info(s"Fetching token from $issuerUri using user $userPrincipal")
+        new KerberosRestTemplate(keyTabLocation.get, userPrincipal.get)
+      case (None, None) =>
+        logger.info(s"Fetching token from $issuerUri using cached user ticket")
+        new KerberosRestTemplate()
+      case _ =>
+        throw new Error("Either both keyTabLocation and userPrincipal need to be available or omitted")
+    }
+
+    val headers = new HttpHeaders()
+    val entity = new HttpEntity[String](null, headers)
+
+    try {
+      val response: ResponseEntity[String] = restTemplate.exchange(
+        issuerUri,
+        HttpMethod.POST,
+        entity,
+        classOf[String])
       response.getBody
     }
     catch {
