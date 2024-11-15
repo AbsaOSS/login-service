@@ -26,8 +26,7 @@ import org.springframework.security.web.authentication.www.BasicAuthenticationFi
 import za.co.absa.loginsvc.rest.config.provider.AuthConfigProvider
 import za.co.absa.loginsvc.rest.provider.kerberos.KerberosSPNEGOAuthenticationProvider
 
-import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpServletResponse
+import javax.servlet.http.{HttpServletRequest, HttpServletResponse}
 import org.springframework.security.core.AuthenticationException
 
 @Configuration
