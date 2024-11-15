@@ -26,6 +26,10 @@ import org.springframework.security.web.authentication.www.BasicAuthenticationFi
 import za.co.absa.loginsvc.rest.config.provider.AuthConfigProvider
 import za.co.absa.loginsvc.rest.provider.kerberos.KerberosSPNEGOAuthenticationProvider
 
+import javax.servlet.http.HttpServletRequest
+import javax.servlet.http.HttpServletResponse
+import org.springframework.security.core.AuthenticationException
+
 @Configuration
 @EnableWebSecurity
 class SecurityConfig @Autowired()(authConfigsProvider: AuthConfigProvider) {
@@ -58,13 +62,20 @@ class SecurityConfig @Autowired()(authConfigsProvider: AuthConfigProvider) {
     if(ldapConfig != null)
       {
         if(ldapConfig.enableKerberos.isDefined)
-          {
-            val kerberos = new KerberosSPNEGOAuthenticationProvider(ldapConfig)
+        {
+          val kerberos = new KerberosSPNEGOAuthenticationProvider(ldapConfig)
 
-            http.addFilterBefore(
+          http.addFilterBefore(
               kerberos.spnegoAuthenticationProcessingFilter,
               classOf[BasicAuthenticationFilter])
-          }
+              .exceptionHandling()
+              .authenticationEntryPoint((request: HttpServletRequest,
+                                         response: HttpServletResponse,
+                                         authException: AuthenticationException) => {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED)
+                response.addHeader("WWW-Authenticate", "Negotiate")
+              })
+        }
       }
 
     http.build()
