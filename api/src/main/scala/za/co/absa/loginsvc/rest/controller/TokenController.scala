@@ -71,6 +71,7 @@ class TokenController @Autowired()(jwtService: JWTService) {
   )
   @ResponseStatus(HttpStatus.OK)
   @SecurityRequirement(name = "basicAuth")
+  @SecurityRequirement(name = "negotiate")
   def generateToken(authentication: Authentication, @RequestParam("group-prefixes") groupPrefixes: Optional[String]): CompletableFuture[TokensWrapper] = {
 
     val user: User = authentication.getPrincipal match {

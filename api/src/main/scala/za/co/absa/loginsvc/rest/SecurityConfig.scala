@@ -72,6 +72,7 @@ class SecurityConfig @Autowired()(authConfigsProvider: AuthConfigProvider) {
                                          response: HttpServletResponse,
                                          authException: AuthenticationException) => {
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED)
+                response.addHeader("WWW-Authenticate", """Basic realm="Realm"""")
                 response.addHeader("WWW-Authenticate", "Negotiate")
               })
         }
