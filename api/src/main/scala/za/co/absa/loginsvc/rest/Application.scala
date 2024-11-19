@@ -47,6 +47,11 @@ import org.springframework.context.annotation._
   `type` = SecuritySchemeType.HTTP,
   scheme = "basic"
 )
+@SecurityScheme(
+  name = "negotiate",
+  `type` = SecuritySchemeType.HTTP,
+  scheme = "negotiate"
+)
 @SpringBootApplication()
 @ConfigurationPropertiesScan(Array("za.co.absa.loginsvc.rest.config")) // look for configuration in this package (not related to path in config file)
 class Application extends SpringBootServletInitializer {
