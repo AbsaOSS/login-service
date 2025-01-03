@@ -26,7 +26,12 @@ import software.amazon.awssdk.services.secretsmanager.model.{GetSecretValueReque
 object AwsSecretsUtils {
 
   private val logger = LoggerFactory.getLogger(getClass)
-  def fetchSecret(secretName: String, region: String, secretFields: Array[String]): Map[String, String] = {
+  def fetchSecret(
+    secretName: String,
+    region: String,
+    secretFields: Array[String],
+    versionStage: Option[String] = None
+  ): Map[String, String] = {
 
     val default = DefaultCredentialsProvider.create
 
@@ -35,7 +40,9 @@ object AwsSecretsUtils {
       .credentialsProvider(default)
       .build
 
-    val getSecretValueRequest = GetSecretValueRequest.builder.secretId(secretName).build
+    val getSecretValueRequestBuilder = GetSecretValueRequest.builder.secretId(secretName)
+    versionStage.foreach(getSecretValueRequestBuilder.versionStage)
+    val getSecretValueRequest = getSecretValueRequestBuilder.build()
 
     try {
       logger.info("Attempting to fetch secret from AWS Secrets Manager")
