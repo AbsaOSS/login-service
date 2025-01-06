@@ -31,7 +31,7 @@ trait KeyConfig extends ConfigValidatable {
   def accessExpTime: FiniteDuration
   def refreshExpTime: FiniteDuration
   def keyRotationTime: Option[FiniteDuration]
-  def keyPair(): KeyPair
+  def keyPair(): (KeyPair, Option[KeyPair])
   def throwErrors(): Unit
 
   final def jwtAlgorithmToCryptoAlgorithm : String = {

@@ -30,11 +30,15 @@ case class InMemoryKeyConfig(
   keyRotationTime: Option[FiniteDuration]
 ) extends KeyConfig {
 
+  private var oldKeyPair: Option[KeyPair] = None
   private val logger = LoggerFactory.getLogger(classOf[InMemoryKeyConfig])
 
-  override def keyPair(): KeyPair = {
+  override def keyPair(): (KeyPair, Option[KeyPair]) = {
     logger.info(s"Generating new keys - every ${keyRotationTime.getOrElse("?")}")
-    Keys.keyPairFor(SignatureAlgorithm.valueOf(algName))
+    val newKeyPair = Keys.keyPairFor(SignatureAlgorithm.valueOf(algName))
+    val result = (newKeyPair, oldKeyPair)
+    oldKeyPair = Some(newKeyPair)
+    result
   }
 
   override def throwErrors(): Unit = this.validate().throwOnErrors()
