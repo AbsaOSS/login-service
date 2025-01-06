@@ -31,7 +31,7 @@ object AwsSecretsUtils {
     region: String,
     secretFields: Array[String],
     versionStage: Option[String] = None
-  ): Map[String, String] = {
+  ): Option[Map[String, String]] = {
 
     val default = DefaultCredentialsProvider.create
 
@@ -51,14 +51,14 @@ object AwsSecretsUtils {
       logger.info("secret retrieved. Attempting to Parse data")
       val rootNode: JsonNode = new ObjectMapper().readTree(secret)
 
-      secretFields.map(field => {
+      Some(secretFields.map(field => {
         field -> rootNode.get(field).asText()
-      }).toMap
+      }).toMap)
     }
     catch {
       case e: Throwable =>
-        logger.error(s"Error occurred retrieving and parsing secrets from AWS Secrets Manager", e)
-        throw e
+        logger.warn(s"Error occurred retrieving and parsing secrets from AWS Secrets Manager", e)
+        None
     }
   }
 }

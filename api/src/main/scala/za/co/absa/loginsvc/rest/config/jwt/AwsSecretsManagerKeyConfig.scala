@@ -40,32 +40,47 @@ case class AwsSecretsManagerKeyConfig(
   private val logger = LoggerFactory.getLogger(classOf[AwsSecretsManagerKeyConfig])
 
   override def keyRotationTime : Option[FiniteDuration] = pollTime
-  override def keyPair(): KeyPair = {
+  override def keyPair(): (KeyPair, Option[KeyPair]) = {
     try {
-      val secrets = AwsSecretsUtils.fetchSecret(secretName, region, Array(privateKeyFieldName, publicKeyFieldName))
-
-      val publicKeySpec: X509EncodedKeySpec = new X509EncodedKeySpec(
-        Base64.getDecoder.decode(
-          secrets(publicKeyFieldName)
-        )
-      )
-      val privateKeySpec: PKCS8EncodedKeySpec = new PKCS8EncodedKeySpec(
-        Base64.getDecoder.decode(
-          secrets(privateKeyFieldName)
-        )
+      val currentSecretsOption = AwsSecretsUtils.fetchSecret(
+        secretName,
+        region,
+        Array(privateKeyFieldName, publicKeyFieldName)
       )
 
-      logger.info("Key Data successfully retrieved and parsed from AWS Secrets Manager")
+      if(currentSecretsOption.isEmpty)
+        throw new Exception("Error retrieving AWSCURRENT key from from AWS Secrets Manager")
 
-      val keyFactory: KeyFactory = KeyFactory.getInstance(jwtAlgorithmToCryptoAlgorithm)
-      new KeyPair(keyFactory.generatePublic(publicKeySpec), keyFactory.generatePrivate(privateKeySpec))
-    }
-    catch {
+      val currentKeyPair = createKeyPair(currentSecretsOption.get)
+      logger.info("AWSCURRENT Key Data successfully retrieved and parsed from AWS Secrets Manager")
+
+      val previousSecretsOption = AwsSecretsUtils.fetchSecret(
+        secretName,
+        region,
+        Array(privateKeyFieldName, publicKeyFieldName),
+        Some("AWSPREVIOUS")
+      )
+
+      val previousKeyPair = previousSecretsOption.flatMap { previousSecrets =>
+        try {
+          val keys = createKeyPair(previousSecrets)
+          logger.info("AWSPREVIOUS Key Data successfully retrieved and parsed from AWS Secrets Manager")
+          Some(keys)
+        } catch {
+          case e: Throwable =>
+            logger.warn(s"Error occurred decoding AWSPREVIOUSKEYS, skipping previous keys.", e)
+            None
+        }
+      }
+
+      (currentKeyPair, previousKeyPair)
+    } catch {
       case e: Throwable =>
         logger.error(s"Error occurred retrieving and decoding keys from AWS Secrets Manager", e)
         throw e
     }
   }
+
   override def throwErrors(): Unit = this.validate().throwOnErrors()
 
   override def validate(): ConfigValidationResult = {
@@ -91,5 +106,22 @@ case class AwsSecretsManagerKeyConfig(
     val awsSecretsResultsMerge = awsSecretsResults.foldLeft[ConfigValidationResult](ConfigValidationSuccess)(ConfigValidationResult.merge)
 
     super.validate().merge(awsSecretsResultsMerge)
+  }
+
+  private def createKeyPair(secretKeys: Map[String, String]): KeyPair = {
+
+    val publicKeySpec: X509EncodedKeySpec = new X509EncodedKeySpec(
+      Base64.getDecoder.decode(
+        secretKeys(publicKeyFieldName)
+      )
+    )
+    val privateKeySpec: PKCS8EncodedKeySpec = new PKCS8EncodedKeySpec(
+      Base64.getDecoder.decode(
+        secretKeys(privateKeyFieldName)
+      )
+    )
+
+    val keyFactory: KeyFactory = KeyFactory.getInstance(jwtAlgorithmToCryptoAlgorithm)
+    new KeyPair(keyFactory.generatePublic(publicKeySpec), keyFactory.generatePrivate(privateKeySpec))
   }
 }

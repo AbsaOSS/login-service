@@ -48,7 +48,7 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider, authSearchSe
   })
 
   private val jwtConfig = jwtConfigProvider.getJwtKeyConfig
-  @volatile private var keyPair: KeyPair = jwtConfig.keyPair()
+  @volatile private var keyPair: KeyPair = jwtConfig.keyPair()._1
 
   if(jwtConfig.keyRotationTime.nonEmpty)
     {
@@ -182,7 +182,7 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider, authSearchSe
         try {
           val newKeyPair = jwtConfig.keyPair()
           logger.info("Keys have been Refreshed")
-          keyPair = newKeyPair
+          keyPair = newKeyPair._1
         }
         catch {
           case e: Throwable =>
