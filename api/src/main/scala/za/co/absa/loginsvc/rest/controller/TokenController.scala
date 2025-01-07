@@ -145,7 +145,7 @@ class TokenController @Autowired()(jwtService: JWTService) {
   @ResponseStatus(HttpStatus.OK)
   def getPublicKey(): CompletableFuture[PublicKey] = {
     val publicKey = jwtService.publicKey
-    val publicKeyBase64 = Base64.getEncoder.encodeToString(publicKey.getEncoded)
+    val publicKeyBase64 = Base64.getEncoder.encodeToString(publicKey._1.getEncoded)
 
     Future.successful(PublicKey(publicKeyBase64))
   }
@@ -163,10 +163,10 @@ class TokenController @Autowired()(jwtService: JWTService) {
   )
   @ResponseStatus(HttpStatus.OK)
   def getPublicKeyJwks(): CompletableFuture[Map[String, AnyRef]] = {
-    val jwks = jwtService.jwks
+    val jwk = jwtService.jwks
 
     import scala.collection.JavaConverters._
-    Future.successful(jwks.toJSONObject(true).asScala.toMap)
+    Future.successful(jwk.toJSONObject(true).asScala.toMap)
   }
 }
 

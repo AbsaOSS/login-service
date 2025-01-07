@@ -17,7 +17,7 @@
 package za.co.absa.loginsvc.rest.service.jwt
 
 import com.nimbusds.jose.JWSAlgorithm
-import com.nimbusds.jose.jwk.{JWKSet, KeyUse, RSAKey}
+import com.nimbusds.jose.jwk.{JWK, JWKSet, KeyUse, RSAKey}
 import io.jsonwebtoken._
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -48,7 +48,7 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider, authSearchSe
   })
 
   private val jwtConfig = jwtConfigProvider.getJwtKeyConfig
-  @volatile private var keyPair: KeyPair = jwtConfig.keyPair()._1
+  @volatile private var keyPair: (KeyPair, Option[KeyPair]) = jwtConfig.keyPair()
 
   if(jwtConfig.keyRotationTime.nonEmpty)
     {
@@ -82,7 +82,7 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider, authSearchSe
         }.asJava
       )
       .claim("type", Token.TokenType.Access.toString)
-      .signWith(keyPair.getPrivate)
+      .signWith(keyPair._1.getPrivate)
       .compact()
 
     AccessToken(tokenContent)
@@ -101,7 +101,7 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider, authSearchSe
       .setExpiration(expiration)
       .setIssuedAt(issuedAt)
       .claim("type", Token.TokenType.Refresh.toString)
-      .signWith(keyPair.getPrivate)
+      .signWith(keyPair._1.getPrivate)
       .compact()
 
     RefreshToken(tokenContent)
@@ -110,7 +110,7 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider, authSearchSe
   def refreshTokens(accessToken: AccessToken, refreshToken: RefreshToken): (AccessToken, RefreshToken) = {
     val oldAccessJws: Jws[Claims] = Jwts.parserBuilder()
       .require("type", Token.TokenType.Access.toString)
-      .setSigningKey(keyPair.getPublic)
+      .setSigningKey(keyPair._1.getPublic)
       .setClock(() => Date.from(Instant.now().minus(jwtConfig.refreshExpTime.toJava))) // allowing expired access token - up to refresh token validity window
       .build()
       .parseClaimsJws(accessToken.token) // checks requirements: type=access, signature, custom validity window
@@ -120,7 +120,7 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider, authSearchSe
     Jwts.parserBuilder()
       .require("type", Token.TokenType.Refresh.toString)
       .requireSubject(userFromOldAccessToken.name)
-      .setSigningKey(keyPair.getPublic)
+      .setSigningKey(keyPair._1.getPublic)
       .build()
       .parseClaimsJws(refreshToken.token) // checks username, validity, and signature.
 
@@ -140,13 +140,24 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider, authSearchSe
     (refreshedAccessToken, refreshToken)
   }
 
-  def publicKey: PublicKey = keyPair.getPublic
+  def publicKey: (PublicKey, Option[PublicKey]) = {
+    val currentPublicKey = keyPair._1.getPublic
+    val previousPublicKey = keyPair._2.map(_.getPublic)
+    (currentPublicKey, previousPublicKey)
+  }
 
-  def publicKeyThumbprint: String = rsaPublicKey.getKeyID
+  def publicKeyThumbprint: String = rsaPublicKey(publicKey._1).getKeyID
 
   def jwks: JWKSet = {
-    val jwk = rsaPublicKey
-    new JWKSet(jwk).toPublicJWKSet
+    val currentJwk = rsaPublicKey(publicKey._1)
+    val previousJwk = publicKey._2.map(rsaPublicKey)
+
+    val jwkList = previousJwk match {
+      case Some(previousJwk) => List[JWK](currentJwk, previousJwk)
+      case None              => List[JWK](currentJwk)
+    }
+
+    new JWKSet(jwkList.asJava)
   }
 
   def close() : Unit = {
@@ -165,8 +176,8 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider, authSearchSe
     }
   }
 
-  private def rsaPublicKey: RSAKey = {
-    publicKey match {
+  private def rsaPublicKey(key: PublicKey): RSAKey = {
+    key match {
       case rsaKey: RSAPublicKey => new RSAKey.Builder(rsaKey)
         .keyUse(KeyUse.SIGNATURE)
         .algorithm(JWSAlgorithm.parse(jwtConfig.algName))
@@ -182,7 +193,7 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider, authSearchSe
         try {
           val newKeyPair = jwtConfig.keyPair()
           logger.info("Keys have been Refreshed")
-          keyPair = newKeyPair._1
+          keyPair = newKeyPair
         }
         catch {
           case e: Throwable =>

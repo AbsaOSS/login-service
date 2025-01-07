@@ -54,7 +54,7 @@ class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
     groups = Seq("group2")
   )
 
-  private def parseJWT(jwt: Token, publicKey: PublicKey = jwtService.publicKey): Try[Jws[Claims]] = Try {
+  private def parseJWT(jwt: Token, publicKey: PublicKey = jwtService.publicKey._1): Try[Jws[Claims]] = Try {
     Jwts.parserBuilder().setSigningKey(publicKey).build().parseClaimsJws(jwt.token)
   }
 
@@ -221,10 +221,10 @@ class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
     val refreshJwt = customJwtService.generateRefreshToken(userWithGroups)
 
     Thread.sleep(3 * 1000) // make sure that access is past due - as set above
-    parseJWT(accessJwt, customJwtService.publicKey).isFailure shouldBe true // expired
+    parseJWT(accessJwt, customJwtService.publicKey._1).isFailure shouldBe true // expired
 
     val (refreshedAccessJwt, _) = customJwtService.refreshTokens(accessJwt, refreshJwt)
-    val parsedRefreshedAccessJWT = parseJWT(refreshedAccessJwt, customJwtService.publicKey)
+    val parsedRefreshedAccessJWT = parseJWT(refreshedAccessJwt, customJwtService.publicKey._1)
     assert(parsedRefreshedAccessJWT.isSuccess)
 
     parsedRefreshedAccessJWT match {
@@ -247,7 +247,7 @@ class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
     val refreshJwt = customJwtService.generateRefreshToken(userWithGroups)
 
     Thread.sleep(2 * 1000) // make sure that refresh is past due - as set above
-    parseJWT(refreshJwt, customJwtService.publicKey).isFailure shouldBe true // expired
+    parseJWT(refreshJwt, customJwtService.publicKey._1).isFailure shouldBe true // expired
 
     an[ExpiredJwtException] should be thrownBy {
       customJwtService.refreshTokens(accessJwt, refreshJwt)
@@ -264,7 +264,7 @@ class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
     val jwks = jwtService.jwks
     val rsaKey = jwks.getKeys.asScala.head.toRSAKey
 
-    assert(publicKey == rsaKey.toPublicKey)
+    assert(publicKey._1 == rsaKey.toPublicKey)
   }
 
   it should "return a JWK with parameters" in {
