@@ -205,6 +205,63 @@ class TokenControllerTest extends AnyFlatSpec
     )(auth = None)
   }
 
+  it should "return only a single Base64 encoded public key from JWTService previous and current keys are available" in {
+    val publicKey = Keys.keyPairFor(SignatureAlgorithm.RS256).getPublic
+    val secondaryPublicKey = Keys.keyPairFor(SignatureAlgorithm.RS256).getPublic
+    when(jwtService.publicKey).thenReturn((publicKey, Option(secondaryPublicKey)))
+
+    val expectedPublicKeyBase64 = Base64.getEncoder.encodeToString(publicKey.getEncoded)
+
+    assertExpectedResponseFields(
+      "/token/public-key",
+      Get())(
+      expectedJsonBody = s"""{"key": "$expectedPublicKeyBase64"}"""
+    )(auth = None)
+  }
+
+  behavior of "getAllPublicKeys"
+
+  it should "return a single Base64 encoded public key from JWTService when user is authenticated" in {
+    val publicKey = Keys.keyPairFor(SignatureAlgorithm.RS256).getPublic
+    when(jwtService.publicKey).thenReturn((publicKey, None))
+
+    val expectedPublicKeyBase64 = Base64.getEncoder.encodeToString(publicKey.getEncoded)
+
+    assertExpectedResponseFields(
+      "/token/public-key/all",
+      Get())(
+      expectedJsonBody = s"""{"key": "$expectedPublicKeyBase64"}"""
+    )(auth = None)
+  }
+
+  it should "return a single Base64 encoded public key from JWTService when user is not authenticated" in {
+    val publicKey = Keys.keyPairFor(SignatureAlgorithm.RS256).getPublic
+    when(jwtService.publicKey).thenReturn((publicKey, None))
+
+    val expectedPublicKeyBase64 = Base64.getEncoder.encodeToString(publicKey.getEncoded)
+
+    assertExpectedResponseFields(
+      "/token/public-key/all",
+      Get())(
+      expectedJsonBody = s"""{"key": "$expectedPublicKeyBase64"}"""
+    )(auth = None)
+  }
+
+  it should "return both the current and previous Base64 encoded public keys from JWTService" in {
+    val publicKey = Keys.keyPairFor(SignatureAlgorithm.RS256).getPublic
+    val secondaryPublicKey = Keys.keyPairFor(SignatureAlgorithm.RS256).getPublic
+    when(jwtService.publicKey).thenReturn((publicKey, Option(secondaryPublicKey)))
+
+    val expectedPublicKeyBase64 = Base64.getEncoder.encodeToString(publicKey.getEncoded)
+    val expectedSecondaryPublicKeyBase64 = Base64.getEncoder.encodeToString(secondaryPublicKey.getEncoded)
+
+    assertExpectedResponseFields(
+      "/token/public-key/all",
+      Get())(
+      expectedJsonBody = s"""{"key": "$expectedPublicKeyBase64","previousKey":"$expectedSecondaryPublicKeyBase64"}"""
+    )(auth = None)
+  }
+
   behavior of "getPublicKeyJwks"
 
   it should "return a JWKS from JWTService when user is authenticated" in {

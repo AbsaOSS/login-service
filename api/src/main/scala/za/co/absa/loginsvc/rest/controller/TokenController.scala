@@ -146,8 +146,33 @@ class TokenController @Autowired()(jwtService: JWTService) {
   def getPublicKey(): CompletableFuture[PublicKey] = {
     val publicKey = jwtService.publicKey
     val publicKeyBase64 = Base64.getEncoder.encodeToString(publicKey._1.getEncoded)
-
     Future.successful(PublicKey(publicKeyBase64))
+  }
+
+  @Tags(Array(new Tag(name = "token")))
+  @Operation(
+    summary = "Gives payload with the current and previously rotated RSA256 public key",
+    description = """Alternative to /public-key - exposes current and previous public keys allowing users to verify a JWT after rotation.""",
+    responses = Array(
+      new ApiResponse(responseCode = "200", description = "Payload containing current and previous public keys is returned",
+        content = Array(new Content(
+          schema = new Schema(implementation = classOf[PublicKey]),
+          examples = Array(new ExampleObject(value = "{\n  \"key\": \"ABCDEFGH1234\"\n}")))
+        )
+      )
+    )
+  )
+  @GetMapping(
+    path = Array("/public-key/all"),
+    produces = Array(MediaType.APPLICATION_JSON_VALUE)
+  )
+  @ResponseStatus(HttpStatus.OK)
+  def getAllPublicKeys(): CompletableFuture[PublicKey] = {
+    val publicKey = jwtService.publicKey
+    val currentPublicKeyBase64 = Base64.getEncoder.encodeToString(publicKey._1.getEncoded)
+    val previousKeyBase64 = publicKey._2.map(pk =>
+      Base64.getEncoder.encodeToString(pk.getEncoded))
+    Future.successful(PublicKey(currentPublicKeyBase64, previousKeyBase64))
   }
 
   @Tags(Array(new Tag(name = "token")))

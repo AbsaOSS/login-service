@@ -278,6 +278,8 @@ class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
     assert(jwk.getKeyUse == KeyUse.SIGNATURE)
   }
 
+  behavior of "keyRotation"
+
   it should "rotate an public and private keys after 5 seconds" in {
     val initToken = jwtService.generateAccessToken(userWithoutGroups)
     val initPublicKey = jwtService.publicKey
@@ -288,5 +290,7 @@ class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
     assert(parseJWT(initToken).isFailure)
     assert(parseJWT(refreshedToken).isSuccess)
     assert(initPublicKey != jwtService.publicKey)
+    assert(initPublicKey._1 != jwtService.publicKey._1)
+    assert(initPublicKey._1 == jwtService.publicKey._2.orNull)
   }
 }

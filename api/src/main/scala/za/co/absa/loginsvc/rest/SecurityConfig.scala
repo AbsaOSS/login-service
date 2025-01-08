@@ -50,7 +50,8 @@ class SecurityConfig @Autowired()(authConfigsProvider: AuthConfigProvider) {
         "/actuator/**",
         "/token/refresh", // access+refresh JWT in payload, no auth
         "/token/public-key-jwks",
-        "/token/public-key").permitAll()
+        "/token/public-key",
+        "/token/public-key/all").permitAll()
         .anyRequest().authenticated()
         .and()
       .sessionManagement()
