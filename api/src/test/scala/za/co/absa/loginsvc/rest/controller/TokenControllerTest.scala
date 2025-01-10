@@ -226,11 +226,21 @@ class TokenControllerTest extends AnyFlatSpec
     when(jwtService.publicKey).thenReturn((publicKey, None))
 
     val expectedPublicKeyBase64 = Base64.getEncoder.encodeToString(publicKey.getEncoded)
+    val expectedResponse =
+      s"""
+         |{
+         |  "keys": [
+         |    {
+         |      "key": "$expectedPublicKeyBase64"
+         |    }
+         |  ]
+         |}
+         |""".stripMargin
 
     assertExpectedResponseFields(
-      "/token/public-key/all",
+      "/token/public-keys",
       Get())(
-      expectedJsonBody = s"""{"key": "$expectedPublicKeyBase64"}"""
+      expectedJsonBody = expectedResponse
     )(auth = None)
   }
 
@@ -239,11 +249,22 @@ class TokenControllerTest extends AnyFlatSpec
     when(jwtService.publicKey).thenReturn((publicKey, None))
 
     val expectedPublicKeyBase64 = Base64.getEncoder.encodeToString(publicKey.getEncoded)
+    val expectedResponse =
+      s"""
+         |{
+         |  "keys": [
+         |    {
+         |      "key": "$expectedPublicKeyBase64"
+         |    }
+         |  ]
+         |}
+         |""".stripMargin
+
 
     assertExpectedResponseFields(
-      "/token/public-key/all",
+      "/token/public-keys",
       Get())(
-      expectedJsonBody = s"""{"key": "$expectedPublicKeyBase64"}"""
+      expectedJsonBody = expectedResponse
     )(auth = None)
   }
 
@@ -254,11 +275,25 @@ class TokenControllerTest extends AnyFlatSpec
 
     val expectedPublicKeyBase64 = Base64.getEncoder.encodeToString(publicKey.getEncoded)
     val expectedSecondaryPublicKeyBase64 = Base64.getEncoder.encodeToString(secondaryPublicKey.getEncoded)
+    val expectedResponse =
+      s"""
+         |{
+         |  "keys": [
+         |    {
+         |      "key": "$expectedPublicKeyBase64"
+         |    },
+         |    {
+         |      "key": "$expectedSecondaryPublicKeyBase64"
+         |    }
+         |  ]
+         |}
+         |""".stripMargin
+
 
     assertExpectedResponseFields(
-      "/token/public-key/all",
+      "/token/public-keys",
       Get())(
-      expectedJsonBody = s"""{"key": "$expectedPublicKeyBase64","previousKey":"$expectedSecondaryPublicKeyBase64"}"""
+      expectedJsonBody = expectedResponse
     )(auth = None)
   }
 

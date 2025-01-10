@@ -51,7 +51,7 @@ class SecurityConfig @Autowired()(authConfigsProvider: AuthConfigProvider) {
         "/token/refresh", // access+refresh JWT in payload, no auth
         "/token/public-key-jwks",
         "/token/public-key",
-        "/token/public-key/all").permitAll()
+        "/token/public-keys").permitAll()
         .anyRequest().authenticated()
         .and()
       .sessionManagement()

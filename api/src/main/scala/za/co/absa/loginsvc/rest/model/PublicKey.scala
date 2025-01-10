@@ -24,12 +24,5 @@ case class PublicKey(
   @JsonProperty("key")
   @Schema(example = "ABCDEFGH1234", requiredMode = RequiredMode.REQUIRED,
     description = "The public key currently signing JWTs")
-  key: String,
-
-  @JsonProperty("previousKey")
-  @Schema(
-    example = "ZYXWVUT9876", requiredMode = RequiredMode.NOT_REQUIRED,
-    description = "The previous public key, if available."
-  )
-  previousKey: Option[String] = None
-)
+  key: String
+) extends AnyVal
