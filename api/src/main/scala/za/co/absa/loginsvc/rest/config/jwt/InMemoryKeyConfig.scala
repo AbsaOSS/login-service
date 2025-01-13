@@ -19,15 +19,19 @@ package za.co.absa.loginsvc.rest.config.jwt
 import io.jsonwebtoken.SignatureAlgorithm
 import io.jsonwebtoken.security.Keys
 import org.slf4j.LoggerFactory
+import za.co.absa.loginsvc.rest.config.validation.{ConfigValidationException, ConfigValidationResult}
+import za.co.absa.loginsvc.rest.config.validation.ConfigValidationResult.{ConfigValidationError, ConfigValidationSuccess}
 
 import java.security.KeyPair
+import java.util.concurrent.Executors
 import scala.concurrent.duration.FiniteDuration
 
 case class InMemoryKeyConfig(
   algName: String,
   accessExpTime: FiniteDuration,
   refreshExpTime: FiniteDuration,
-  keyRotationTime: Option[FiniteDuration]
+  keyRotationTime: Option[FiniteDuration],
+  keyPhaseOutTime: Option[FiniteDuration]
 ) extends KeyConfig {
 
   private var oldKeyPair: Option[KeyPair] = None
@@ -41,7 +45,19 @@ case class InMemoryKeyConfig(
     result
   }
 
-  override def throwErrors(): Unit = this.validate().throwOnErrors()
+  override def validate(): ConfigValidationResult = {
+    val keyRotationResult = if (keyPhaseOutTime.nonEmpty && keyRotationTime.isEmpty) {
+      ConfigValidationError(ConfigValidationException(s"keyPhaseOutTime can only be enable if keyRotationTime is enable!"))
+    } else ConfigValidationSuccess
 
+    val keyPhaseOutTimeResult = if(keyPhaseOutTime.nonEmpty && keyRotationTime.isEmpty
+      && keyPhaseOutTime.get > keyRotationTime.get) {
+      ConfigValidationError(ConfigValidationException(s"keyPhaseOutTime must be lower than keyRotationTime!"))
+    } else ConfigValidationSuccess
+
+    super.validate().merge(keyRotationResult).merge(keyPhaseOutTimeResult)
+  }
+
+  override def throwErrors(): Unit = this.validate().throwOnErrors()
 }
 

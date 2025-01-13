@@ -31,6 +31,7 @@ trait KeyConfig extends ConfigValidatable {
   def accessExpTime: FiniteDuration
   def refreshExpTime: FiniteDuration
   def keyRotationTime: Option[FiniteDuration]
+  def keyPhaseOutTime: Option[FiniteDuration]
   def keyPair(): (KeyPair, Option[KeyPair])
   def throwErrors(): Unit
 
@@ -73,6 +74,10 @@ trait KeyConfig extends ConfigValidatable {
 
     if (keyRotationTime.isEmpty) {
       logger.warn("keyRotationTime is not set in config, key-pair will not be rotated!")
+    }
+
+    if(keyPhaseOutTime.isEmpty) {
+      logger.warn("keyPhaseOutTime is not set in config, the previously used public key will be viewable till rotation!")
     }
 
     algValidation.merge(accessExpTimeResult).merge(refreshExpTimeResult).merge(keyRotationTimeResult)
