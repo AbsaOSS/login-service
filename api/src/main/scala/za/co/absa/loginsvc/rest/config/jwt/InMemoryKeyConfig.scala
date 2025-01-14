@@ -23,7 +23,6 @@ import za.co.absa.loginsvc.rest.config.validation.{ConfigValidationException, Co
 import za.co.absa.loginsvc.rest.config.validation.ConfigValidationResult.{ConfigValidationError, ConfigValidationSuccess}
 
 import java.security.KeyPair
-import java.util.concurrent.Executors
 import scala.concurrent.duration.FiniteDuration
 
 case class InMemoryKeyConfig(
@@ -46,16 +45,12 @@ case class InMemoryKeyConfig(
   }
 
   override def validate(): ConfigValidationResult = {
-    val keyRotationResult = if (keyPhaseOutTime.nonEmpty && keyRotationTime.isEmpty) {
-      ConfigValidationError(ConfigValidationException(s"keyPhaseOutTime can only be enable if keyRotationTime is enable!"))
-    } else ConfigValidationSuccess
-
-    val keyPhaseOutTimeResult = if(keyPhaseOutTime.nonEmpty && keyRotationTime.isEmpty
+    val keyPhaseOutTimeResult = if(keyPhaseOutTime.nonEmpty && keyRotationTime.nonEmpty
       && keyPhaseOutTime.get > keyRotationTime.get) {
       ConfigValidationError(ConfigValidationException(s"keyPhaseOutTime must be lower than keyRotationTime!"))
     } else ConfigValidationSuccess
 
-    super.validate().merge(keyRotationResult).merge(keyPhaseOutTimeResult)
+    super.validate().merge(keyPhaseOutTimeResult)
   }
 
   override def throwErrors(): Unit = this.validate().throwOnErrors()

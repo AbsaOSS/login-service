@@ -22,8 +22,7 @@ import za.co.absa.loginsvc.rest.config.validation.{ConfigValidatable, ConfigVali
 import za.co.absa.loginsvc.rest.config.validation.ConfigValidationResult.{ConfigValidationError, ConfigValidationSuccess}
 
 import java.security.KeyPair
-import java.util.concurrent.TimeUnit
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 
 trait KeyConfig extends ConfigValidatable {
@@ -72,6 +71,14 @@ trait KeyConfig extends ConfigValidatable {
       ConfigValidationError(ConfigValidationException(s"keyRotationTime must be at least ${KeyConfig.minKeyRotationTime}"))
     } else ConfigValidationSuccess
 
+    val keyPhaseOutTimeResult = if (keyPhaseOutTime.nonEmpty && keyPhaseOutTime.get < KeyConfig.minKeyPhaseOutTime) {
+      ConfigValidationError(ConfigValidationException(s"keyPhaseOutTime must be at least ${KeyConfig.minKeyPhaseOutTime}"))
+    } else ConfigValidationSuccess
+
+    val keyPhaseOutWithRotationResult = if (keyPhaseOutTime.nonEmpty && keyRotationTime.isEmpty) {
+      ConfigValidationError(ConfigValidationException(s"keyPhaseOutTime can only be enable if keyRotationTime is enable!"))
+    } else ConfigValidationSuccess
+
     if (keyRotationTime.isEmpty) {
       logger.warn("keyRotationTime is not set in config, key-pair will not be rotated!")
     }
@@ -80,12 +87,18 @@ trait KeyConfig extends ConfigValidatable {
       logger.warn("keyPhaseOutTime is not set in config, the previously used public key will be viewable till rotation!")
     }
 
-    algValidation.merge(accessExpTimeResult).merge(refreshExpTimeResult).merge(keyRotationTimeResult)
+    algValidation
+      .merge(accessExpTimeResult)
+      .merge(refreshExpTimeResult)
+      .merge(keyRotationTimeResult)
+      .merge(keyPhaseOutTimeResult)
+      .merge(keyPhaseOutWithRotationResult)
   }
 }
 
 object KeyConfig {
-  val minAccessExpTime: FiniteDuration = FiniteDuration(10, TimeUnit.MILLISECONDS)
-  val minRefreshExpTime: FiniteDuration = FiniteDuration(10, TimeUnit.MILLISECONDS)
-  val minKeyRotationTime: FiniteDuration = FiniteDuration(10, TimeUnit.MILLISECONDS)
+  val minAccessExpTime: FiniteDuration = 10.milliseconds
+  val minRefreshExpTime: FiniteDuration = 10.milliseconds
+  val minKeyRotationTime: FiniteDuration = 10.milliseconds
+  val minKeyPhaseOutTime: FiniteDuration = 10.milliseconds
 }

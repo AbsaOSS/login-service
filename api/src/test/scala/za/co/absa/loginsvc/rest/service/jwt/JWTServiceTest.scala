@@ -205,7 +205,7 @@ class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
   def customTimedJwtService(accessExpTime: FiniteDuration, refreshExpTime: FiniteDuration): JWTService = {
     val configP = new JwtConfigProvider {
       override def getJwtKeyConfig: KeyConfig = InMemoryKeyConfig(
-        "RS256", accessExpTime, refreshExpTime, None
+        "RS256", accessExpTime, refreshExpTime, None, None
       )
     }
 
@@ -292,5 +292,22 @@ class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
     assert(initPublicKey != jwtService.publicKey)
     assert(initPublicKey._1 != jwtService.publicKey._1)
     assert(initPublicKey._1 == jwtService.publicKey._2.orNull)
+  }
+
+  it should "phase out older keys after 8 seconds" in {
+    val initToken = jwtService.generateAccessToken(userWithoutGroups)
+    val initPublicKey = jwtService.publicKey
+
+    Thread.sleep(6 * 1000)
+    val refreshedToken = jwtService.generateAccessToken(userWithoutGroups)
+
+    assert(parseJWT(initToken).isFailure)
+    assert(parseJWT(refreshedToken).isSuccess)
+    assert(initPublicKey != jwtService.publicKey)
+    assert(initPublicKey._1 != jwtService.publicKey._1)
+    assert(initPublicKey._1 == jwtService.publicKey._2.orNull)
+
+    Thread.sleep(3 * 1000)
+    assert(jwtService.publicKey._2.isEmpty)
   }
 }

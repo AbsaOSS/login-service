@@ -6,6 +6,7 @@ loginsvc:
         access-exp-time: 15min
         refresh-exp-time: 10h
         key-rotation-time: 5sec
+        key-phase-out-time: 3sec
         alg-name: "RS256"
 
     # Rest Auth Config (AD)
