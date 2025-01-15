@@ -7,19 +7,20 @@ loginsvc:
         access-exp-time: 15min
         refresh-exp-time: 9h
         key-rotation-time: 9h
+        key-phase-out-time: 30min
         alg-name: "RS256"
       #Instead of generating the key in memory
       #The Below Config allows for the application to fetch keys from AWS Secrets Manager.
-      aws-secrets-manager:
-        secret-name: "secret"
-        region: "region"
-        private-key-field-name: "privateKey"
-        public-key-field-name: "publicKey"
-        access-exp-time: 15min
-        refresh-exp-time: 9h
-        poll-time: 5min
-        key-phase-out-time: 2min
-        alg-name: "RS256"
+      #aws-secrets-manager:
+        #secret-name: "secret"
+        #region: "region"
+        #private-key-field-name: "privateKey"
+        #public-key-field-name: "publicKey"
+        #access-exp-time: 15min
+        #refresh-exp-time: 9h
+        #poll-time: 5min
+        #key-phase-out-time: 30min
+        #alg-name: "RS256"
     config:
       # Generates git.properties file for use on info endpoint.
       git-info:

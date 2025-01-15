@@ -21,7 +21,10 @@ import org.slf4j.LoggerFactory
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient
-import software.amazon.awssdk.services.secretsmanager.model.{GetSecretValueRequest, GetSecretValueResponse}
+import software.amazon.awssdk.services.secretsmanager.model.{DescribeSecretRequest, GetSecretValueRequest, GetSecretValueResponse}
+
+import java.time.Instant
+import scala.collection.JavaConverters._
 
 object AwsSecretsUtils {
 
@@ -60,5 +63,35 @@ object AwsSecretsUtils {
         logger.warn(s"Error occurred retrieving and parsing secrets from AWS Secrets Manager", e)
         None
     }
+  }
+
+  def getCreationTime(
+    secretName: String,
+    region: String,
+    versionStage: Option[String] = None
+  ): Option[Instant] = {
+    val default = DefaultCredentialsProvider.create
+
+    val client = SecretsManagerClient.builder
+      .region(Region.of(region))
+      .credentialsProvider(default)
+      .build
+
+    val describeRequest = DescribeSecretRequest.builder()
+      .secretId(secretName)
+      .build()
+
+    val describeResponse = client.describeSecret(describeRequest)
+
+    val versionIdsToStages = describeResponse.versionIdsToStages().asScala
+
+    val targetVersionId = versionStage match {
+      case Some(stage) =>
+        versionIdsToStages.find { case (_, stages) => stages.asScala.contains(stage) }.map(_._1)
+      case None =>
+        versionIdsToStages.find { case (_, stages) => stages.asScala.contains("AWSCURRENT") }.map(_._1)
+    }
+
+    targetVersionId.flatMap(_ => Option(describeResponse.createdDate()))
   }
 }

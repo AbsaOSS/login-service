@@ -144,8 +144,8 @@ class TokenController @Autowired()(jwtService: JWTService) {
   )
   @ResponseStatus(HttpStatus.OK)
   def getPublicKey(): CompletableFuture[PublicKey] = {
-    val publicKey = jwtService.publicKey
-    val publicKeyBase64 = Base64.getEncoder.encodeToString(publicKey._1.getEncoded)
+    val (publicKey, _) = jwtService.publicKeys
+    val publicKeyBase64 = Base64.getEncoder.encodeToString(publicKey.getEncoded)
     Future.successful(PublicKey(publicKeyBase64))
   }
 
@@ -168,9 +168,9 @@ class TokenController @Autowired()(jwtService: JWTService) {
   )
   @ResponseStatus(HttpStatus.OK)
   def getAllPublicKeys(): CompletableFuture[PublicKeySet] = {
-    val publicKey = jwtService.publicKey
-    val currentPublicKey = PublicKey(Base64.getEncoder.encodeToString(publicKey._1.getEncoded))
-    val previousPublicKey = publicKey._2.map(pk =>
+    val (primaryPublicKey, optionalPublicKey) = jwtService.publicKeys
+    val currentPublicKey = PublicKey(Base64.getEncoder.encodeToString(primaryPublicKey.getEncoded))
+    val previousPublicKey = optionalPublicKey.map(pk =>
       PublicKey(Base64.getEncoder.encodeToString(pk.getEncoded)))
     Future.successful(PublicKeySet(keys = currentPublicKey :: previousPublicKey.toList))
   }

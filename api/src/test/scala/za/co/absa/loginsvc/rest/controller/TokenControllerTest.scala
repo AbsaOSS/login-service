@@ -181,7 +181,7 @@ class TokenControllerTest extends AnyFlatSpec
 
   it should "return a Base64 encoded public key from JWTService when user is authenticated" in {
     val publicKey = Keys.keyPairFor(SignatureAlgorithm.RS256).getPublic
-    when(jwtService.publicKey).thenReturn((publicKey, None))
+    when(jwtService.publicKeys).thenReturn((publicKey, None))
 
     val expectedPublicKeyBase64 = Base64.getEncoder.encodeToString(publicKey.getEncoded)
 
@@ -194,7 +194,7 @@ class TokenControllerTest extends AnyFlatSpec
 
   it should "return a Base64 encoded public key from JWTService when user is not authenticated" in {
     val publicKey = Keys.keyPairFor(SignatureAlgorithm.RS256).getPublic
-    when(jwtService.publicKey).thenReturn((publicKey, None))
+    when(jwtService.publicKeys).thenReturn((publicKey, None))
 
     val expectedPublicKeyBase64 = Base64.getEncoder.encodeToString(publicKey.getEncoded)
 
@@ -208,7 +208,7 @@ class TokenControllerTest extends AnyFlatSpec
   it should "return only a single Base64 encoded public key from JWTService previous and current keys are available" in {
     val publicKey = Keys.keyPairFor(SignatureAlgorithm.RS256).getPublic
     val secondaryPublicKey = Keys.keyPairFor(SignatureAlgorithm.RS256).getPublic
-    when(jwtService.publicKey).thenReturn((publicKey, Option(secondaryPublicKey)))
+    when(jwtService.publicKeys).thenReturn((publicKey, Option(secondaryPublicKey)))
 
     val expectedPublicKeyBase64 = Base64.getEncoder.encodeToString(publicKey.getEncoded)
 
@@ -223,7 +223,7 @@ class TokenControllerTest extends AnyFlatSpec
 
   it should "return a single Base64 encoded public key from JWTService when user is authenticated" in {
     val publicKey = Keys.keyPairFor(SignatureAlgorithm.RS256).getPublic
-    when(jwtService.publicKey).thenReturn((publicKey, None))
+    when(jwtService.publicKeys).thenReturn((publicKey, None))
 
     val expectedPublicKeyBase64 = Base64.getEncoder.encodeToString(publicKey.getEncoded)
     val expectedResponse =
@@ -246,7 +246,7 @@ class TokenControllerTest extends AnyFlatSpec
 
   it should "return a single Base64 encoded public key from JWTService when user is not authenticated" in {
     val publicKey = Keys.keyPairFor(SignatureAlgorithm.RS256).getPublic
-    when(jwtService.publicKey).thenReturn((publicKey, None))
+    when(jwtService.publicKeys).thenReturn((publicKey, None))
 
     val expectedPublicKeyBase64 = Base64.getEncoder.encodeToString(publicKey.getEncoded)
     val expectedResponse =
@@ -271,7 +271,7 @@ class TokenControllerTest extends AnyFlatSpec
   it should "return both the current and previous Base64 encoded public keys from JWTService" in {
     val publicKey = Keys.keyPairFor(SignatureAlgorithm.RS256).getPublic
     val secondaryPublicKey = Keys.keyPairFor(SignatureAlgorithm.RS256).getPublic
-    when(jwtService.publicKey).thenReturn((publicKey, Option(secondaryPublicKey)))
+    when(jwtService.publicKeys).thenReturn((publicKey, Option(secondaryPublicKey)))
 
     val expectedPublicKeyBase64 = Base64.getEncoder.encodeToString(publicKey.getEncoded)
     val expectedSecondaryPublicKeyBase64 = Base64.getEncoder.encodeToString(secondaryPublicKey.getEncoded)

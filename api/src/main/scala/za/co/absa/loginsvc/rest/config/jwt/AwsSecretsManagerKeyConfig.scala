@@ -23,6 +23,7 @@ import za.co.absa.loginsvc.utils.AwsSecretsUtils
 
 import java.security.{KeyFactory, KeyPair}
 import java.security.spec.{PKCS8EncodedKeySpec, X509EncodedKeySpec}
+import java.time.Instant
 import java.util.Base64
 import scala.concurrent.duration.FiniteDuration
 
@@ -55,12 +56,38 @@ case class AwsSecretsManagerKeyConfig(
       val currentKeyPair = createKeyPair(currentSecretsOption.get)
       logger.info("AWSCURRENT Key Data successfully retrieved and parsed from AWS Secrets Manager")
 
-      val previousSecretsOption = AwsSecretsUtils.fetchSecret(
-        secretName,
-        region,
-        Array(privateKeyFieldName, publicKeyFieldName),
-        Some("AWSPREVIOUS")
-      )
+      val previousSecretsOption: Option[Map[String, String]] = {
+
+        if(keyPhaseOutTime.nonEmpty) {
+          val previousSecretCreationTime = AwsSecretsUtils.getCreationTime(
+            secretName,
+            region,
+            Some("AWSPREVIOUS")
+          )
+
+          previousSecretCreationTime match {
+            case Some(creationTime) =>
+              if (!isExpired(creationTime, keyPhaseOutTime.get)) {
+                AwsSecretsUtils.fetchSecret(
+                  secretName,
+                  region,
+                  Array(privateKeyFieldName, publicKeyFieldName),
+                  Some("AWSPREVIOUS")
+                )
+              } else {
+                None
+              }
+            case None => None
+          }
+        } else {
+          AwsSecretsUtils.fetchSecret(
+            secretName,
+            region,
+            Array(privateKeyFieldName, publicKeyFieldName),
+            Some("AWSPREVIOUS")
+          )
+        }
+      }
 
       val previousKeyPair = previousSecretsOption.flatMap { previousSecrets =>
         try {
@@ -124,5 +151,10 @@ case class AwsSecretsManagerKeyConfig(
 
     val keyFactory: KeyFactory = KeyFactory.getInstance(jwtAlgorithmToCryptoAlgorithm)
     new KeyPair(keyFactory.generatePublic(publicKeySpec), keyFactory.generatePrivate(privateKeySpec))
+  }
+
+  private def isExpired(creationTime: Instant, finiteDuration: FiniteDuration): Boolean = {
+    val expirationTime = creationTime.plus(finiteDuration.toMillis, java.time.temporal.ChronoUnit.MILLIS)
+    Instant.now().isAfter(expirationTime)
   }
 }

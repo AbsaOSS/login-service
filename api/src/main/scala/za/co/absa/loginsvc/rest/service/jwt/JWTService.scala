@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import za.co.absa.loginsvc.model.User
-import za.co.absa.loginsvc.rest.config.jwt.{AwsSecretsManagerKeyConfig, InMemoryKeyConfig}
+import za.co.absa.loginsvc.rest.config.jwt.InMemoryKeyConfig
 import za.co.absa.loginsvc.rest.config.provider.JwtConfigProvider
 import za.co.absa.loginsvc.rest.model.{AccessToken, RefreshToken, Token}
 import za.co.absa.loginsvc.rest.service.jwt.JWTService.extractUserFrom
@@ -33,7 +33,7 @@ import java.security.interfaces.RSAPublicKey
 import java.security.{KeyPair, PublicKey}
 import java.time.Instant
 import java.util.Date
-import java.util.concurrent.{Executors, ScheduledThreadPoolExecutor, ThreadFactory, TimeUnit}
+import java.util.concurrent.{ScheduledThreadPoolExecutor, ThreadFactory, TimeUnit}
 import scala.collection.JavaConverters._
 import scala.compat.java8.DurationConverters._
 import scala.concurrent.duration.FiniteDuration
@@ -51,13 +51,9 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider, authSearchSe
   })
 
   private val jwtConfig = jwtConfigProvider.getJwtKeyConfig
-  @volatile private var keyPair: (KeyPair, Option[KeyPair]) = jwtConfig.keyPair()
+  @volatile private var (primaryKeyPair: KeyPair, optionalKeyPair: Option[KeyPair]) = jwtConfig.keyPair()
 
   jwtConfig.keyRotationTime.foreach(scheduleSecretsRefresh)
-  if(keyPair._2.nonEmpty)
-    {
-      jwtConfig.keyPhaseOutTime.foreach(scheduleKeyPhaseOut)
-    }
 
   def generateAccessToken(user: User, isRefresh: Boolean = false): AccessToken = {
     val msgIntro = if (isRefresh) "Refreshing" else "Generating new"
@@ -85,7 +81,7 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider, authSearchSe
         }.asJava
       )
       .claim("type", Token.TokenType.Access.toString)
-      .signWith(keyPair._1.getPrivate)
+      .signWith(primaryKeyPair.getPrivate)
       .compact()
 
     AccessToken(tokenContent)
@@ -104,7 +100,7 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider, authSearchSe
       .setExpiration(expiration)
       .setIssuedAt(issuedAt)
       .claim("type", Token.TokenType.Refresh.toString)
-      .signWith(keyPair._1.getPrivate)
+      .signWith(primaryKeyPair.getPrivate)
       .compact()
 
     RefreshToken(tokenContent)
@@ -113,7 +109,7 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider, authSearchSe
   def refreshTokens(accessToken: AccessToken, refreshToken: RefreshToken): (AccessToken, RefreshToken) = {
     val oldAccessJws: Jws[Claims] = Jwts.parserBuilder()
       .require("type", Token.TokenType.Access.toString)
-      .setSigningKey(keyPair._1.getPublic)
+      .setSigningKey(primaryKeyPair.getPublic)
       .setClock(() => Date.from(Instant.now().minus(jwtConfig.refreshExpTime.toJava))) // allowing expired access token - up to refresh token validity window
       .build()
       .parseClaimsJws(accessToken.token) // checks requirements: type=access, signature, custom validity window
@@ -123,7 +119,7 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider, authSearchSe
     Jwts.parserBuilder()
       .require("type", Token.TokenType.Refresh.toString)
       .requireSubject(userFromOldAccessToken.name)
-      .setSigningKey(keyPair._1.getPublic)
+      .setSigningKey(primaryKeyPair.getPublic)
       .build()
       .parseClaimsJws(refreshToken.token) // checks username, validity, and signature.
 
@@ -143,17 +139,17 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider, authSearchSe
     (refreshedAccessToken, refreshToken)
   }
 
-  def publicKey: (PublicKey, Option[PublicKey]) = {
-    val currentPublicKey = keyPair._1.getPublic
-    val previousPublicKey = keyPair._2.map(_.getPublic)
+  def publicKeys: (PublicKey, Option[PublicKey]) = {
+    val currentPublicKey = primaryKeyPair.getPublic
+    val previousPublicKey = optionalKeyPair.map(_.getPublic)
     (currentPublicKey, previousPublicKey)
   }
 
-  def publicKeyThumbprint: String = rsaPublicKey(publicKey._1).getKeyID
+  def publicKeyThumbprint: String = rsaPublicKey(primaryKeyPair.getPublic).getKeyID
 
   def jwks: JWKSet = {
-    val currentJwk = rsaPublicKey(publicKey._1)
-    val previousJwk = publicKey._2.map(rsaPublicKey)
+    val currentJwk = rsaPublicKey(primaryKeyPair.getPublic)
+    val previousJwk = optionalKeyPair.map(kp => rsaPublicKey(kp.getPublic))
 
     val jwkList = previousJwk match {
       case Some(previousJwk) => List[JWK](currentJwk, previousJwk)
@@ -194,28 +190,16 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider, authSearchSe
       val scheduledFuture = scheduler.scheduleAtFixedRate(() => {
         logger.info("Attempting to Refresh for new Keys")
         try {
-          val newKeyPair = jwtConfig.keyPair()
+          val (newPrimaryKeyPair, newOptionalKeyPair) = jwtConfig.keyPair()
           logger.info("Keys have been Refreshed")
-          if(jwtConfig.keyPhaseOutTime.isEmpty)
-            {
-              keyPair = newKeyPair
-              return
-            }
           jwtConfig.keyPhaseOutTime.foreach { kp => {
             jwtConfig match {
-              case i: InMemoryKeyConfig => {
+              case i: InMemoryKeyConfig =>
                 scheduleKeyPhaseOut(kp)
-                keyPair = newKeyPair
-              }
-              case a: AwsSecretsManagerKeyConfig => {
-                if(!keyPair._1.equals(newKeyPair._1))
-                  {
-                    scheduleKeyPhaseOut(kp)
-                    keyPair = newKeyPair
-                  }
-              }
             }
           }}
+          primaryKeyPair = newPrimaryKeyPair
+          optionalKeyPair = newOptionalKeyPair
         }
         catch {
           case e: Throwable =>
@@ -237,7 +221,7 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider, authSearchSe
     val scheduledFuture = scheduler.schedule(new Runnable {
       override def run(): Unit = {
         logger.info("Phasing out previous KeyPair.")
-        keyPair = (keyPair._1, None)
+        optionalKeyPair = None
       }
     }, phaseOutTime.toMillis, TimeUnit.MILLISECONDS)
 

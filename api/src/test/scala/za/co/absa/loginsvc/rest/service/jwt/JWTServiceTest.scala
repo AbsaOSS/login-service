@@ -54,7 +54,7 @@ class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
     groups = Seq("group2")
   )
 
-  private def parseJWT(jwt: Token, publicKey: PublicKey = jwtService.publicKey._1): Try[Jws[Claims]] = Try {
+  private def parseJWT(jwt: Token, publicKey: PublicKey = jwtService.publicKeys._1): Try[Jws[Claims]] = Try {
     Jwts.parserBuilder().setSigningKey(publicKey).build().parseClaimsJws(jwt.token)
   }
 
@@ -221,10 +221,10 @@ class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
     val refreshJwt = customJwtService.generateRefreshToken(userWithGroups)
 
     Thread.sleep(3 * 1000) // make sure that access is past due - as set above
-    parseJWT(accessJwt, customJwtService.publicKey._1).isFailure shouldBe true // expired
+    parseJWT(accessJwt, customJwtService.publicKeys._1).isFailure shouldBe true // expired
 
     val (refreshedAccessJwt, _) = customJwtService.refreshTokens(accessJwt, refreshJwt)
-    val parsedRefreshedAccessJWT = parseJWT(refreshedAccessJwt, customJwtService.publicKey._1)
+    val parsedRefreshedAccessJWT = parseJWT(refreshedAccessJwt, customJwtService.publicKeys._1)
     assert(parsedRefreshedAccessJWT.isSuccess)
 
     parsedRefreshedAccessJWT match {
@@ -247,7 +247,7 @@ class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
     val refreshJwt = customJwtService.generateRefreshToken(userWithGroups)
 
     Thread.sleep(2 * 1000) // make sure that refresh is past due - as set above
-    parseJWT(refreshJwt, customJwtService.publicKey._1).isFailure shouldBe true // expired
+    parseJWT(refreshJwt, customJwtService.publicKeys._1).isFailure shouldBe true // expired
 
     an[ExpiredJwtException] should be thrownBy {
       customJwtService.refreshTokens(accessJwt, refreshJwt)
@@ -260,7 +260,7 @@ class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
   it should "return a JWK that is equivalent to the `publicKey`" in {
     import scala.collection.JavaConverters._
 
-    val publicKey = jwtService.publicKey
+    val publicKey = jwtService.publicKeys
     val jwks = jwtService.jwks
     val rsaKey = jwks.getKeys.asScala.head.toRSAKey
 
@@ -282,32 +282,32 @@ class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
 
   it should "rotate an public and private keys after 5 seconds" in {
     val initToken = jwtService.generateAccessToken(userWithoutGroups)
-    val initPublicKey = jwtService.publicKey
+    val initPublicKey = jwtService.publicKeys
 
     Thread.sleep(6 * 1000)
     val refreshedToken = jwtService.generateAccessToken(userWithoutGroups)
 
     assert(parseJWT(initToken).isFailure)
     assert(parseJWT(refreshedToken).isSuccess)
-    assert(initPublicKey != jwtService.publicKey)
-    assert(initPublicKey._1 != jwtService.publicKey._1)
-    assert(initPublicKey._1 == jwtService.publicKey._2.orNull)
+    assert(initPublicKey != jwtService.publicKeys)
+    assert(initPublicKey._1 != jwtService.publicKeys._1)
+    assert(initPublicKey._1 == jwtService.publicKeys._2.orNull)
   }
 
   it should "phase out older keys after 8 seconds" in {
     val initToken = jwtService.generateAccessToken(userWithoutGroups)
-    val initPublicKey = jwtService.publicKey
+    val initPublicKey = jwtService.publicKeys
 
     Thread.sleep(6 * 1000)
     val refreshedToken = jwtService.generateAccessToken(userWithoutGroups)
 
     assert(parseJWT(initToken).isFailure)
     assert(parseJWT(refreshedToken).isSuccess)
-    assert(initPublicKey != jwtService.publicKey)
-    assert(initPublicKey._1 != jwtService.publicKey._1)
-    assert(initPublicKey._1 == jwtService.publicKey._2.orNull)
+    assert(initPublicKey != jwtService.publicKeys)
+    assert(initPublicKey._1 != jwtService.publicKeys._1)
+    assert(initPublicKey._1 == jwtService.publicKeys._2.orNull)
 
     Thread.sleep(3 * 1000)
-    assert(jwtService.publicKey._2.isEmpty)
+    assert(jwtService.publicKeys._2.isEmpty)
   }
 }
