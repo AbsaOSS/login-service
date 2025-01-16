@@ -93,7 +93,7 @@ case class AwsSecretsLdapUserConfig(private val secretName: String,
       secretsOption.fold(
         throw new Exception("Error retrieving username and password from from AWS Secrets Manager")
       ) { secrets =>
-        (secrets(usernameFieldName), secrets(passwordFieldName))
+        (secrets.secretValue(usernameFieldName), secrets.secretValue(passwordFieldName))
       }
 
     } catch {

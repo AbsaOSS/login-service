@@ -53,47 +53,24 @@ case class AwsSecretsManagerKeyConfig(
       if(currentSecretsOption.isEmpty)
         throw new Exception("Error retrieving AWSCURRENT key from from AWS Secrets Manager")
 
-      val currentKeyPair = createKeyPair(currentSecretsOption.get)
+      val currentKeyPair = createKeyPair(currentSecretsOption.get.secretValue)
       logger.info("AWSCURRENT Key Data successfully retrieved and parsed from AWS Secrets Manager")
 
-      val previousSecretsOption: Option[Map[String, String]] = {
-
-        if(keyPhaseOutTime.nonEmpty) {
-          val previousSecretCreationTime = AwsSecretsUtils.getCreationTime(
-            secretName,
-            region,
-            Some("AWSPREVIOUS")
-          )
-
-          previousSecretCreationTime match {
-            case Some(creationTime) =>
-              if (!isExpired(creationTime, keyPhaseOutTime.get)) {
-                AwsSecretsUtils.fetchSecret(
-                  secretName,
-                  region,
-                  Array(privateKeyFieldName, publicKeyFieldName),
-                  Some("AWSPREVIOUS")
-                )
-              } else {
-                None
-              }
-            case None => None
-          }
-        } else {
-          AwsSecretsUtils.fetchSecret(
-            secretName,
-            region,
-            Array(privateKeyFieldName, publicKeyFieldName),
-            Some("AWSPREVIOUS")
-          )
-        }
-      }
+      val previousSecretsOption =
+        AwsSecretsUtils.fetchSecret(
+        secretName,
+        region,
+        Array(privateKeyFieldName, publicKeyFieldName),
+        Some("AWSPREVIOUS")
+      )
 
       val previousKeyPair = previousSecretsOption.flatMap { previousSecrets =>
         try {
-          val keys = createKeyPair(previousSecrets)
+          val keys = createKeyPair(previousSecrets.secretValue)
           logger.info("AWSPREVIOUS Key Data successfully retrieved and parsed from AWS Secrets Manager")
-          Some(keys)
+          val exp = keyPhaseOutTime.exists(isExpired(previousSecrets.createTime, _))
+          if(exp) { None }
+          else { Some(keys) }
         } catch {
           case e: Throwable =>
             logger.warn(s"Error occurred decoding AWSPREVIOUSKEYS, skipping previous keys.", e)
