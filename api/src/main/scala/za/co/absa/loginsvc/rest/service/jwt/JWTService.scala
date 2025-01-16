@@ -17,12 +17,13 @@
 package za.co.absa.loginsvc.rest.service.jwt
 
 import com.nimbusds.jose.JWSAlgorithm
-import com.nimbusds.jose.jwk.{JWKSet, KeyUse, RSAKey}
+import com.nimbusds.jose.jwk.{JWK, JWKSet, KeyUse, RSAKey}
 import io.jsonwebtoken._
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import za.co.absa.loginsvc.model.User
+import za.co.absa.loginsvc.rest.config.jwt.InMemoryKeyConfig
 import za.co.absa.loginsvc.rest.config.provider.JwtConfigProvider
 import za.co.absa.loginsvc.rest.model.{AccessToken, RefreshToken, Token}
 import za.co.absa.loginsvc.rest.service.jwt.JWTService.extractUserFrom
@@ -32,7 +33,7 @@ import java.security.interfaces.RSAPublicKey
 import java.security.{KeyPair, PublicKey}
 import java.time.Instant
 import java.util.Date
-import java.util.concurrent.{Executors, TimeUnit}
+import java.util.concurrent.{ScheduledThreadPoolExecutor, ThreadFactory, TimeUnit}
 import scala.collection.JavaConverters._
 import scala.compat.java8.DurationConverters._
 import scala.concurrent.duration.FiniteDuration
@@ -41,20 +42,18 @@ import scala.concurrent.duration.FiniteDuration
 class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider, authSearchService: UserSearchService) {
 
   private val logger = LoggerFactory.getLogger(classOf[JWTService])
-  private val scheduler = Executors.newSingleThreadScheduledExecutor(r => {
-    val t = new Thread(r)
-    t.setDaemon(true)
-    t
+  private val scheduler = new ScheduledThreadPoolExecutor(2, new ThreadFactory {
+    override def newThread(r: Runnable): Thread = {
+      val t = new Thread(r)
+      t.setDaemon(true)
+      t
+    }
   })
 
   private val jwtConfig = jwtConfigProvider.getJwtKeyConfig
-  @volatile private var keyPair: KeyPair = jwtConfig.keyPair()
+  @volatile private var (primaryKeyPair: KeyPair, optionalKeyPair: Option[KeyPair]) = jwtConfig.keyPair()
 
-  if(jwtConfig.keyRotationTime.nonEmpty)
-    {
-      val refreshTime = jwtConfig.keyRotationTime.get
-      scheduleSecretsRefresh(refreshTime)
-    }
+  jwtConfig.keyRotationTime.foreach(scheduleSecretsRefresh)
 
   def generateAccessToken(user: User, isRefresh: Boolean = false): AccessToken = {
     val msgIntro = if (isRefresh) "Refreshing" else "Generating new"
@@ -82,7 +81,7 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider, authSearchSe
         }.asJava
       )
       .claim("type", Token.TokenType.Access.toString)
-      .signWith(keyPair.getPrivate)
+      .signWith(primaryKeyPair.getPrivate)
       .compact()
 
     AccessToken(tokenContent)
@@ -101,7 +100,7 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider, authSearchSe
       .setExpiration(expiration)
       .setIssuedAt(issuedAt)
       .claim("type", Token.TokenType.Refresh.toString)
-      .signWith(keyPair.getPrivate)
+      .signWith(primaryKeyPair.getPrivate)
       .compact()
 
     RefreshToken(tokenContent)
@@ -110,7 +109,7 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider, authSearchSe
   def refreshTokens(accessToken: AccessToken, refreshToken: RefreshToken): (AccessToken, RefreshToken) = {
     val oldAccessJws: Jws[Claims] = Jwts.parserBuilder()
       .require("type", Token.TokenType.Access.toString)
-      .setSigningKey(keyPair.getPublic)
+      .setSigningKey(primaryKeyPair.getPublic)
       .setClock(() => Date.from(Instant.now().minus(jwtConfig.refreshExpTime.toJava))) // allowing expired access token - up to refresh token validity window
       .build()
       .parseClaimsJws(accessToken.token) // checks requirements: type=access, signature, custom validity window
@@ -120,7 +119,7 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider, authSearchSe
     Jwts.parserBuilder()
       .require("type", Token.TokenType.Refresh.toString)
       .requireSubject(userFromOldAccessToken.name)
-      .setSigningKey(keyPair.getPublic)
+      .setSigningKey(primaryKeyPair.getPublic)
       .build()
       .parseClaimsJws(refreshToken.token) // checks username, validity, and signature.
 
@@ -140,13 +139,24 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider, authSearchSe
     (refreshedAccessToken, refreshToken)
   }
 
-  def publicKey: PublicKey = keyPair.getPublic
+  def publicKeys: (PublicKey, Option[PublicKey]) = {
+    val currentPublicKey = primaryKeyPair.getPublic
+    val previousPublicKey = optionalKeyPair.map(_.getPublic)
+    (currentPublicKey, previousPublicKey)
+  }
 
-  def publicKeyThumbprint: String = rsaPublicKey.getKeyID
+  def publicKeyThumbprint: String = rsaPublicKey(primaryKeyPair.getPublic).getKeyID
 
   def jwks: JWKSet = {
-    val jwk = rsaPublicKey
-    new JWKSet(jwk).toPublicJWKSet
+    val currentJwk = rsaPublicKey(primaryKeyPair.getPublic)
+    val previousJwk = optionalKeyPair.map(kp => rsaPublicKey(kp.getPublic))
+
+    val jwkList = previousJwk match {
+      case Some(previousJwk) => List[JWK](currentJwk, previousJwk)
+      case None              => List[JWK](currentJwk)
+    }
+
+    new JWKSet(jwkList.asJava)
   }
 
   def close() : Unit = {
@@ -165,8 +175,8 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider, authSearchSe
     }
   }
 
-  private def rsaPublicKey: RSAKey = {
-    publicKey match {
+  private def rsaPublicKey(key: PublicKey): RSAKey = {
+    key match {
       case rsaKey: RSAPublicKey => new RSAKey.Builder(rsaKey)
         .keyUse(KeyUse.SIGNATURE)
         .algorithm(JWSAlgorithm.parse(jwtConfig.algName))
@@ -180,9 +190,16 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider, authSearchSe
       val scheduledFuture = scheduler.scheduleAtFixedRate(() => {
         logger.info("Attempting to Refresh for new Keys")
         try {
-          val newKeyPair = jwtConfig.keyPair()
+          val (newPrimaryKeyPair, newOptionalKeyPair) = jwtConfig.keyPair()
           logger.info("Keys have been Refreshed")
-          keyPair = newKeyPair
+          jwtConfig.keyPhaseOutTime.foreach { kp => {
+            jwtConfig match {
+              case i: InMemoryKeyConfig =>
+                scheduleKeyPhaseOut(kp)
+            }
+          }}
+          primaryKeyPair = newPrimaryKeyPair
+          optionalKeyPair = newOptionalKeyPair
         }
         catch {
           case e: Throwable =>
@@ -195,10 +212,23 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider, authSearchSe
       )
 
       Runtime.getRuntime.addShutdownHook(new Thread(() => {
-
         scheduledFuture.cancel(false)
         this.close()
       }))
+  }
+
+  private def scheduleKeyPhaseOut(phaseOutTime: FiniteDuration): Unit = {
+    val scheduledFuture = scheduler.schedule(new Runnable {
+      override def run(): Unit = {
+        logger.info("Phasing out previous KeyPair.")
+        optionalKeyPair = None
+      }
+    }, phaseOutTime.toMillis, TimeUnit.MILLISECONDS)
+
+    Runtime.getRuntime.addShutdownHook(new Thread(() => {
+      scheduledFuture.cancel(false)
+      this.close()
+    }))
   }
 
   def getConfiguredRefreshExpDuration: FiniteDuration = jwtConfig.refreshExpTime

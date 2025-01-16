@@ -23,6 +23,7 @@ import za.co.absa.loginsvc.utils.AwsSecretsUtils
 
 import java.security.{KeyFactory, KeyPair}
 import java.security.spec.{PKCS8EncodedKeySpec, X509EncodedKeySpec}
+import java.time.Instant
 import java.util.Base64
 import scala.concurrent.duration.FiniteDuration
 
@@ -34,38 +35,57 @@ case class AwsSecretsManagerKeyConfig(
   algName: String,
   accessExpTime: FiniteDuration,
   refreshExpTime: FiniteDuration,
-  pollTime: Option[FiniteDuration]
+  pollTime: Option[FiniteDuration],
+  keyPhaseOutTime: Option[FiniteDuration]
 ) extends KeyConfig {
 
   private val logger = LoggerFactory.getLogger(classOf[AwsSecretsManagerKeyConfig])
 
   override def keyRotationTime : Option[FiniteDuration] = pollTime
-  override def keyPair(): KeyPair = {
+  override def keyPair(): (KeyPair, Option[KeyPair]) = {
     try {
-      val secrets = AwsSecretsUtils.fetchSecret(secretName, region, Array(privateKeyFieldName, publicKeyFieldName))
-
-      val publicKeySpec: X509EncodedKeySpec = new X509EncodedKeySpec(
-        Base64.getDecoder.decode(
-          secrets(publicKeyFieldName)
-        )
-      )
-      val privateKeySpec: PKCS8EncodedKeySpec = new PKCS8EncodedKeySpec(
-        Base64.getDecoder.decode(
-          secrets(privateKeyFieldName)
-        )
+      val currentSecretsOption = AwsSecretsUtils.fetchSecret(
+        secretName,
+        region,
+        Array(privateKeyFieldName, publicKeyFieldName)
       )
 
-      logger.info("Key Data successfully retrieved and parsed from AWS Secrets Manager")
+      if(currentSecretsOption.isEmpty)
+        throw new Exception("Error retrieving AWSCURRENT key from from AWS Secrets Manager")
 
-      val keyFactory: KeyFactory = KeyFactory.getInstance(jwtAlgorithmToCryptoAlgorithm)
-      new KeyPair(keyFactory.generatePublic(publicKeySpec), keyFactory.generatePrivate(privateKeySpec))
-    }
-    catch {
+      val currentKeyPair = createKeyPair(currentSecretsOption.get.secretValue)
+      logger.info("AWSCURRENT Key Data successfully retrieved and parsed from AWS Secrets Manager")
+
+      val previousSecretsOption =
+        AwsSecretsUtils.fetchSecret(
+        secretName,
+        region,
+        Array(privateKeyFieldName, publicKeyFieldName),
+        Some("AWSPREVIOUS")
+      )
+
+      val previousKeyPair = previousSecretsOption.flatMap { previousSecrets =>
+        try {
+          val keys = createKeyPair(previousSecrets.secretValue)
+          logger.info("AWSPREVIOUS Key Data successfully retrieved and parsed from AWS Secrets Manager")
+          val exp = keyPhaseOutTime.exists(isExpired(previousSecrets.createTime, _))
+          if(exp) { None }
+          else { Some(keys) }
+        } catch {
+          case e: Throwable =>
+            logger.warn(s"Error occurred decoding AWSPREVIOUSKEYS, skipping previous keys.", e)
+            None
+        }
+      }
+
+      (currentKeyPair, previousKeyPair)
+    } catch {
       case e: Throwable =>
         logger.error(s"Error occurred retrieving and decoding keys from AWS Secrets Manager", e)
         throw e
     }
   }
+
   override def throwErrors(): Unit = this.validate().throwOnErrors()
 
   override def validate(): ConfigValidationResult = {
@@ -91,5 +111,27 @@ case class AwsSecretsManagerKeyConfig(
     val awsSecretsResultsMerge = awsSecretsResults.foldLeft[ConfigValidationResult](ConfigValidationSuccess)(ConfigValidationResult.merge)
 
     super.validate().merge(awsSecretsResultsMerge)
+  }
+
+  private def createKeyPair(secretKeys: Map[String, String]): KeyPair = {
+
+    val publicKeySpec: X509EncodedKeySpec = new X509EncodedKeySpec(
+      Base64.getDecoder.decode(
+        secretKeys(publicKeyFieldName)
+      )
+    )
+    val privateKeySpec: PKCS8EncodedKeySpec = new PKCS8EncodedKeySpec(
+      Base64.getDecoder.decode(
+        secretKeys(privateKeyFieldName)
+      )
+    )
+
+    val keyFactory: KeyFactory = KeyFactory.getInstance(jwtAlgorithmToCryptoAlgorithm)
+    new KeyPair(keyFactory.generatePublic(publicKeySpec), keyFactory.generatePrivate(privateKeySpec))
+  }
+
+  private def isExpired(creationTime: Instant, finiteDuration: FiniteDuration): Boolean = {
+    val expirationTime = creationTime.plus(finiteDuration.toMillis, java.time.temporal.ChronoUnit.MILLIS)
+    Instant.now().isAfter(expirationTime)
   }
 }

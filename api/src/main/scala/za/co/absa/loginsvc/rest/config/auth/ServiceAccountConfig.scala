@@ -88,10 +88,15 @@ case class AwsSecretsLdapUserConfig(private val secretName: String,
 
   private def getUsernameAndPasswordFromSecret: (String, String) = {
     try {
-      val secrets = AwsSecretsUtils.fetchSecret(secretName, region, Array(usernameFieldName, passwordFieldName))
-      (secrets(usernameFieldName), secrets(passwordFieldName))
-    }
-    catch {
+      val secretsOption = AwsSecretsUtils.fetchSecret(secretName, region, Array(usernameFieldName, passwordFieldName))
+
+      secretsOption.fold(
+        throw new Exception("Error retrieving username and password from from AWS Secrets Manager")
+      ) { secrets =>
+        (secrets.secretValue(usernameFieldName), secrets.secretValue(passwordFieldName))
+      }
+
+    } catch {
       case e: Throwable =>
         logger.error(s"Error occurred retrieving account data from AWS Secrets Manager", e)
         throw e

@@ -16,13 +16,6 @@
 
 package za.co.absa.loginsvc.rest.model
 
-import com.fasterxml.jackson.annotation.JsonProperty
-import io.swagger.v3.oas.annotations.media.Schema
-import io.swagger.v3.oas.annotations.media.Schema.RequiredMode
+import java.time.Instant
 
-case class PublicKey(
-  @JsonProperty("key")
-  @Schema(example = "ABCDEFGH1234", requiredMode = RequiredMode.REQUIRED,
-    description = "The public key currently signing JWTs")
-  key: String
-) extends AnyVal
+case class AwsSecret(secretValue: Map[String, String], createTime: Instant)

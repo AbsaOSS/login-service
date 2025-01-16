@@ -22,11 +22,17 @@ import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient
 import software.amazon.awssdk.services.secretsmanager.model.{GetSecretValueRequest, GetSecretValueResponse}
+import za.co.absa.loginsvc.rest.model.AwsSecret
 
 object AwsSecretsUtils {
 
   private val logger = LoggerFactory.getLogger(getClass)
-  def fetchSecret(secretName: String, region: String, secretFields: Array[String]): Map[String, String] = {
+  def fetchSecret(
+    secretName: String,
+    region: String,
+    secretFields: Array[String],
+    versionStage: Option[String] = None
+  ): Option[AwsSecret] = {
 
     val default = DefaultCredentialsProvider.create
 
@@ -35,7 +41,9 @@ object AwsSecretsUtils {
       .credentialsProvider(default)
       .build
 
-    val getSecretValueRequest = GetSecretValueRequest.builder.secretId(secretName).build
+    val getSecretValueRequestBuilder = GetSecretValueRequest.builder.secretId(secretName)
+    versionStage.foreach(getSecretValueRequestBuilder.versionStage)
+    val getSecretValueRequest = getSecretValueRequestBuilder.build()
 
     try {
       logger.info("Attempting to fetch secret from AWS Secrets Manager")
@@ -44,14 +52,17 @@ object AwsSecretsUtils {
       logger.info("secret retrieved. Attempting to Parse data")
       val rootNode: JsonNode = new ObjectMapper().readTree(secret)
 
-      secretFields.map(field => {
+      val secretValues = secretFields.map(field => {
         field -> rootNode.get(field).asText()
       }).toMap
+      val createTime = getSecretValueResponse.createdDate()
+
+      Option(AwsSecret(secretValues, createTime))
     }
     catch {
       case e: Throwable =>
-        logger.error(s"Error occurred retrieving and parsing secrets from AWS Secrets Manager", e)
-        throw e
+        logger.warn(s"Error occurred retrieving and parsing secrets from AWS Secrets Manager", e)
+        None
     }
   }
 }

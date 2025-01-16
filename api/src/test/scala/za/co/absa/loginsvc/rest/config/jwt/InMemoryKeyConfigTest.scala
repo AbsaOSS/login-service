@@ -21,7 +21,6 @@ import org.scalatest.matchers.should.Matchers
 import za.co.absa.loginsvc.rest.config.validation.ConfigValidationException
 import za.co.absa.loginsvc.rest.config.validation.ConfigValidationResult.{ConfigValidationError, ConfigValidationSuccess}
 
-import java.util.concurrent.TimeUnit
 import scala.concurrent.duration._
 
 class InMemoryKeyConfigTest extends AnyFlatSpec with Matchers {
@@ -29,7 +28,8 @@ class InMemoryKeyConfigTest extends AnyFlatSpec with Matchers {
   val inMemoryKeyConfig: InMemoryKeyConfig = InMemoryKeyConfig("RS256",
     15.minutes,
     2.hours,
-    Option(30.minutes))
+    Option(30.minutes),
+    Option(15.minutes))
 
   "inMemoryKeyConfig" should "validate expected content" in {
     inMemoryKeyConfig.validate() shouldBe ConfigValidationSuccess
@@ -41,17 +41,32 @@ class InMemoryKeyConfigTest extends AnyFlatSpec with Matchers {
   }
 
   it should "fail on non-negative accessExpTime" in {
-    inMemoryKeyConfig.copy(accessExpTime = FiniteDuration(5, TimeUnit.MILLISECONDS)).validate() shouldBe
+    inMemoryKeyConfig.copy(accessExpTime = 5.milliseconds).validate() shouldBe
       ConfigValidationError(ConfigValidationException(s"accessExpTime must be at least ${KeyConfig.minAccessExpTime}"))
   }
 
   it should "fail on non-negative refreshExpTime" in {
-    inMemoryKeyConfig.copy(refreshExpTime = FiniteDuration(5, TimeUnit.MILLISECONDS)).validate() shouldBe
+    inMemoryKeyConfig.copy(refreshExpTime = 5.milliseconds).validate() shouldBe
       ConfigValidationError(ConfigValidationException(s"refreshExpTime must be at least ${KeyConfig.minRefreshExpTime}"))
   }
 
   it should "fail on non-negative keyRotationTime" in {
-    inMemoryKeyConfig.copy(keyRotationTime = Option(FiniteDuration(5, TimeUnit.MILLISECONDS))).validate() shouldBe
+    inMemoryKeyConfig.copy(keyRotationTime = Option(5.milliseconds), keyPhaseOutTime = None).validate() shouldBe
       ConfigValidationError(ConfigValidationException(s"keyRotationTime must be at least ${KeyConfig.minKeyRotationTime}"))
+  }
+
+  it should "fail on non-negative keyPhaseOutTime" in {
+    inMemoryKeyConfig.copy(keyPhaseOutTime = Option(5.milliseconds)).validate() shouldBe
+      ConfigValidationError(ConfigValidationException(s"keyPhaseOutTime must be at least ${KeyConfig.minKeyPhaseOutTime}"))
+  }
+
+  it should "fail on keyPhaseOutTime being configured without keyRotationTime" in {
+    inMemoryKeyConfig.copy(keyRotationTime = None).validate() shouldBe
+      ConfigValidationError(ConfigValidationException(s"keyPhaseOutTime can only be enable if keyRotationTime is enable!"))
+  }
+
+  it should "fail on keyPhaseOutTime being larger than keyRotationTime" in {
+    inMemoryKeyConfig.copy(keyRotationTime = Option(10.minutes)).validate() shouldBe
+      ConfigValidationError(ConfigValidationException(s"keyPhaseOutTime must be lower than keyRotationTime!"))
   }
 }
