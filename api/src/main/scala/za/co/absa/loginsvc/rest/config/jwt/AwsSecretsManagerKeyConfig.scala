@@ -53,7 +53,8 @@ case class AwsSecretsManagerKeyConfig(
       if(currentSecretsOption.isEmpty)
         throw new Exception("Error retrieving AWSCURRENT key from from AWS Secrets Manager")
 
-      val currentKeyPair = createKeyPair(currentSecretsOption.get.secretValue)
+      val currentSecrets = currentSecretsOption.get
+      val currentKeyPair = createKeyPair(currentSecrets.secretValue)
       logger.info("AWSCURRENT Key Data successfully retrieved and parsed from AWS Secrets Manager")
 
       val previousSecretsOption =
@@ -68,7 +69,7 @@ case class AwsSecretsManagerKeyConfig(
         try {
           val keys = createKeyPair(previousSecrets.secretValue)
           logger.info("AWSPREVIOUS Key Data successfully retrieved and parsed from AWS Secrets Manager")
-          val exp = keyPhaseOutTime.exists(isExpired(previousSecrets.createTime, _))
+          val exp = keyPhaseOutTime.exists(isExpired(currentSecrets.createTime, _))
           if(exp) { None }
           else { Some(keys) }
         } catch {
