@@ -194,8 +194,9 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider, authSearchSe
           logger.info("Keys have been Refreshed")
           jwtConfig.keyPhaseOutTime.foreach { kp => {
             jwtConfig match {
-              case i: InMemoryKeyConfig =>
+              case _: InMemoryKeyConfig =>
                 scheduleKeyPhaseOut(kp)
+              case _ =>
             }
           }}
           primaryKeyPair = newPrimaryKeyPair
