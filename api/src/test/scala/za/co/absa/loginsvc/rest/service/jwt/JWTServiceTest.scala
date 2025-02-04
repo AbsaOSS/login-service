@@ -205,7 +205,7 @@ class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
   def customTimedJwtService(accessExpTime: FiniteDuration, refreshExpTime: FiniteDuration): JWTService = {
     val configP = new JwtConfigProvider {
       override def getJwtKeyConfig: KeyConfig = InMemoryKeyConfig(
-        "RS256", accessExpTime, refreshExpTime, None, None
+        "RS256", accessExpTime, refreshExpTime, None, None, None
       )
     }
 

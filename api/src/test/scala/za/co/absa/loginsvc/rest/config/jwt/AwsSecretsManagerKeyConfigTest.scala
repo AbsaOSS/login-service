@@ -33,7 +33,8 @@ class AwsSecretsManagerKeyConfigTest extends AnyFlatSpec with Matchers {
     15.minutes,
     9.minutes,
     Option(30.minutes),
-    Option(15.minutes))
+    Option(15.minutes),
+    Option(5.minutes))
 
   "awsSecretsManagerKeyConfig" should "validate expected content" in {
     awsSecretsManagerKeyConfig.validate() shouldBe ConfigValidationSuccess
