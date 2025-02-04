@@ -42,7 +42,7 @@ import scala.concurrent.duration.FiniteDuration
 class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider, authSearchService: UserSearchService) {
 
   private val logger = LoggerFactory.getLogger(classOf[JWTService])
-  private val scheduler = new ScheduledThreadPoolExecutor(2, new ThreadFactory {
+  private val scheduler = new ScheduledThreadPoolExecutor(3, new ThreadFactory {
     override def newThread(r: Runnable): Thread = {
       val t = new Thread(r)
       t.setDaemon(true)
@@ -190,12 +190,24 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider, authSearchSe
       val scheduledFuture = scheduler.scheduleAtFixedRate(() => {
         logger.info("Attempting to Refresh for new Keys")
         try {
-          val (newPrimaryKeyPair, newOptionalKeyPair) = jwtConfig.keyPair()
+          var (newPrimaryKeyPair, newOptionalKeyPair) = jwtConfig.keyPair()
           logger.info("Keys have been Refreshed")
           jwtConfig.keyPhaseOutTime.foreach { kp => {
             jwtConfig match {
               case _: InMemoryKeyConfig =>
                 scheduleKeyPhaseOut(kp)
+              case _ =>
+            }
+          }}
+          jwtConfig.keyLayOverTime.foreach { kl => {
+            jwtConfig match {
+              case _: InMemoryKeyConfig =>
+                newOptionalKeyPair.foreach { tok =>
+                  scheduleKeyLayOver(kl)
+                  val temp = tok
+                  newOptionalKeyPair = Some(newPrimaryKeyPair)
+                  newPrimaryKeyPair = temp
+                }
               case _ =>
             }
           }}
@@ -211,7 +223,6 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider, authSearchSe
         refreshTime.toMillis,
         TimeUnit.MILLISECONDS
       )
-
       Runtime.getRuntime.addShutdownHook(new Thread(() => {
         scheduledFuture.cancel(false)
         this.close()
@@ -225,7 +236,23 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider, authSearchSe
         optionalKeyPair = None
       }
     }, phaseOutTime.toMillis, TimeUnit.MILLISECONDS)
+    Runtime.getRuntime.addShutdownHook(new Thread(() => {
+      scheduledFuture.cancel(false)
+      this.close()
+    }))
+  }
 
+  private def scheduleKeyLayOver(layOverTime: FiniteDuration): Unit = {
+    val scheduledFuture = scheduler.schedule(new Runnable {
+      override def run(): Unit = {
+        logger.info("Switching Signing key")
+        optionalKeyPair.foreach { okp =>
+          val temp = okp
+          optionalKeyPair = Some(primaryKeyPair)
+          primaryKeyPair = temp
+        }
+      }
+    }, layOverTime.toMillis, TimeUnit.MILLISECONDS)
     Runtime.getRuntime.addShutdownHook(new Thread(() => {
       scheduledFuture.cancel(false)
       this.close()

@@ -30,7 +30,8 @@ case class InMemoryKeyConfig(
   accessExpTime: FiniteDuration,
   refreshExpTime: FiniteDuration,
   keyRotationTime: Option[FiniteDuration],
-  keyPhaseOutTime: Option[FiniteDuration]
+  keyPhaseOutTime: Option[FiniteDuration],
+  keyLayOverTime: Option[FiniteDuration]
 ) extends KeyConfig {
 
   private var oldKeyPair: Option[KeyPair] = None
@@ -50,7 +51,14 @@ case class InMemoryKeyConfig(
       ConfigValidationError(ConfigValidationException(s"keyPhaseOutTime must be lower than keyRotationTime!"))
     } else ConfigValidationSuccess
 
-    super.validate().merge(keyPhaseOutTimeResult)
+    val keyLayOverTimeResult = if(keyLayOverTime.nonEmpty && keyRotationTime.nonEmpty
+      && keyLayOverTime.get > keyRotationTime.get) {
+      ConfigValidationError(ConfigValidationException(s"keyLayOverTime must be lower than keyRotationTime!"))
+    } else ConfigValidationSuccess
+
+    super.validate()
+      .merge(keyPhaseOutTimeResult)
+      .merge(keyLayOverTimeResult)
   }
 
   override def throwErrors(): Unit = this.validate().throwOnErrors()
