@@ -61,13 +61,28 @@ class AwsSecretsManagerKeyConfigTest extends AnyFlatSpec with Matchers {
   }
 
   it should "fail on non-negative keyPhaseOutTime" in {
-    awsSecretsManagerKeyConfig.copy(keyPhaseOutTime = Option(5.milliseconds)).validate() shouldBe
+    awsSecretsManagerKeyConfig.copy(keyPhaseOutTime = Option(5.milliseconds), keyLayOverTime = None).validate() shouldBe
       ConfigValidationError(ConfigValidationException(s"keyPhaseOutTime must be at least ${KeyConfig.minKeyPhaseOutTime}"))
   }
 
   it should "fail on keyPhaseOutTime being configured without keyRotationTime" in {
-    awsSecretsManagerKeyConfig.copy(pollTime = None).validate() shouldBe
+    awsSecretsManagerKeyConfig.copy(pollTime = None, keyLayOverTime = None).validate() shouldBe
       ConfigValidationError(ConfigValidationException(s"keyPhaseOutTime can only be enable if keyRotationTime is enable!"))
+  }
+
+  it should "fail on non-negative keyLayOverTime" in {
+    awsSecretsManagerKeyConfig.copy(keyLayOverTime = Option(5.milliseconds)).validate() shouldBe
+      ConfigValidationError(ConfigValidationException(s"keyLayOverTime must be at least ${KeyConfig.minKeyLayOverTime}"))
+  }
+
+  it should "fail on keyLayOverTime being configured without keyRotationTime" in {
+    awsSecretsManagerKeyConfig.copy(pollTime = None, keyPhaseOutTime = None).validate() shouldBe
+      ConfigValidationError(ConfigValidationException(s"keyLayOverTime can only be enable if keyRotationTime is enable!"))
+  }
+
+  it should "fail on keyLayOverTime being larger than keyPhaseOutTime" in {
+    awsSecretsManagerKeyConfig.copy(keyPhaseOutTime = Option(4.minutes)).validate() shouldBe
+      ConfigValidationError(ConfigValidationException(s"keyLayOverTime must be lower than keyPhaseOutTime!"))
   }
 
   it should "fail on missing value" in {
