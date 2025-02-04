@@ -80,7 +80,15 @@ case class AwsSecretsManagerKeyConfig(
         }
       }
 
-      (currentKeyPair, previousKeyPair)
+      previousKeyPair.fold {(currentKeyPair, previousKeyPair)} { pk =>
+        val exp = keyLayOverTime.exists(isExpired(currentSecrets.createTime, _))
+        if (exp) {
+          (currentKeyPair, previousKeyPair)
+        }
+        else {
+          (pk, Some(currentKeyPair))
+        }
+      }
     } catch {
       case e: Throwable =>
         logger.error(s"Error occurred retrieving and decoding keys from AWS Secrets Manager", e)
