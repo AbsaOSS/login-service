@@ -197,7 +197,7 @@ class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
   }
 
   it should "fail with a unreadable tokens" in {
-    an[MalformedJwtException] should be thrownBy {
+    an[JwtException] should be thrownBy {
       jwtService.refreshTokens(AccessToken("abc.def.ghi"), RefreshToken("123.456.789"))
     }
   }

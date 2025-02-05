@@ -26,7 +26,7 @@ import za.co.absa.loginsvc.model.User
 import za.co.absa.loginsvc.rest.config.jwt.InMemoryKeyConfig
 import za.co.absa.loginsvc.rest.config.provider.JwtConfigProvider
 import za.co.absa.loginsvc.rest.model.{AccessToken, RefreshToken, Token}
-import za.co.absa.loginsvc.rest.service.jwt.JWTService.extractUserFrom
+import za.co.absa.loginsvc.rest.service.jwt.JWTService.{extractUserFrom, parseWithKeys}
 import za.co.absa.loginsvc.rest.service.search.UserSearchService
 
 import java.security.interfaces.RSAPublicKey
@@ -107,21 +107,28 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider, authSearchSe
   }
 
   def refreshTokens(accessToken: AccessToken, refreshToken: RefreshToken): (AccessToken, RefreshToken) = {
-    val oldAccessJws: Jws[Claims] = Jwts.parserBuilder()
-      .require("type", Token.TokenType.Access.toString)
-      .setSigningKey(primaryKeyPair.getPublic)
-      .setClock(() => Date.from(Instant.now().minus(jwtConfig.refreshExpTime.toJava))) // allowing expired access token - up to refresh token validity window
-      .build()
-      .parseClaimsJws(accessToken.token) // checks requirements: type=access, signature, custom validity window
 
-    val userFromOldAccessToken: User = extractUserFrom(oldAccessJws.getBody)
+    val keyList: List[PublicKey] = List(primaryKeyPair.getPublic) ++ optionalKeyPair.map(_.getPublic).toList
 
-    Jwts.parserBuilder()
-      .require("type", Token.TokenType.Refresh.toString)
-      .requireSubject(userFromOldAccessToken.name)
-      .setSigningKey(primaryKeyPair.getPublic)
-      .build()
-      .parseClaimsJws(refreshToken.token) // checks username, validity, and signature.
+    val oldAccessJws: Option[Jws[Claims]] = parseWithKeys(
+      accessToken,
+      keyList,
+      Token.TokenType.Access.toString,
+      Some(jwtConfig.refreshExpTime)
+    ) // checks requirements: type=access, signature, custom validity window
+
+    if(oldAccessJws.isEmpty)
+      throw new JwtException("Access token is invalid!")
+
+    val userFromOldAccessToken: User = extractUserFrom(oldAccessJws.get.getBody)
+
+    val refreshClaims = parseWithKeys(
+      refreshToken,
+      keyList,
+      Token.TokenType.Refresh.toString
+    )
+    if(refreshClaims.isEmpty)
+      throw new JwtException("refresh Token is invalid!")
 
     val userUpdatedDetails = {
       try {
@@ -280,5 +287,30 @@ object JWTService {
     }.toMap
 
     User(name, groups, optionalAttributes)
+  }
+
+  def parseWithKeys(
+    token: Token,
+    keys: List[PublicKey],
+    accessType: String,
+    clock: Option[FiniteDuration] = None
+  ): Option[Jws[Claims]] = {
+    keys.flatMap { key =>
+      try {
+          val builder = Jwts.parserBuilder()
+            .require("type", accessType)
+            .setSigningKey(key)
+
+        clock.foreach(time => builder.setClock(() => Date.from(Instant.now().minus(time.toJava))))
+
+        Some(builder.build().parseClaimsJws(token.token))
+      } catch {
+        case e: MalformedJwtException =>
+          throw e
+        case e: ExpiredJwtException =>
+          throw e
+        case _: JwtException => None
+      }
+    }.headOption
   }
 }
