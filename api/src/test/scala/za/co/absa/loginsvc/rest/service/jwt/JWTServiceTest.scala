@@ -280,11 +280,11 @@ class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
 
   behavior of "keyRotation"
 
-  it should "rotate an public and private keys after 5 seconds" in {
+  it should "rotate public and private keys after 25 seconds" in {
     val initToken = jwtService.generateAccessToken(userWithoutGroups)
     val initPublicKey = jwtService.publicKeys
 
-    Thread.sleep(6 * 1000)
+    Thread.sleep(26000)
     val refreshedToken = jwtService.generateAccessToken(userWithoutGroups)
 
     assert(parseJWT(initToken).isFailure)
@@ -294,11 +294,11 @@ class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
     assert(initPublicKey._1 == jwtService.publicKeys._2.orNull)
   }
 
-  it should "phase out older keys after 8 seconds" in {
+  it should "phase out older keys after 30 seconds" in {
     val initToken = jwtService.generateAccessToken(userWithoutGroups)
     val initPublicKey = jwtService.publicKeys
 
-    Thread.sleep(6 * 1000)
+    Thread.sleep(26000)
     val refreshedToken = jwtService.generateAccessToken(userWithoutGroups)
 
     assert(parseJWT(initToken).isFailure)
@@ -307,7 +307,28 @@ class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
     assert(initPublicKey._1 != jwtService.publicKeys._1)
     assert(initPublicKey._1 == jwtService.publicKeys._2.orNull)
 
-    Thread.sleep(3 * 1000)
+    Thread.sleep(6000)
     assert(jwtService.publicKeys._2.isEmpty)
+  }
+
+  it should "lay over keys after 25 seconds" in {
+    val initToken = jwtService.generateAccessToken(userWithoutGroups)
+    val initPublicKey = jwtService.publicKeys
+
+    Thread.sleep(21000)
+
+    assert(parseJWT(initToken).isSuccess)
+    assert(initPublicKey != jwtService.publicKeys)
+    assert(initPublicKey._1 == jwtService.publicKeys._1)
+    assert(initPublicKey._1 != jwtService.publicKeys._2.orNull)
+
+    Thread.sleep(6000)
+    val refreshedToken = jwtService.generateAccessToken(userWithoutGroups)
+
+    assert(parseJWT(initToken).isFailure)
+    assert(parseJWT(refreshedToken).isSuccess)
+    assert(initPublicKey != jwtService.publicKeys)
+    assert(initPublicKey._1 != jwtService.publicKeys._1)
+    assert(initPublicKey._1 == jwtService.publicKeys._2.orNull)
   }
 }
