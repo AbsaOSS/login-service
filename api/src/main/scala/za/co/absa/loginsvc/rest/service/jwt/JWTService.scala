@@ -118,7 +118,7 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider, authSearchSe
     ) // checks requirements: type=access, signature, custom validity window
 
     if(oldAccessJws.isEmpty)
-      throw new JwtException("Access token is invalid!")
+      throw new JwtException("Tokens are incompatible with current keys. Please request new Tokens!")
 
     val userFromOldAccessToken: User = extractUserFrom(oldAccessJws.get.getBody)
 
@@ -127,8 +127,9 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider, authSearchSe
       keyList,
       Token.TokenType.Refresh.toString
     )
+
     if(refreshClaims.isEmpty)
-      throw new JwtException("refresh Token is invalid!")
+      throw new JwtException("Tokens are incompatible with current keys. Please request new Tokens!")
 
     val userUpdatedDetails = {
       try {
