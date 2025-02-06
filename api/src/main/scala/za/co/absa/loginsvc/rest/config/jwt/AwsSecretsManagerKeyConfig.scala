@@ -81,8 +81,8 @@ case class AwsSecretsManagerKeyConfig(
       }
 
       previousKeyPair.fold {(currentKeyPair, previousKeyPair)} { pk =>
-        val exp = keyLayOverTime.exists(isExpired(currentSecrets.createTime, _))
-        if (exp) {
+        val exp = keyLayOverTime.exists(!isExpired(currentSecrets.createTime, _))
+        if (!exp) {
           (currentKeyPair, previousKeyPair)
         }
         else {
