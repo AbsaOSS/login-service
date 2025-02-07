@@ -36,7 +36,7 @@ import java.util.Date
 import java.util.concurrent.{ScheduledThreadPoolExecutor, ThreadFactory, TimeUnit}
 import scala.collection.JavaConverters._
 import scala.compat.java8.DurationConverters._
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration.{Duration, FiniteDuration}
 
 @Service
 class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider, authSearchService: UserSearchService) {
@@ -200,13 +200,7 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider, authSearchSe
         try {
           var (newPrimaryKeyPair, newOptionalKeyPair) = jwtConfig.keyPair()
           logger.info("Keys have been Refreshed")
-          jwtConfig.keyPhaseOutTime.foreach { kp => {
-            jwtConfig match {
-              case _: InMemoryKeyConfig =>
-                scheduleKeyPhaseOut(kp)
-              case _ =>
-            }
-          }}
+
           jwtConfig.keyLayOverTime.foreach { kl => {
             jwtConfig match {
               case _: InMemoryKeyConfig =>
@@ -219,6 +213,15 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider, authSearchSe
               case _ =>
             }
           }}
+
+          jwtConfig.keyPhaseOutTime.foreach { kp => {
+            jwtConfig match {
+              case _: InMemoryKeyConfig =>
+                scheduleKeyPhaseOut(kp + jwtConfig.keyLayOverTime.getOrElse(Duration.Zero))
+              case _ =>
+            }
+          }}
+
           primaryKeyPair = newPrimaryKeyPair
           optionalKeyPair = newOptionalKeyPair
         }

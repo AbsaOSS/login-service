@@ -25,7 +25,7 @@ import java.security.{KeyFactory, KeyPair}
 import java.security.spec.{PKCS8EncodedKeySpec, X509EncodedKeySpec}
 import java.time.Instant
 import java.util.Base64
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration.{Duration, FiniteDuration}
 
 case class AwsSecretsManagerKeyConfig(
   secretName: String,
@@ -70,7 +70,8 @@ case class AwsSecretsManagerKeyConfig(
         try {
           val keys = createKeyPair(previousSecrets.secretValue)
           logger.info("AWSPREVIOUS Key Data successfully retrieved and parsed from AWS Secrets Manager")
-          val exp = keyPhaseOutTime.exists(isExpired(currentSecrets.createTime, _))
+          val exp = keyPhaseOutTime.exists(kpot =>
+            isExpired(currentSecrets.createTime, kpot + keyLayOverTime.getOrElse(Duration.Zero)))
           if(exp) { None }
           else { Some(keys) }
         } catch {

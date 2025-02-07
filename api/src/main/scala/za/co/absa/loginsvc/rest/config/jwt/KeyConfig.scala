@@ -88,11 +88,6 @@ trait KeyConfig extends ConfigValidatable {
       ConfigValidationError(ConfigValidationException(s"keyLayOverTime can only be enable if keyRotationTime is enable!"))
     } else ConfigValidationSuccess
 
-    val keyLayOverWithPhaseResult = if(keyLayOverTime.nonEmpty && keyPhaseOutTime.nonEmpty
-      && keyLayOverTime.get > keyPhaseOutTime.get) {
-      ConfigValidationError(ConfigValidationException(s"keyLayOverTime must be lower than keyPhaseOutTime!"))
-    } else ConfigValidationSuccess
-
     if (keyRotationTime.isEmpty) {
       logger.warn("keyRotationTime is not set in config, key-pair will not be rotated!")
     }
@@ -109,7 +104,6 @@ trait KeyConfig extends ConfigValidatable {
       .merge(keyPhaseOutWithRotationResult)
       .merge(keyLayoverTimeResult)
       .merge(keyLayOverWithRotationResult)
-      .merge(keyLayOverWithPhaseResult)
   }
 }
 

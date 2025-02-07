@@ -280,11 +280,11 @@ class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
 
   behavior of "keyRotation"
 
-  it should "rotate public and private keys after 25 seconds" in {
+  it should "rotate public and private keys after 14 seconds" in {
     val initToken = jwtService.generateAccessToken(userWithoutGroups)
     val initPublicKey = jwtService.publicKeys
 
-    Thread.sleep(26000)
+    Thread.sleep(14000)
     val refreshedToken = jwtService.generateAccessToken(userWithoutGroups)
 
     assert(parseJWT(initToken).isFailure)
@@ -294,11 +294,11 @@ class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
     assert(initPublicKey._1 == jwtService.publicKeys._2.orNull)
   }
 
-  it should "phase out older keys after 30 seconds" in {
+  it should "phase out older keys after 17 seconds" in {
     val initToken = jwtService.generateAccessToken(userWithoutGroups)
     val initPublicKey = jwtService.publicKeys
 
-    Thread.sleep(26000)
+    Thread.sleep(14000)
     val refreshedToken = jwtService.generateAccessToken(userWithoutGroups)
 
     assert(parseJWT(initToken).isFailure)
@@ -307,22 +307,22 @@ class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
     assert(initPublicKey._1 != jwtService.publicKeys._1)
     assert(initPublicKey._1 == jwtService.publicKeys._2.orNull)
 
-    Thread.sleep(6000)
+    Thread.sleep(3000)
     assert(jwtService.publicKeys._2.isEmpty)
   }
 
-  it should "lay over keys after 25 seconds" in {
+  it should "lay over keys after 15 seconds" in {
     val initToken = jwtService.generateAccessToken(userWithoutGroups)
     val initPublicKey = jwtService.publicKeys
 
-    Thread.sleep(21000)
+    Thread.sleep(11000)
 
     assert(parseJWT(initToken).isSuccess)
     assert(initPublicKey != jwtService.publicKeys)
     assert(initPublicKey._1 == jwtService.publicKeys._1)
     assert(initPublicKey._1 != jwtService.publicKeys._2.orNull)
 
-    Thread.sleep(6000)
+    Thread.sleep(4000)
     val refreshedToken = jwtService.generateAccessToken(userWithoutGroups)
 
     assert(parseJWT(initToken).isFailure)

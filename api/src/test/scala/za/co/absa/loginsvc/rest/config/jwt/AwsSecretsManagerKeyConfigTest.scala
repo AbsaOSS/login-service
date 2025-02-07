@@ -80,11 +80,6 @@ class AwsSecretsManagerKeyConfigTest extends AnyFlatSpec with Matchers {
       ConfigValidationError(ConfigValidationException(s"keyLayOverTime can only be enable if keyRotationTime is enable!"))
   }
 
-  it should "fail on keyLayOverTime being larger than keyPhaseOutTime" in {
-    awsSecretsManagerKeyConfig.copy(keyPhaseOutTime = Option(4.minutes)).validate() shouldBe
-      ConfigValidationError(ConfigValidationException(s"keyLayOverTime must be lower than keyPhaseOutTime!"))
-  }
-
   it should "fail on missing value" in {
     awsSecretsManagerKeyConfig.copy(secretName = null).validate() shouldBe
       ConfigValidationError(ConfigValidationException("secretName is empty"))
