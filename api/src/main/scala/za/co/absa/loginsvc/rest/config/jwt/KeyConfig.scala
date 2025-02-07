@@ -30,8 +30,8 @@ trait KeyConfig extends ConfigValidatable {
   def accessExpTime: FiniteDuration
   def refreshExpTime: FiniteDuration
   def keyRotationTime: Option[FiniteDuration]
-  def keyPhaseOutTime: Option[FiniteDuration]
   def keyLayOverTime: Option[FiniteDuration]
+  def keyPhaseOutTime: Option[FiniteDuration]
   def keyPair(): (KeyPair, Option[KeyPair])
   def throwErrors(): Unit
 

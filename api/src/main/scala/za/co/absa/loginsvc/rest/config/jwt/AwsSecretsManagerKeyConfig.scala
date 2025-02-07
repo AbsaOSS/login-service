@@ -36,8 +36,8 @@ case class AwsSecretsManagerKeyConfig(
   accessExpTime: FiniteDuration,
   refreshExpTime: FiniteDuration,
   pollTime: Option[FiniteDuration],
-  keyPhaseOutTime: Option[FiniteDuration],
-  keyLayOverTime: Option[FiniteDuration]
+  keyLayOverTime: Option[FiniteDuration],
+  keyPhaseOutTime: Option[FiniteDuration]
 ) extends KeyConfig {
 
   private val logger = LoggerFactory.getLogger(classOf[AwsSecretsManagerKeyConfig])

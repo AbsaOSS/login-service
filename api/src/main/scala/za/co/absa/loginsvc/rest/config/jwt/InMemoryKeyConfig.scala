@@ -30,8 +30,8 @@ case class InMemoryKeyConfig(
   accessExpTime: FiniteDuration,
   refreshExpTime: FiniteDuration,
   keyRotationTime: Option[FiniteDuration],
-  keyPhaseOutTime: Option[FiniteDuration],
-  keyLayOverTime: Option[FiniteDuration]
+  keyLayOverTime: Option[FiniteDuration],
+  keyPhaseOutTime: Option[FiniteDuration]
 ) extends KeyConfig {
 
   private var oldKeyPair: Option[KeyPair] = None
