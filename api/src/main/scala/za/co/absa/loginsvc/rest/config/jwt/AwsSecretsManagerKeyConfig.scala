@@ -19,7 +19,7 @@ package za.co.absa.loginsvc.rest.config.jwt
 import org.slf4j.LoggerFactory
 import za.co.absa.loginsvc.rest.config.validation.{ConfigValidationException, ConfigValidationResult}
 import za.co.absa.loginsvc.rest.config.validation.ConfigValidationResult.{ConfigValidationError, ConfigValidationSuccess}
-import za.co.absa.loginsvc.utils.AwsSecretsUtils
+import za.co.absa.loginsvc.utils.{AwsSecretsUtils, SecretUtil}
 
 import java.security.{KeyFactory, KeyPair}
 import java.security.spec.{PKCS8EncodedKeySpec, X509EncodedKeySpec}
@@ -43,59 +43,7 @@ case class AwsSecretsManagerKeyConfig(
   private val logger = LoggerFactory.getLogger(classOf[AwsSecretsManagerKeyConfig])
 
   override def keyRotationTime : Option[FiniteDuration] = pollTime
-  override def keyPair(): (KeyPair, Option[KeyPair]) = {
-    try {
-      val currentSecretsOption = AwsSecretsUtils.fetchSecret(
-        secretName,
-        region,
-        Array(privateKeyFieldName, publicKeyFieldName)
-      )
-
-      if(currentSecretsOption.isEmpty)
-        throw new Exception("Error retrieving AWSCURRENT key from from AWS Secrets Manager")
-
-      val currentSecrets = currentSecretsOption.get
-      val currentKeyPair = createKeyPair(currentSecrets.secretValue)
-      logger.info("AWSCURRENT Key Data successfully retrieved and parsed from AWS Secrets Manager")
-
-      val previousSecretsOption =
-        AwsSecretsUtils.fetchSecret(
-        secretName,
-        region,
-        Array(privateKeyFieldName, publicKeyFieldName),
-        Some("AWSPREVIOUS")
-      )
-
-      val previousKeyPair = previousSecretsOption.flatMap { previousSecrets =>
-        try {
-          val keys = createKeyPair(previousSecrets.secretValue)
-          logger.info("AWSPREVIOUS Key Data successfully retrieved and parsed from AWS Secrets Manager")
-          val exp = keyPhaseOutTime.exists(kpot =>
-            isExpired(currentSecrets.createTime, kpot + keyLayOverTime.getOrElse(Duration.Zero)))
-          if(exp) { None }
-          else { Some(keys) }
-        } catch {
-          case e: Throwable =>
-            logger.warn(s"Error occurred decoding AWSPREVIOUSKEYS, skipping previous keys.", e)
-            None
-        }
-      }
-
-      previousKeyPair.fold {(currentKeyPair, previousKeyPair)} { pk =>
-        val exp = keyLayOverTime.exists(!isExpired(currentSecrets.createTime, _))
-        if (!exp) {
-          (currentKeyPair, previousKeyPair)
-        }
-        else {
-          (pk, Some(currentKeyPair))
-        }
-      }
-    } catch {
-      case e: Throwable =>
-        logger.error(s"Error occurred retrieving and decoding keys from AWS Secrets Manager", e)
-        throw e
-    }
-  }
+  override def keyPair(): (KeyPair, Option[KeyPair]) = fetchKeySetsFromCloud()
 
   override def throwErrors(): Unit = this.validate().throwOnErrors()
 
@@ -122,6 +70,60 @@ case class AwsSecretsManagerKeyConfig(
     val awsSecretsResultsMerge = awsSecretsResults.foldLeft[ConfigValidationResult](ConfigValidationSuccess)(ConfigValidationResult.merge)
 
     super.validate().merge(awsSecretsResultsMerge)
+  }
+
+  def fetchKeySetsFromCloud(secretsUtils: SecretUtil = AwsSecretsUtils): (KeyPair, Option[KeyPair]) = {
+    try {
+      val currentSecretsOption = secretsUtils.fetchSecret(
+        secretName,
+        region,
+        Array(privateKeyFieldName, publicKeyFieldName)
+      )
+
+      if(currentSecretsOption.isEmpty)
+        throw new Exception("Error retrieving AWSCURRENT key from from AWS Secrets Manager")
+
+      val currentSecrets = currentSecretsOption.get
+      val currentKeyPair = createKeyPair(currentSecrets.secretValue)
+      logger.info("AWSCURRENT Key Data successfully retrieved and parsed from AWS Secrets Manager")
+
+      val previousSecretsOption =
+        secretsUtils.fetchSecret(
+          secretName,
+          region,
+          Array(privateKeyFieldName, publicKeyFieldName),
+          Some("AWSPREVIOUS")
+        )
+
+      val previousKeyPair = previousSecretsOption.flatMap { previousSecrets =>
+        try {
+          val keys = createKeyPair(previousSecrets.secretValue)
+          logger.info("AWSPREVIOUS Key Data successfully retrieved and parsed from AWS Secrets Manager")
+          val keyPhaseOutActive = keyPhaseOutTime.exists(kpot =>
+            isExpired(currentSecrets.createTime, kpot + keyLayOverTime.getOrElse(Duration.Zero)))
+          if(keyPhaseOutActive) { None }
+          else { Some(keys) }
+        } catch {
+          case e: Throwable =>
+            logger.warn(s"Error occurred decoding AWSPREVIOUSKEYS, skipping previous keys.", e)
+            None
+        }
+      }
+
+      previousKeyPair.fold {(currentKeyPair, previousKeyPair)} { pk =>
+        val keyLayOverActive = keyLayOverTime.exists(!isExpired(currentSecrets.createTime, _))
+        if (!keyLayOverActive) {
+          (currentKeyPair, previousKeyPair)
+        }
+        else {
+          (pk, Some(currentKeyPair))
+        }
+      }
+    } catch {
+      case e: Throwable =>
+        logger.error(s"Error occurred retrieving and decoding keys from AWS Secrets Manager", e)
+        throw e
+    }
   }
 
   private def createKeyPair(secretKeys: Map[String, String]): KeyPair = {
