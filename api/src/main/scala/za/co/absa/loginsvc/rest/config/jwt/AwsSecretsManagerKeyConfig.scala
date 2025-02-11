@@ -77,7 +77,8 @@ case class AwsSecretsManagerKeyConfig(
       val currentSecretsOption = secretsUtils.fetchSecret(
         secretName,
         region,
-        Array(privateKeyFieldName, publicKeyFieldName)
+        Array(privateKeyFieldName, publicKeyFieldName),
+        None
       )
 
       if(currentSecretsOption.isEmpty)
