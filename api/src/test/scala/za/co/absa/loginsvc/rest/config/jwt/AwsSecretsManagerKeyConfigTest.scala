@@ -25,7 +25,7 @@ import org.scalatest.matchers.should.Matchers
 import za.co.absa.loginsvc.rest.config.validation.ConfigValidationException
 import za.co.absa.loginsvc.rest.config.validation.ConfigValidationResult.{ConfigValidationError, ConfigValidationSuccess}
 import za.co.absa.loginsvc.rest.model.AwsSecret
-import za.co.absa.loginsvc.utils.SecretUtil
+import za.co.absa.loginsvc.utils.SecretUtils
 
 import java.time.Instant
 import java.util.Base64
@@ -44,22 +44,22 @@ class AwsSecretsManagerKeyConfigTest extends AnyFlatSpec with Matchers {
     Option(15.minutes),
     Option(5.minutes))
 
-  private val mockSecretsUtil = mock(classOf[SecretUtil])
+  private val mockSecretsUtil = mock(classOf[SecretUtils])
   private val currentKeyPair = Keys.keyPairFor(SignatureAlgorithm.RS256)
   private val previousKeyPair = Keys.keyPairFor(SignatureAlgorithm.RS256)
-  private val currentkeyPairMaps = Map(
+  private val currentKeyPairMaps = Map(
     "private" -> Base64.getEncoder.encodeToString(currentKeyPair.getPrivate.getEncoded),
     "public" -> Base64.getEncoder.encodeToString(currentKeyPair.getPublic.getEncoded))
-  private val previouskeyPairMaps = Map(
+  private val previousKeyPairMaps = Map(
     "private" -> Base64.getEncoder.encodeToString(previousKeyPair.getPrivate.getEncoded),
     "public" -> Base64.getEncoder.encodeToString(previousKeyPair.getPublic.getEncoded))
 
-  private val currentSecret = Some(AwsSecret(currentkeyPairMaps, Instant.now()))
-  private val currentSecretAfterLayOver = Some(AwsSecret(currentkeyPairMaps,
+  private val currentSecret = Some(AwsSecret(currentKeyPairMaps, Instant.now()))
+  private val currentSecretAfterLayOver = Some(AwsSecret(currentKeyPairMaps,
     Instant.now().minus(16.minutes.toMillis, java.time.temporal.ChronoUnit.MILLIS)))
-  private val currentSecretAfterPhase = Some(AwsSecret(currentkeyPairMaps,
+  private val currentSecretAfterPhase = Some(AwsSecret(currentKeyPairMaps,
     Instant.now().minus(21.minutes.toMillis, java.time.temporal.ChronoUnit.MILLIS)))
-  private val previousSecret = Some(AwsSecret(previouskeyPairMaps,
+  private val previousSecret = Some(AwsSecret(previousKeyPairMaps,
     Instant.now().minus(6.hours.toMillis, java.time.temporal.ChronoUnit.MILLIS)))
 
   behavior of "validation"
@@ -121,19 +121,19 @@ class AwsSecretsManagerKeyConfigTest extends AnyFlatSpec with Matchers {
     when(mockSecretsUtil.fetchSecret(anyString(),anyString(),any[Array[String]](),eqMatch(Some("AWSPREVIOUS"))))
       .thenReturn(None)
 
-    val keysDuringLayover = awsSecretsManagerKeyConfig.fetchKeySetsFromCloud(mockSecretsUtil)
+    val (currentKey, opPreviousKey) = awsSecretsManagerKeyConfig.fetchKeySetsFromCloud(mockSecretsUtil)
 
-    assert(keysDuringLayover._1.getPrivate == currentKeyPair.getPrivate)
-    assert(keysDuringLayover._1.getPublic == currentKeyPair.getPublic)
-    assert(keysDuringLayover._2.isEmpty)
+    assert(currentKey.getPrivate == currentKeyPair.getPrivate)
+    assert(currentKey.getPublic == currentKeyPair.getPublic)
+    assert(opPreviousKey.isEmpty)
 
     when (mockSecretsUtil.fetchSecret(anyString(),anyString(),any[Array[String]](),eqMatch(None))).thenReturn(currentSecretAfterLayOver)
 
-    val keysAfterLayover = awsSecretsManagerKeyConfig.fetchKeySetsFromCloud(mockSecretsUtil)
+    val (currentKeyAfterLayover, optPreviousKeyAfterLayOver) = awsSecretsManagerKeyConfig.fetchKeySetsFromCloud(mockSecretsUtil)
 
-    assert(keysAfterLayover._1.getPrivate == currentKeyPair.getPrivate)
-    assert(keysAfterLayover._1.getPublic == currentKeyPair.getPublic)
-    assert(keysAfterLayover._2.isEmpty)
+    assert(currentKeyAfterLayover.getPrivate == currentKeyPair.getPrivate)
+    assert(currentKeyAfterLayover.getPublic == currentKeyPair.getPublic)
+    assert(optPreviousKeyAfterLayOver.isEmpty)
   }
 
   it should "not use keyPhaseOut when previousKey is not available" in {
@@ -142,11 +142,11 @@ class AwsSecretsManagerKeyConfigTest extends AnyFlatSpec with Matchers {
     when(mockSecretsUtil.fetchSecret(anyString(),anyString(),any[Array[String]](),eqMatch(Some("AWSPREVIOUS"))))
       .thenReturn(None)
 
-    val keysDuringLayover = awsSecretsManagerKeyConfig.fetchKeySetsFromCloud(mockSecretsUtil)
+    val (currentKey, opPreviousKey) = awsSecretsManagerKeyConfig.fetchKeySetsFromCloud(mockSecretsUtil)
 
-    assert(keysDuringLayover._1.getPrivate == currentKeyPair.getPrivate)
-    assert(keysDuringLayover._1.getPublic == currentKeyPair.getPublic)
-    assert(keysDuringLayover._2.isEmpty)
+    assert(currentKey.getPrivate == currentKeyPair.getPrivate)
+    assert(currentKey.getPublic == currentKeyPair.getPublic)
+    assert(opPreviousKey.isEmpty)
   }
 
   it should "use previousKey during the keyLayOver Period" in {
@@ -155,12 +155,12 @@ class AwsSecretsManagerKeyConfigTest extends AnyFlatSpec with Matchers {
     when(mockSecretsUtil.fetchSecret(anyString(),anyString(),any[Array[String]](),eqMatch(Some("AWSPREVIOUS"))))
       .thenReturn(previousSecret)
 
-    val keysDuringLayover = awsSecretsManagerKeyConfig.fetchKeySetsFromCloud(mockSecretsUtil)
+    val (currentKey, opPreviousKey) = awsSecretsManagerKeyConfig.fetchKeySetsFromCloud(mockSecretsUtil)
 
-    assert(keysDuringLayover._1.getPrivate == previousKeyPair.getPrivate)
-    assert(keysDuringLayover._1.getPublic == previousKeyPair.getPublic)
-    assert(keysDuringLayover._2.get.getPrivate == currentKeyPair.getPrivate)
-    assert(keysDuringLayover._2.get.getPublic == currentKeyPair.getPublic)
+    assert(currentKey.getPrivate == previousKeyPair.getPrivate)
+    assert(currentKey.getPublic == previousKeyPair.getPublic)
+    assert(opPreviousKey.get.getPrivate == currentKeyPair.getPrivate)
+    assert(opPreviousKey.get.getPublic == currentKeyPair.getPublic)
   }
 
   it should "use currentKey after the keyLayOver Period" in {
@@ -169,12 +169,12 @@ class AwsSecretsManagerKeyConfigTest extends AnyFlatSpec with Matchers {
     when(mockSecretsUtil.fetchSecret(anyString(),anyString(),any[Array[String]](),eqMatch(Some("AWSPREVIOUS"))))
       .thenReturn(previousSecret)
 
-    val keysDuringLayover = awsSecretsManagerKeyConfig.fetchKeySetsFromCloud(mockSecretsUtil)
+    val (currentKey, opPreviousKey) = awsSecretsManagerKeyConfig.fetchKeySetsFromCloud(mockSecretsUtil)
 
-    assert(keysDuringLayover._1.getPrivate == currentKeyPair.getPrivate)
-    assert(keysDuringLayover._1.getPublic == currentKeyPair.getPublic)
-    assert(keysDuringLayover._2.get.getPrivate == previousKeyPair.getPrivate)
-    assert(keysDuringLayover._2.get.getPublic == previousKeyPair.getPublic)
+    assert(currentKey.getPrivate == currentKeyPair.getPrivate)
+    assert(currentKey.getPublic == currentKeyPair.getPublic)
+    assert(opPreviousKey.get.getPrivate == previousKeyPair.getPrivate)
+    assert(opPreviousKey.get.getPublic == previousKeyPair.getPublic)
   }
 
   it should "set the previousKey to None after the keyPhaseOut period" in {
@@ -183,10 +183,10 @@ class AwsSecretsManagerKeyConfigTest extends AnyFlatSpec with Matchers {
     when(mockSecretsUtil.fetchSecret(anyString(),anyString(),any[Array[String]](),eqMatch(Some("AWSPREVIOUS"))))
       .thenReturn(previousSecret)
 
-    val keysDuringLayover = awsSecretsManagerKeyConfig.fetchKeySetsFromCloud(mockSecretsUtil)
+    val (currentKey, opPreviousKey) = awsSecretsManagerKeyConfig.fetchKeySetsFromCloud(mockSecretsUtil)
 
-    assert(keysDuringLayover._1.getPrivate == currentKeyPair.getPrivate)
-    assert(keysDuringLayover._1.getPublic == currentKeyPair.getPublic)
-    assert(keysDuringLayover._2.isEmpty)
+    assert(currentKey.getPrivate == currentKeyPair.getPrivate)
+    assert(currentKey.getPublic == currentKeyPair.getPublic)
+    assert(opPreviousKey.isEmpty)
   }
 }

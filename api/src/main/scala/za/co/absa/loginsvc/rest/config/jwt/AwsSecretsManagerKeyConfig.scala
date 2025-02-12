@@ -19,7 +19,7 @@ package za.co.absa.loginsvc.rest.config.jwt
 import org.slf4j.LoggerFactory
 import za.co.absa.loginsvc.rest.config.validation.{ConfigValidationException, ConfigValidationResult}
 import za.co.absa.loginsvc.rest.config.validation.ConfigValidationResult.{ConfigValidationError, ConfigValidationSuccess}
-import za.co.absa.loginsvc.utils.{AwsSecretsUtils, SecretUtil}
+import za.co.absa.loginsvc.utils.{AwsSecretsUtils, SecretUtils}
 
 import java.security.{KeyFactory, KeyPair}
 import java.security.spec.{PKCS8EncodedKeySpec, X509EncodedKeySpec}
@@ -72,7 +72,16 @@ case class AwsSecretsManagerKeyConfig(
     super.validate().merge(awsSecretsResultsMerge)
   }
 
-  def fetchKeySetsFromCloud(secretsUtils: SecretUtil = AwsSecretsUtils): (KeyPair, Option[KeyPair]) = {
+  /**
+   * Fetches the keypair used for generating Java Web Tokens from Cloud.
+   * Fetches both the current as well as previously rotated keys if available.
+   *
+   * @param secretsUtils The methods used to fetch the keys.
+   *                     Mainly used for testing and can be left empty to use the default value in standard use.
+   * @return The most current KeyPair as well as an option of the previously rotated keypair if available.
+   *         The order and availability of the keys are dependant on key-lay-over and key-phase-out if enabled.
+   */
+  private[jwt] def fetchKeySetsFromCloud(secretsUtils: SecretUtils = AwsSecretsUtils): (KeyPair, Option[KeyPair]) = {
     try {
       val currentSecretsOption = secretsUtils.fetchSecret(
         secretName,
