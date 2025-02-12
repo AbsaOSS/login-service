@@ -219,8 +219,8 @@ Using the above values, the optional properties will give the following effect a
 ```
 t=0: keys rotation happens
 t=0-14m: layover period: old key from before rotation is still used for signing. Both public keys available from public-keys endpoint.
-t=15-29m: layover is over: new key from after rotation is used for signing. Both public keys available from public-keys endpoint.
-t=30m+: phase-out happens: new key from after rotation is used for signing. Old Key is no longer available from public-keys endpoint.
+t=15-44m: layover is over: new key from after rotation is used for signing. Both public keys available from public-keys endpoint.
+t=45m+: phase-out happens: new key from after rotation is used for signing. Old Key is no longer available from public-keys endpoint.
 ```
 These properties cannot be enabled if rotation is not enabled. The combined values of these properties cannot be higher than the rotation time.
 
@@ -261,8 +261,8 @@ There are a few important configuration values to be provided:
 ```
 t=0: keys rotation happens
 t=0-14m: layover period: old key from before rotation is still used for signing. Both public keys available from public-keys endpoint.
-t=15-29m: layover is over: new key from after rotation is used for signing. Both public keys available from public-keys endpoint.
-t=30m+: phase-out happens: new key from after rotation is used for signing. Old Key is no longer available from public-keys endpoint.
+t=15-44m: layover is over: new key from after rotation is used for signing. Both public keys available from public-keys endpoint.
+t=45m+: phase-out happens: new key from after rotation is used for signing. Old Key is no longer available from public-keys endpoint.
 ```
 These properties cannot be enabled if polling is not enabled.
   
