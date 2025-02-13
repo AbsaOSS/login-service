@@ -24,7 +24,7 @@ import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient
 import software.amazon.awssdk.services.secretsmanager.model.{GetSecretValueRequest, GetSecretValueResponse}
 import za.co.absa.loginsvc.rest.model.AwsSecret
 
-object AwsSecretsUtils {
+object AwsSecretsUtils extends SecretUtils {
 
   private val logger = LoggerFactory.getLogger(getClass)
   def fetchSecret(
@@ -65,4 +65,13 @@ object AwsSecretsUtils {
         None
     }
   }
+}
+
+trait SecretUtils {
+  def fetchSecret(
+    secretName: String,
+    region: String,
+    secretFields: Array[String],
+    versionStage: Option[String] = None
+  ): Option[AwsSecret]
 }

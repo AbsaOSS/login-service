@@ -30,6 +30,7 @@ trait KeyConfig extends ConfigValidatable {
   def accessExpTime: FiniteDuration
   def refreshExpTime: FiniteDuration
   def keyRotationTime: Option[FiniteDuration]
+  def keyLayOverTime: Option[FiniteDuration]
   def keyPhaseOutTime: Option[FiniteDuration]
   def keyPair(): (KeyPair, Option[KeyPair])
   def throwErrors(): Unit
@@ -79,6 +80,14 @@ trait KeyConfig extends ConfigValidatable {
       ConfigValidationError(ConfigValidationException(s"keyPhaseOutTime can only be enable if keyRotationTime is enable!"))
     } else ConfigValidationSuccess
 
+    val keyLayoverTimeResult = if (keyLayOverTime.nonEmpty && keyLayOverTime.get < KeyConfig.minKeyLayOverTime) {
+      ConfigValidationError(ConfigValidationException(s"keyLayOverTime must be at least ${KeyConfig.minKeyLayOverTime}"))
+    } else ConfigValidationSuccess
+
+    val keyLayOverWithRotationResult = if (keyLayOverTime.nonEmpty && keyRotationTime.isEmpty) {
+      ConfigValidationError(ConfigValidationException(s"keyLayOverTime can only be enable if keyRotationTime is enable!"))
+    } else ConfigValidationSuccess
+
     if (keyRotationTime.isEmpty) {
       logger.warn("keyRotationTime is not set in config, key-pair will not be rotated!")
     }
@@ -93,6 +102,8 @@ trait KeyConfig extends ConfigValidatable {
       .merge(keyRotationTimeResult)
       .merge(keyPhaseOutTimeResult)
       .merge(keyPhaseOutWithRotationResult)
+      .merge(keyLayoverTimeResult)
+      .merge(keyLayOverWithRotationResult)
   }
 }
 
@@ -101,4 +112,5 @@ object KeyConfig {
   val minRefreshExpTime: FiniteDuration = 10.milliseconds
   val minKeyRotationTime: FiniteDuration = 10.milliseconds
   val minKeyPhaseOutTime: FiniteDuration = 10.milliseconds
+  val minKeyLayOverTime: FiniteDuration = 10.milliseconds
 }

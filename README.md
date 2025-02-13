@@ -8,7 +8,9 @@ AbsaOSS Common Login service using JWT Public key signatures
 To interact with the service, most notable endpoints are
  - `/token/generate` to generate access & refresh tokens
  - `/token/refresh` to obtain a new access token with a still-valid refresh token
- - `/token/public-key` to obtain public key to verify tokens including their validity window
+ - `/token/public-key` to obtain the currently signing public key to verify tokens including their validity window
+ - `/token/public-keys` to obtain all available public keys including the current and previously rotated keys.
+ - `/token/public-key-jwks` gives same data as `/token/public-keys` but in the form of a JSON Web Key Set.
 
 Please, refer to the [API documentation](#api-documentation) below for details of the endpoints.
 
@@ -201,13 +203,27 @@ loginsvc:
          access-exp-time: 15min
          refresh-exp-time: 9h
          key-rotation-time: 9h
+         key-lay-over-time: 15min
+         key-phase-out-time: 30min
          alg-name: "RS256"
 ```
 There are a few important configuration values to be provided:
 - `access-exp-time` which indicates how long an access token is valid for,
 - `refresh-exp-time` which indicates how long a refresh token is valid for,
 - Optional property: `key-rotation-time` which indicates how often Key pairs are rotated. Rotation will be disabled if missing.
+- Optional property: `key-lay-over-time` which indicates a delay after rotation before using the newly created key for signing. Lay-over will be disabled if missing.
+- Optional property: `key-phase-out-time` which indicates the time to phase out the older key. Timer is scheduled after `key-lay-over-time` if enabled. Phase-out will be disabled if missing.
 - `alg-name` which indicates which algorithm is used to encode your keys.
+
+Using the above values, the optional properties will give the following effect after the 1st rotation at 9 hours:
+```
+t=0: keys rotation happens
+t=0-14m: layover period: old key from before rotation is still used for signing. Both public keys available from public-keys endpoint.
+t=15-44m: layover is over: new key from after rotation is used for signing. Both public keys available from public-keys endpoint.
+t=45m+: phase-out happens: new key from after rotation is used for signing. Old Key is no longer available from public-keys endpoint.
+```
+These properties cannot be enabled if rotation is not enabled. The combined values of these properties cannot be higher than the rotation time.
+
 
 To setup for AWS Secrets Manager, your config should look like so:
 ```
@@ -222,6 +238,8 @@ loginsvc:
         access-exp-time: 15min
         refresh-exp-time: 9h
         poll-time: 30min
+        key-lay-over-time: 15min
+        key-phase-out-time: 30min
         alg-name: "RS256"
 ```
 Your AWS Secret must have at least 2 fields which correspond to the above properties:
@@ -236,7 +254,17 @@ There are a few important configuration values to be provided:
 - `access-exp-time` which indicates how long an access token is valid for,
 - `refresh-exp-time` which indicates how long a refresh token is valid for,
 - Optional property:`poll-time` which indicates how often key pairs (`private-key-field-name` and `public-key-field-name`) are polled and fetched from AWS Secrets Manager. Polling will be disabled if missing.
+- Optional property: `key-lay-over-time` which indicates a delay after rotation before using the newly created key for signing. Lay-over will be disabled if missing.
+- Optional property: `key-phase-out-time` which indicates the time to phase out the older key. Timer is scheduled after `key-lay-over-time` if enabled. Phase-out will be disabled if missing.
 - `alg-name` which indicates which algorithm is used to encode your keys.
+  Using the above values, the optional properties will give the following effect after the 1st rotation at 9 hours:
+```
+t=0: keys rotation happens
+t=0-14m: layover period: old key from before rotation is still used for signing. Both public keys available from public-keys endpoint.
+t=15-44m: layover is over: new key from after rotation is used for signing. Both public keys available from public-keys endpoint.
+t=45m+: phase-out happens: new key from after rotation is used for signing. Old Key is no longer available from public-keys endpoint.
+```
+These properties cannot be enabled if polling is not enabled.
   
 Please note that only one configuration option (`loginsvc.rest.jwt.{aws-secrets-manager|generate-in-memory}`) can be used at a time.
 

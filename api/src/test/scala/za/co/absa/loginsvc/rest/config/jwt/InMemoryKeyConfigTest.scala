@@ -29,7 +29,8 @@ class InMemoryKeyConfigTest extends AnyFlatSpec with Matchers {
     15.minutes,
     2.hours,
     Option(30.minutes),
-    Option(15.minutes))
+    Option(15.minutes),
+    Option(5.minutes))
 
   "inMemoryKeyConfig" should "validate expected content" in {
     inMemoryKeyConfig.validate() shouldBe ConfigValidationSuccess
@@ -51,22 +52,33 @@ class InMemoryKeyConfigTest extends AnyFlatSpec with Matchers {
   }
 
   it should "fail on non-negative keyRotationTime" in {
-    inMemoryKeyConfig.copy(keyRotationTime = Option(5.milliseconds), keyPhaseOutTime = None).validate() shouldBe
+    inMemoryKeyConfig.copy(keyRotationTime = Option(5.milliseconds), keyPhaseOutTime = None, keyLayOverTime = None).validate() shouldBe
       ConfigValidationError(ConfigValidationException(s"keyRotationTime must be at least ${KeyConfig.minKeyRotationTime}"))
   }
 
   it should "fail on non-negative keyPhaseOutTime" in {
-    inMemoryKeyConfig.copy(keyPhaseOutTime = Option(5.milliseconds)).validate() shouldBe
+    inMemoryKeyConfig.copy(keyPhaseOutTime = Option(5.milliseconds), keyLayOverTime = None).validate() shouldBe
       ConfigValidationError(ConfigValidationException(s"keyPhaseOutTime must be at least ${KeyConfig.minKeyPhaseOutTime}"))
   }
 
   it should "fail on keyPhaseOutTime being configured without keyRotationTime" in {
-    inMemoryKeyConfig.copy(keyRotationTime = None).validate() shouldBe
+    inMemoryKeyConfig.copy(keyRotationTime = None, keyLayOverTime = None).validate() shouldBe
       ConfigValidationError(ConfigValidationException(s"keyPhaseOutTime can only be enable if keyRotationTime is enable!"))
   }
 
-  it should "fail on keyPhaseOutTime being larger than keyRotationTime" in {
-    inMemoryKeyConfig.copy(keyRotationTime = Option(10.minutes)).validate() shouldBe
-      ConfigValidationError(ConfigValidationException(s"keyPhaseOutTime must be lower than keyRotationTime!"))
+  it should "fail on non-negative keyLayOverTime" in {
+    inMemoryKeyConfig.copy(keyLayOverTime = Option(5.milliseconds)).validate() shouldBe
+      ConfigValidationError(ConfigValidationException(s"keyLayOverTime must be at least ${KeyConfig.minKeyLayOverTime}"))
   }
+
+  it should "fail on keyLayOverTime being configured without keyRotationTime" in {
+    inMemoryKeyConfig.copy(keyRotationTime = None, keyPhaseOutTime = None).validate() shouldBe
+      ConfigValidationError(ConfigValidationException(s"keyLayOverTime can only be enable if keyRotationTime is enable!"))
+  }
+
+  it should "fail on keyLayOverTime + keyPhaseOutTime being larger than keyRotationTime" in {
+    inMemoryKeyConfig.copy(keyRotationTime = Option(10.minutes)).validate() shouldBe
+      ConfigValidationError(ConfigValidationException(s"keyLayOverTime + keyPhaseOutTime must be lower than keyRotationTime!"))
+  }
+
 }

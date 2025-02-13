@@ -26,7 +26,7 @@ import za.co.absa.loginsvc.model.User
 import za.co.absa.loginsvc.rest.config.jwt.InMemoryKeyConfig
 import za.co.absa.loginsvc.rest.config.provider.JwtConfigProvider
 import za.co.absa.loginsvc.rest.model.{AccessToken, RefreshToken, Token}
-import za.co.absa.loginsvc.rest.service.jwt.JWTService.extractUserFrom
+import za.co.absa.loginsvc.rest.service.jwt.JWTService.{extractUserFrom, parseWithKeys}
 import za.co.absa.loginsvc.rest.service.search.UserSearchService
 
 import java.security.interfaces.RSAPublicKey
@@ -36,13 +36,13 @@ import java.util.Date
 import java.util.concurrent.{ScheduledThreadPoolExecutor, ThreadFactory, TimeUnit}
 import scala.collection.JavaConverters._
 import scala.compat.java8.DurationConverters._
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration.{Duration, FiniteDuration}
 
 @Service
 class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider, authSearchService: UserSearchService) {
 
   private val logger = LoggerFactory.getLogger(classOf[JWTService])
-  private val scheduler = new ScheduledThreadPoolExecutor(2, new ThreadFactory {
+  private val scheduler = new ScheduledThreadPoolExecutor(3, new ThreadFactory {
     override def newThread(r: Runnable): Thread = {
       val t = new Thread(r)
       t.setDaemon(true)
@@ -107,21 +107,29 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider, authSearchSe
   }
 
   def refreshTokens(accessToken: AccessToken, refreshToken: RefreshToken): (AccessToken, RefreshToken) = {
-    val oldAccessJws: Jws[Claims] = Jwts.parserBuilder()
-      .require("type", Token.TokenType.Access.toString)
-      .setSigningKey(primaryKeyPair.getPublic)
-      .setClock(() => Date.from(Instant.now().minus(jwtConfig.refreshExpTime.toJava))) // allowing expired access token - up to refresh token validity window
-      .build()
-      .parseClaimsJws(accessToken.token) // checks requirements: type=access, signature, custom validity window
 
-    val userFromOldAccessToken: User = extractUserFrom(oldAccessJws.getBody)
+    val keyList: List[PublicKey] = List(primaryKeyPair.getPublic) ++ optionalKeyPair.map(_.getPublic).toList
 
-    Jwts.parserBuilder()
-      .require("type", Token.TokenType.Refresh.toString)
-      .requireSubject(userFromOldAccessToken.name)
-      .setSigningKey(primaryKeyPair.getPublic)
-      .build()
-      .parseClaimsJws(refreshToken.token) // checks username, validity, and signature.
+    val oldAccessJws: Option[Jws[Claims]] = parseWithKeys(
+      accessToken,
+      keyList,
+      Token.TokenType.Access.toString,
+      Some(jwtConfig.refreshExpTime)
+    ) // checks requirements: type=access, signature, custom validity window
+
+    if(oldAccessJws.isEmpty)
+      throw new JwtException("Tokens are incompatible with current keys. Please request new Tokens!")
+
+    val userFromOldAccessToken: User = extractUserFrom(oldAccessJws.get.getBody)
+
+    val refreshClaims = parseWithKeys(
+      refreshToken,
+      keyList,
+      Token.TokenType.Refresh.toString
+    )
+
+    if(refreshClaims.isEmpty)
+      throw new JwtException("Tokens are incompatible with current keys. Please request new Tokens!")
 
     val userUpdatedDetails = {
       try {
@@ -190,15 +198,30 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider, authSearchSe
       val scheduledFuture = scheduler.scheduleAtFixedRate(() => {
         logger.info("Attempting to Refresh for new Keys")
         try {
-          val (newPrimaryKeyPair, newOptionalKeyPair) = jwtConfig.keyPair()
+          var (newPrimaryKeyPair, newOptionalKeyPair) = jwtConfig.keyPair()
           logger.info("Keys have been Refreshed")
-          jwtConfig.keyPhaseOutTime.foreach { kp => {
+
+          jwtConfig.keyLayOverTime.foreach { kl => {
             jwtConfig match {
               case _: InMemoryKeyConfig =>
-                scheduleKeyPhaseOut(kp)
+                newOptionalKeyPair.foreach { tok =>
+                  scheduleKeyLayOver(kl)
+                  val temp = tok
+                  newOptionalKeyPair = Some(newPrimaryKeyPair)
+                  newPrimaryKeyPair = temp
+                }
               case _ =>
             }
           }}
+
+          jwtConfig.keyPhaseOutTime.foreach { kp => {
+            jwtConfig match {
+              case _: InMemoryKeyConfig =>
+                scheduleKeyPhaseOut(kp + jwtConfig.keyLayOverTime.getOrElse(Duration.Zero))
+              case _ =>
+            }
+          }}
+
           primaryKeyPair = newPrimaryKeyPair
           optionalKeyPair = newOptionalKeyPair
         }
@@ -211,7 +234,6 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider, authSearchSe
         refreshTime.toMillis,
         TimeUnit.MILLISECONDS
       )
-
       Runtime.getRuntime.addShutdownHook(new Thread(() => {
         scheduledFuture.cancel(false)
         this.close()
@@ -225,7 +247,23 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider, authSearchSe
         optionalKeyPair = None
       }
     }, phaseOutTime.toMillis, TimeUnit.MILLISECONDS)
+    Runtime.getRuntime.addShutdownHook(new Thread(() => {
+      scheduledFuture.cancel(false)
+      this.close()
+    }))
+  }
 
+  private def scheduleKeyLayOver(layOverTime: FiniteDuration): Unit = {
+    val scheduledFuture = scheduler.schedule(new Runnable {
+      override def run(): Unit = {
+        logger.info("Switching Signing key")
+        optionalKeyPair.foreach { okp =>
+          val temp = okp
+          optionalKeyPair = Some(primaryKeyPair)
+          primaryKeyPair = temp
+        }
+      }
+    }, layOverTime.toMillis, TimeUnit.MILLISECONDS)
     Runtime.getRuntime.addShutdownHook(new Thread(() => {
       scheduledFuture.cancel(false)
       this.close()
@@ -253,5 +291,30 @@ object JWTService {
     }.toMap
 
     User(name, groups, optionalAttributes)
+  }
+
+  def parseWithKeys(
+    token: Token,
+    keys: List[PublicKey],
+    accessType: String,
+    clock: Option[FiniteDuration] = None
+  ): Option[Jws[Claims]] = {
+    keys.flatMap { key =>
+      try {
+          val builder = Jwts.parserBuilder()
+            .require("type", accessType)
+            .setSigningKey(key)
+
+        clock.foreach(time => builder.setClock(() => Date.from(Instant.now().minus(time.toJava))))
+
+        Some(builder.build().parseClaimsJws(token.token))
+      } catch {
+        case e: MalformedJwtException =>
+          throw e
+        case e: ExpiredJwtException =>
+          throw e
+        case _: JwtException => None
+      }
+    }.headOption
   }
 }

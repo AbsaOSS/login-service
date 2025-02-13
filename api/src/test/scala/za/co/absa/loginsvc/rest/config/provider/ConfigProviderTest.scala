@@ -37,7 +37,9 @@ class ConfigProviderTest extends AnyFlatSpec with Matchers  {
     keyConfig.algName shouldBe "RS256"
     keyConfig.accessExpTime shouldBe FiniteDuration(15, TimeUnit.MINUTES)
     keyConfig.refreshExpTime shouldBe FiniteDuration(10, TimeUnit.HOURS)
-    keyConfig.keyRotationTime.get shouldBe FiniteDuration(5, TimeUnit.SECONDS)
+    keyConfig.keyRotationTime.get shouldBe FiniteDuration(10, TimeUnit.SECONDS)
+    keyConfig.keyLayOverTime.get shouldBe FiniteDuration(3, TimeUnit.SECONDS)
+    keyConfig.keyPhaseOutTime.get shouldBe FiniteDuration(3, TimeUnit.SECONDS)
   }
 
   "The ldapConfig properties" should "Match" in {

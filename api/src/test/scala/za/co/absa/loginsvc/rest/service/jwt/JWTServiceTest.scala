@@ -197,7 +197,7 @@ class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
   }
 
   it should "fail with a unreadable tokens" in {
-    an[MalformedJwtException] should be thrownBy {
+    an[JwtException] should be thrownBy {
       jwtService.refreshTokens(AccessToken("abc.def.ghi"), RefreshToken("123.456.789"))
     }
   }
@@ -205,7 +205,7 @@ class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
   def customTimedJwtService(accessExpTime: FiniteDuration, refreshExpTime: FiniteDuration): JWTService = {
     val configP = new JwtConfigProvider {
       override def getJwtKeyConfig: KeyConfig = InMemoryKeyConfig(
-        "RS256", accessExpTime, refreshExpTime, None, None
+        "RS256", accessExpTime, refreshExpTime, None, None, None
       )
     }
 
@@ -280,11 +280,11 @@ class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
 
   behavior of "keyRotation"
 
-  it should "rotate an public and private keys after 5 seconds" in {
+  it should "rotate public and private keys after 14 seconds" in {
     val initToken = jwtService.generateAccessToken(userWithoutGroups)
     val initPublicKey = jwtService.publicKeys
 
-    Thread.sleep(6 * 1000)
+    Thread.sleep(14000)
     val refreshedToken = jwtService.generateAccessToken(userWithoutGroups)
 
     assert(parseJWT(initToken).isFailure)
@@ -294,11 +294,11 @@ class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
     assert(initPublicKey._1 == jwtService.publicKeys._2.orNull)
   }
 
-  it should "phase out older keys after 8 seconds" in {
+  it should "phase out older keys after 17 seconds" in {
     val initToken = jwtService.generateAccessToken(userWithoutGroups)
     val initPublicKey = jwtService.publicKeys
 
-    Thread.sleep(6 * 1000)
+    Thread.sleep(14000)
     val refreshedToken = jwtService.generateAccessToken(userWithoutGroups)
 
     assert(parseJWT(initToken).isFailure)
@@ -307,7 +307,28 @@ class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
     assert(initPublicKey._1 != jwtService.publicKeys._1)
     assert(initPublicKey._1 == jwtService.publicKeys._2.orNull)
 
-    Thread.sleep(3 * 1000)
+    Thread.sleep(3000)
     assert(jwtService.publicKeys._2.isEmpty)
+  }
+
+  it should "lay over keys after 15 seconds" in {
+    val initToken = jwtService.generateAccessToken(userWithoutGroups)
+    val initPublicKey = jwtService.publicKeys
+
+    Thread.sleep(11000)
+
+    assert(parseJWT(initToken).isSuccess)
+    assert(initPublicKey != jwtService.publicKeys)
+    assert(initPublicKey._1 == jwtService.publicKeys._1)
+    assert(initPublicKey._1 != jwtService.publicKeys._2.orNull)
+
+    Thread.sleep(4000)
+    val refreshedToken = jwtService.generateAccessToken(userWithoutGroups)
+
+    assert(parseJWT(initToken).isFailure)
+    assert(parseJWT(refreshedToken).isSuccess)
+    assert(initPublicKey != jwtService.publicKeys)
+    assert(initPublicKey._1 != jwtService.publicKeys._1)
+    assert(initPublicKey._1 == jwtService.publicKeys._2.orNull)
   }
 }
