@@ -78,7 +78,7 @@ case class AwsSecretsManagerKeyConfig(
    *
    * @param secretsUtils The methods used to fetch the keys.
    *                     Mainly used for testing and can be left empty to use the default value in standard use.
-   * @return The most current KeyPair as well as an option of the previously rotated keypair if available.
+   * @return A tuple of the most current KeyPair as well as an option of the previously rotated keypair if available.
    *         The order and availability of the keys are dependant on key-lay-over and key-phase-out if enabled.
    */
   private[jwt] def fetchKeySetsFromCloud(secretsUtils: SecretUtils = AwsSecretsUtils): (KeyPair, Option[KeyPair]) = {
