@@ -16,6 +16,8 @@
 
 package za.co.absa.loginclient.authorization
 
+import com.google.common.cache.CacheBuilder
+import org.springframework.cache.concurrent.ConcurrentMapCache
 import org.springframework.security.oauth2.jwt.{JwtDecoder, NimbusJwtDecoder}
 import za.co.absa.loginclient.publicKeyRetrieval.model.PublicKey
 
@@ -23,6 +25,7 @@ import java.security.KeyFactory
 import java.security.interfaces.RSAPublicKey
 import java.security.spec.X509EncodedKeySpec
 import java.util.Base64
+import java.util.concurrent.TimeUnit
 
 object JwtDecoderProvider {
 
@@ -59,9 +62,16 @@ object JwtDecoderProvider {
    * Currently implemented by NimbusJwtDecoder.withJwkSetUri(JWKS_PATH).
    *
    * @param host The URL from which the public key will be fetched.
+   * @param refreshPeriod Optional value in seconds for caching keys from host. Default cache expiry is 5 minutes.
    * @return A JwtDecoder instance initialized with the public key fetched from the URL.
    */
-  def getDecoderFromURL(host: String): JwtDecoder = {
-    NimbusJwtDecoder.withJwkSetUri(s"$host/token/public-key-jwks").build()
+  def getDecoderFromURL(host: String, refreshPeriod: Option[Int] = None): JwtDecoder = {
+    val decoderBuilder = NimbusJwtDecoder.withJwkSetUri(s"$host/token/public-key-jwks")
+    refreshPeriod.foreach(rp => decoderBuilder.cache(
+      new ConcurrentMapCache("jwkSetCache", CacheBuilder.newBuilder()
+        .expireAfterWrite(rp, TimeUnit.SECONDS)
+        .build().asMap(), false)))
+
+    decoderBuilder.build()
   }
 }

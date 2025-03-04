@@ -17,10 +17,12 @@
 package za.co.absa.loginclient.publicKeyRetrieval.client
 
 import com.google.gson.JsonParser
-import com.nimbusds.jose.jwk.JWK
+import com.nimbusds.jose.jwk.{JWK, JWKSet}
 import org.slf4j.{Logger, LoggerFactory}
 import org.springframework.web.client.RestTemplate
 import za.co.absa.loginclient.publicKeyRetrieval.model.PublicKey
+
+import scala.jdk.CollectionConverters.iterableAsScalaIterableConverter
 
 /**
  * This class is used to retrieve the public key from the issuer.
@@ -33,7 +35,7 @@ case class PublicKeyRetrievalClient(host: String) {
   private val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
   /**
-   * Retrieves the public key from the login service as a PublicKey object.
+   * Retrieves the current public key from the login service as a PublicKey object.
    * This method fetches the public key used for JWT verification and returns it as a PublicKey object.
    * Key is available as a string within the object
    *
@@ -47,16 +49,34 @@ case class PublicKeyRetrievalClient(host: String) {
   }
 
   /**
-   * Retrieves the public key from the login service in JWK (JSON Web Key) format.
-   * This method fetches the public key used for JWT verification and returns it in JWK format.
+   * Retrieves all available public keys from the login service as a set of PublicKey objects.
+   * This method fetches the public keys used for JWT verification and returns it as a set of PublicKey objects.
+   * Keys are available as a string within the objects.
    *
-   * @return A String containing the public key in JWK (JSON Web Key) format retrieved from the login service.
+   * @return A set of PublicKey objects representing the public keys retrieved from the login service.
    */
-  def getPublicKeyJwk: JWK = {
+  def getPublicKeys: Set[PublicKey] = {
+    val issuerUri = s"$host/token/public-keys"
+    val jsonString = fetchToken(issuerUri)
+    val publicKeyStrings = JsonParser.parseString(jsonString).getAsJsonObject.getAsJsonArray("keys")
+      .asScala.map {jsonElement =>
+        val obj = jsonElement.getAsJsonObject
+        obj.entrySet().asScala.head.getValue.getAsString
+      }.toSet
+
+    publicKeyStrings.map { publicKeyString => PublicKey(publicKeyString) }
+  }
+
+  /**
+   * Retrieves the public key from the login service as a JWK (JSON Web Key) set.
+   * This method fetches the public key(s) used for JWT verification and returns it as a JWK Set format.
+   *
+   * @return A String containing the public key(s) in JWK (JSON Web Key) format retrieved from the login service.
+   */
+  def getPublicKeyJwk: JWKSet = {
     val issuerUri = s"$host/token/public-key-jwks"
     val jsonString = fetchToken(issuerUri)
-    val jwkString = JsonParser.parseString(jsonString).getAsJsonObject.get("key").getAsString
-    JWK.parse(jwkString)
+    JWKSet.parse(jsonString)
   }
 
   private def fetchToken(issuerUri: String): String = {

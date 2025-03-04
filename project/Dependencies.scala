@@ -38,6 +38,7 @@ object Dependencies {
   lazy val jacksonModuleScala = "com.fasterxml.jackson.module" %% "jackson-module-scala" % Versions.jacksonModuleScala
   lazy val jacksonDatabind = "com.fasterxml.jackson.core" % "jackson-databind" % Versions.jacksonDatabind
   lazy val javaCompat = "org.scala-lang.modules" %% "scala-java8-compat" % Versions.javaCompat
+  lazy val javaCollectionConverter = "org.scala-lang.modules" %% "scala-collection-compat" % "2.11.0"
 
   lazy val springBootWeb =            "org.springframework.boot" % "spring-boot-starter-web" % Versions.springBoot
   lazy val springBootTomcat =         "org.springframework.boot" % "spring-boot-starter-tomcat" % Versions.springBoot % Provided
@@ -52,6 +53,7 @@ object Dependencies {
   lazy val jjwtJackson = "io.jsonwebtoken" % "jjwt-jackson" % Versions.jjwt % Runtime
 
   lazy val jsonParser = "com.google.code.gson" % "gson" % "2.10.1"
+  lazy val cacheBuilder = "com.google.guava" % "guava" % "33.0.0-jre"
 
   lazy val jwtDecoder = "org.springframework.security" % "spring-security-oauth2-jose" % Versions.spring
   lazy val nimbusJoseJwt = "com.nimbusds" % "nimbus-jose-jwt" % Versions.nimbusJoseJwt
@@ -116,6 +118,7 @@ object Dependencies {
 
   def clientLibDependencies: Seq[ModuleID] = Seq(
     javaCompat,
+    javaCollectionConverter,
 
     nimbusJoseJwt,
     jwtDecoder,
@@ -125,6 +128,7 @@ object Dependencies {
     jjwtJackson,
 
     jsonParser,
+    cacheBuilder,
 
     springBootWeb,
     springBootSecurity,
