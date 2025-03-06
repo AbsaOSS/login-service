@@ -22,7 +22,8 @@ import org.slf4j.{Logger, LoggerFactory}
 import org.springframework.web.client.RestTemplate
 import za.co.absa.loginclient.publicKeyRetrieval.model.PublicKey
 
-import scala.jdk.CollectionConverters.{asScalaIteratorConverter, iterableAsScalaIterableConverter}
+import scala.collection.convert.ImplicitConversions.`collection AsScalaIterable`
+import scala.jdk.CollectionConverters.iterableAsScalaIterableConverter
 
 /**
  * This class is used to retrieve the public key from the issuer.
@@ -58,8 +59,8 @@ case class PublicKeyRetrievalClient(host: String) {
   def getPublicKeys: Set[PublicKey] = {
     val issuerUri = s"$host/token/public-keys"
     val jsonString = fetchToken(issuerUri)
-    val publicKeyIterable = JsonParser.parseString(jsonString).getAsJsonObject.getAsJsonArray("keys").iterator()
-    val publicKeyStrings = publicKeyIterable.asScala.map {jsonElement =>
+    val publicKeyList = JsonParser.parseString(jsonString).getAsJsonObject.getAsJsonArray("keys").asList()
+    val publicKeyStrings = publicKeyList.map {jsonElement =>
         val obj = jsonElement.getAsJsonObject
         obj.entrySet().asScala.head.getValue.getAsString
       }.toSet
