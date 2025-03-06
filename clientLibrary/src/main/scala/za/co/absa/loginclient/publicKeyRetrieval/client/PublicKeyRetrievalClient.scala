@@ -62,7 +62,7 @@ case class PublicKeyRetrievalClient(host: String) {
     val publicKeyList = JsonParser.parseString(jsonString).getAsJsonObject.getAsJsonArray("keys").asList()
     val publicKeyStrings = publicKeyList.map {jsonElement =>
         val obj = jsonElement.getAsJsonObject
-        obj.entrySet().asScala.head.getValue.getAsString
+        obj.entrySet().head.getValue.getAsString
       }.toSet
 
     publicKeyStrings.map { publicKeyString => PublicKey(publicKeyString) }
