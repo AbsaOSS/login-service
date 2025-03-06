@@ -23,7 +23,6 @@ import org.springframework.web.client.RestTemplate
 import za.co.absa.loginclient.publicKeyRetrieval.model.PublicKey
 
 import scala.collection.convert.ImplicitConversions.`collection AsScalaIterable`
-import scala.jdk.CollectionConverters.iterableAsScalaIterableConverter
 
 /**
  * This class is used to retrieve the public key from the issuer.
