@@ -218,7 +218,7 @@ case class TokenRetrievalClient(host: String) {
     }
   }
 
-  private def fetchToken(issuerUri: String, keyTabLocation: Option[String], userPrincipal: Option[String]): String = {
+  private[client] def fetchToken(issuerUri: String, keyTabLocation: Option[String], userPrincipal: Option[String]): String = {
 
     val restTemplate: KerberosRestTemplate = (keyTabLocation, userPrincipal) match {
       case (Some(_), Some(_)) =>

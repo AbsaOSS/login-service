@@ -135,7 +135,8 @@ object Dependencies {
 
     springSecurityKerberosClient,
 
-    scalaTest
+    scalaTest,
+    springBootTest
   )
 
   def exampleDependencies: Seq[ModuleID] = Seq(

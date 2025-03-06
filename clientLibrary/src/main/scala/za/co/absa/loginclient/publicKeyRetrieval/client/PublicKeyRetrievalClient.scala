@@ -17,7 +17,7 @@
 package za.co.absa.loginclient.publicKeyRetrieval.client
 
 import com.google.gson.JsonParser
-import com.nimbusds.jose.jwk.{JWK, JWKSet}
+import com.nimbusds.jose.jwk.JWKSet
 import org.slf4j.{Logger, LoggerFactory}
 import org.springframework.web.client.RestTemplate
 import za.co.absa.loginclient.publicKeyRetrieval.model.PublicKey
@@ -79,7 +79,7 @@ case class PublicKeyRetrievalClient(host: String) {
     JWKSet.parse(jsonString)
   }
 
-  private def fetchToken(issuerUri: String): String = {
+  private[client] def fetchToken(issuerUri: String): String = {
 
     logger.info(s"Fetching token from $issuerUri")
 
