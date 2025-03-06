@@ -4,7 +4,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import za.co.absa.loginclient.tokenRetrieval.model.{AccessToken, RefreshToken}
 
-class TokenRetrievalClientTests extends AnyFlatSpec with Matchers{
+class TokenRetrievalClientTest extends AnyFlatSpec with Matchers{
 
   private val dummyUri = "https://example.com"
   private val dummyUser = "exampleUser"

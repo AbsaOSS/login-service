@@ -4,7 +4,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import za.co.absa.loginclient.publicKeyRetrieval.model.PublicKey
 
-class PublicKeyRetrievalClientTests extends AnyFlatSpec with Matchers{
+class PublicKeyRetrievalClientTest extends AnyFlatSpec with Matchers{
 
   private val dummyUri = "https://example.com"
 
