@@ -17,6 +17,7 @@
 package za.co.absa.loginsvc.rest.provider.ad.ldap
 
 import org.slf4j.LoggerFactory
+import org.springframework.ldap.{CommunicationException, NamingException, ServiceUnavailableException}
 import org.springframework.ldap.core.DirContextOperations
 import org.springframework.security.authentication.{AuthenticationProvider, BadCredentialsException, UsernamePasswordAuthenticationToken}
 import org.springframework.security.core.userdetails.UserDetails
@@ -29,6 +30,10 @@ import za.co.absa.loginsvc.rest.provider.ConfigUsersAuthenticationProvider
 
 import java.util
 import scala.collection.JavaConverters._
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
+import scala.util.{Failure, Success, Try}
 
 /**
  * Enhances ActiveDirectoryLdapAuthenticationProvider from Spring Security LDAP library
@@ -53,7 +58,7 @@ class ActiveDirectoryLDAPAuthenticationProvider(config: ActiveDirectoryLDAPConfi
     logger.info(s"Login of user $username via LDAP")
 
     val fromBase = try {
-       baseImplementation.authenticate(authentication)
+       retryAuthAsync(3, 100, authentication)
     } catch {
       case bc: BadCredentialsException =>
         logger.error(s"Login of user $username: ${bc.getMessage}", bc)
@@ -79,6 +84,29 @@ class ActiveDirectoryLDAPAuthenticationProvider(config: ActiveDirectoryLDAPConfi
 
   override def supports(authentication: Class[_]): Boolean = baseImplementation.supports(authentication)
 
+  private def retryAuthAsync(times: Int, delayMs: Int, authentication: Authentication): Authentication = {
+    def attempt(n: Int): Future[Authentication] = Future {
+      Try(baseImplementation.authenticate(authentication)) match {
+        case Success(auth) => auth
+        case Failure(ex) if isRetryableException(ex) && n < times =>
+          println(s"AD authentication failed on attempt $n: ${ex.getMessage}. Retrying in ${delayMs}ms...")
+          Thread.sleep(delayMs * n) // Delays before retrying
+          Await.result(attempt(n + 1), Duration.Inf)
+        case Failure(ex: BadCredentialsException) =>
+          println("Authentication failed: Bad credentials. No retry.")
+          throw ex
+        case Failure(ex) => throw ex
+      }
+    }
+    Await.result(attempt(1), Duration.Inf)
+  }
+
+  private def isRetryableException(ex: Throwable): Boolean = {
+    ex match {
+      case _: ServiceUnavailableException | _: CommunicationException | _: NamingException => true
+      case _ => false
+    }
+  }
 
   private case class UserDetailsWithExtras(userDetails: UserDetails, extraAttributes: Map[String, Option[AnyRef]]) extends UserDetails {
     override def getAuthorities: util.Collection[_ <: GrantedAuthority] = userDetails.getAuthorities
