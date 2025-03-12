@@ -35,6 +35,7 @@ case class ActiveDirectoryLDAPConfig(domain: String,
                                      order: Int,
                                      serviceAccount: ServiceAccountConfig,
                                      enableKerberos: Option[KerberosConfig],
+                                     LdapRetry: Option[LdapRetryConfig],
                                      attributes: Option[Map[String, String]])
   extends ConfigValidatable with ConfigOrdering
 {
@@ -69,9 +70,27 @@ case class ActiveDirectoryLDAPConfig(domain: String,
         case Some(x) => x.validate()
         case None => ConfigValidationSuccess
       }
-      requiredResults.merge(kerberosResults)
+      val retryResults = LdapRetry match {
+        case Some(x) => x.validate()
+        case None => ConfigValidationSuccess
+      }
+      requiredResults.merge(kerberosResults).merge(retryResults)
     }
     else ConfigValidationSuccess
+  }
+}
+
+case class LdapRetryConfig(attempts: Int, delayMs: Int) extends ConfigValidatable {
+  override def validate(): ConfigValidationResult = {
+    val results = Seq(
+      Option(attempts)
+        .map(_ => ConfigValidationSuccess)
+        .getOrElse(ConfigValidationError(ConfigValidationException("attempts is empty"))),
+      Option(delayMs)
+        .map(_ => ConfigValidationSuccess)
+        .getOrElse(ConfigValidationError(ConfigValidationException("delayMs is empty")))
+    )
+    results.foldLeft[ConfigValidationResult](ConfigValidationSuccess)(ConfigValidationResult.merge)
   }
 }
 
@@ -89,7 +108,6 @@ trait LdapUser extends ConfigValidatable {
         .map(_ => ConfigValidationSuccess)
         .getOrElse(ConfigValidationError(ConfigValidationException("password is empty")))
     )
-
     results.foldLeft[ConfigValidationResult](ConfigValidationSuccess)(ConfigValidationResult.merge)
   }
 }

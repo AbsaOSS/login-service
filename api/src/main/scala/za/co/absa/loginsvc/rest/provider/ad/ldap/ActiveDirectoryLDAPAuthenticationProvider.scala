@@ -17,7 +17,6 @@
 package za.co.absa.loginsvc.rest.provider.ad.ldap
 
 import org.slf4j.LoggerFactory
-import org.springframework.ldap.{CommunicationException, NamingException, ServiceUnavailableException}
 import org.springframework.ldap.core.DirContextOperations
 import org.springframework.security.authentication.{AuthenticationProvider, BadCredentialsException, UsernamePasswordAuthenticationToken}
 import org.springframework.security.core.userdetails.UserDetails
@@ -26,7 +25,6 @@ import org.springframework.security.ldap.authentication.ad.{ActiveDirectoryLdapA
 import org.springframework.security.ldap.userdetails.LdapUserDetailsMapper
 import za.co.absa.loginsvc.model.User
 import za.co.absa.loginsvc.rest.config.auth.ActiveDirectoryLDAPConfig
-import za.co.absa.loginsvc.rest.provider.ConfigUsersAuthenticationProvider
 
 import java.util
 import scala.collection.JavaConverters._
@@ -57,18 +55,9 @@ class ActiveDirectoryLDAPAuthenticationProvider(config: ActiveDirectoryLDAPConfi
     val username = authentication.getName
     logger.info(s"Login of user $username via LDAP")
 
-    val fromBase = try {
-       retryAuthAsync(3, 100, authentication)
-    } catch {
-      case bc: BadCredentialsException =>
-        logger.error(s"Login of user $username: ${bc.getMessage}", bc)
-        throw new BadCredentialsException(bc.getMessage) // rethrow, but strip trace - no need to pollute logs
-
-      case re: RuntimeException => // other exception
-        logger.error(s"Login of user $username: ${re.getMessage}", re)
-        re.printStackTrace()
-        throw re // rethrow, just get info to logs
-    }
+    val fromBase = config.LdapRetry
+      .fold(singleAttemptAuth(authentication))(x =>
+        retryAuthAsync(x.attempts, x.delayMs, authentication))
 
     val fromBasePrincipal = fromBase.getPrincipal.asInstanceOf[UserDetailsWithExtras]
     val principal = User(
@@ -84,18 +73,36 @@ class ActiveDirectoryLDAPAuthenticationProvider(config: ActiveDirectoryLDAPConfi
 
   override def supports(authentication: Class[_]): Boolean = baseImplementation.supports(authentication)
 
-  private def retryAuthAsync(times: Int, delayMs: Int, authentication: Authentication): Authentication = {
+  private def singleAttemptAuth(authentication: Authentication): Authentication = {
+    try {
+      baseImplementation.authenticate(authentication)
+    } catch {
+      case bc: BadCredentialsException =>
+        logger.error(s"Login of user ${authentication.getName}: ${bc.getMessage}", bc)
+        throw new BadCredentialsException(bc.getMessage)
+
+      case re: RuntimeException =>
+        logger.error(s"Login of user ${authentication.getName}: ${re.getMessage}", re)
+        re.printStackTrace()
+        throw re
+    }
+  }
+
+  private def retryAuthAsync(attempts: Int, delayMs: Int, authentication: Authentication): Authentication = {
     def attempt(n: Int): Future[Authentication] = Future {
       Try(baseImplementation.authenticate(authentication)) match {
         case Success(auth) => auth
-        case Failure(ex) if isRetryableException(ex) && n < times =>
-          println(s"AD authentication failed on attempt $n: ${ex.getMessage}. Retrying in ${delayMs}ms...")
-          Thread.sleep(delayMs * n) // Delays before retrying
+        case Failure(ex) if isRetryableException(ex) && n < attempts =>
+          logger.error(s"AD authentication failed on attempt $n: ${ex.getMessage}. Retrying in ${delayMs}ms...")
+          Thread.sleep(delayMs * n)
           Await.result(attempt(n + 1), Duration.Inf)
         case Failure(ex: BadCredentialsException) =>
-          println("Authentication failed: Bad credentials. No retry.")
+          logger.error(s"Login of user ${authentication.getName}: ${ex.getMessage}", ex)
+          throw new BadCredentialsException(ex.getMessage)
+        case Failure(ex) =>
+          logger.error(s"Login of user ${authentication.getName}: ${ex.getMessage}", ex)
+          ex.printStackTrace()
           throw ex
-        case Failure(ex) => throw ex
       }
     }
     Await.result(attempt(1), Duration.Inf)
@@ -103,8 +110,8 @@ class ActiveDirectoryLDAPAuthenticationProvider(config: ActiveDirectoryLDAPConfi
 
   private def isRetryableException(ex: Throwable): Boolean = {
     ex match {
-      case _: ServiceUnavailableException | _: CommunicationException | _: NamingException => true
-      case _ => false
+      case _: BadCredentialsException => false
+      case _ => true
     }
   }
 

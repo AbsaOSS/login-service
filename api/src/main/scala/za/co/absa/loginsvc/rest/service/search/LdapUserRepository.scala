@@ -25,22 +25,24 @@ import javax.naming.Context
 import javax.naming.directory.{Attributes, DirContext, SearchControls, SearchResult}
 import javax.naming.ldap.{Control, InitialLdapContext, PagedResultsControl}
 import scala.collection.JavaConverters.enumerationAsScalaIteratorConverter
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.util.{Failure, Success, Try}
 
 class LdapUserRepository(activeDirectoryLDAPConfig: ActiveDirectoryLDAPConfig)
   extends UserRepository {
 
   private val logger = LoggerFactory.getLogger(classOf[LdapUserRepository])
+  private val serviceAccount = activeDirectoryLDAPConfig.serviceAccount
+  private val retryConfig = activeDirectoryLDAPConfig.LdapRetry
+  private val context = getDirContext(serviceAccount.username, serviceAccount.password)
 
   def searchForUser(username: String): Option[User] = {
     logger.info(s"Searching for user in Ldap: $username")
-    val serviceAccount = activeDirectoryLDAPConfig.serviceAccount
-    val context = getDirContext(serviceAccount.username, serviceAccount.password)
     try {
-      val users = context
-        .search(activeDirectoryLDAPConfig.domain.split("\\.").map(part => s"dc=$part").mkString(","),
-          activeDirectoryLDAPConfig.searchFilter.replace("{1}", username),
-          getSimpleSearchControls)
-        .asScala.filter(filterSearchResults).map(resultToUserEntry).toList
+      val users = retryConfig.fold(contextSearch(username))(x =>
+        retrySearchAsync(x.attempts, x.delayMs, username))
 
       if (users.nonEmpty) {
         logger.info(s"User found in Ldap: $username")
@@ -104,5 +106,30 @@ class LdapUserRepository(activeDirectoryLDAPConfig: ActiveDirectoryLDAPConfig)
       claimName -> value
     }
     User(username, groups, extraAttributes)
+  }
+
+  private def retrySearchAsync(attempts: Int, delayMs: Int, username: String): List[User] = {
+    def attempt(n: Int): Future[List[User]] = Future {
+      Try(contextSearch(username)) match {
+        case Success(searchResults) => searchResults
+        case Failure(ex) if n < attempts =>
+          logger.error(s"AD authentication failed on attempt $n: ${ex.getMessage}. Retrying in ${delayMs}ms...")
+          Thread.sleep(delayMs * n)
+          Await.result(attempt(n + 1), Duration.Inf)
+        case Failure(ex) =>
+          logger.error(s"Search of user ${username}: ${ex.getMessage}", ex)
+          ex.printStackTrace()
+          throw ex
+      }
+    }
+    Await.result(attempt(1), Duration.Inf)
+  }
+
+  private def contextSearch(username: String): List[User] = {
+    context
+      .search(activeDirectoryLDAPConfig.domain.split("\\.").map(part => s"dc=$part").mkString(","),
+        activeDirectoryLDAPConfig.searchFilter.replace("{1}", username),
+        getSimpleSearchControls)
+      .asScala.filter(filterSearchResults).map(resultToUserEntry).toList
   }
 }
