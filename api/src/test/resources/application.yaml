@@ -23,6 +23,9 @@ loginsvc:
             in-config-account:
               username: "svc-ldap"
               password: "password"
+          ldap-retry:
+            attempts: 1
+            delay-ms: 10
           attributes:
             mail: "email"
             displayname: "displayname"

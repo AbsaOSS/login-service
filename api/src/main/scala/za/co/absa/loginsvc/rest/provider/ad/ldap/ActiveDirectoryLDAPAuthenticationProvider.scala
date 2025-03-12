@@ -55,7 +55,7 @@ class ActiveDirectoryLDAPAuthenticationProvider(config: ActiveDirectoryLDAPConfi
     val username = authentication.getName
     logger.info(s"Login of user $username via LDAP")
 
-    val fromBase = config.LdapRetry
+    val fromBase = config.ldapRetry
       .fold(singleAttemptAuth(authentication))(x =>
         retryAuthAsync(x.attempts, x.delayMs, authentication))
 

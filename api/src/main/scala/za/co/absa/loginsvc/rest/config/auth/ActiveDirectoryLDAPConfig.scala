@@ -35,7 +35,7 @@ case class ActiveDirectoryLDAPConfig(domain: String,
                                      order: Int,
                                      serviceAccount: ServiceAccountConfig,
                                      enableKerberos: Option[KerberosConfig],
-                                     LdapRetry: Option[LdapRetryConfig],
+                                     ldapRetry: Option[LdapRetryConfig],
                                      attributes: Option[Map[String, String]])
   extends ConfigValidatable with ConfigOrdering
 {
@@ -70,7 +70,7 @@ case class ActiveDirectoryLDAPConfig(domain: String,
         case Some(x) => x.validate()
         case None => ConfigValidationSuccess
       }
-      val retryResults = LdapRetry match {
+      val retryResults = ldapRetry match {
         case Some(x) => x.validate()
         case None => ConfigValidationSuccess
       }
@@ -83,12 +83,14 @@ case class ActiveDirectoryLDAPConfig(domain: String,
 case class LdapRetryConfig(attempts: Int, delayMs: Int) extends ConfigValidatable {
   override def validate(): ConfigValidationResult = {
     val results = Seq(
-      Option(attempts)
-        .map(_ => ConfigValidationSuccess)
-        .getOrElse(ConfigValidationError(ConfigValidationException("attempts is empty"))),
-      Option(delayMs)
-        .map(_ => ConfigValidationSuccess)
-        .getOrElse(ConfigValidationError(ConfigValidationException("delayMs is empty")))
+      attempts match {
+        case x if x >= 1 => ConfigValidationSuccess
+        case _ => ConfigValidationError(ConfigValidationException("attempts is less than 1"))
+      },
+      delayMs match {
+        case x if x >= 10 => ConfigValidationSuccess
+        case _ => ConfigValidationError(ConfigValidationException("delayMs is less than 10ms"))
+      }
     )
     results.foldLeft[ConfigValidationResult](ConfigValidationSuccess)(ConfigValidationResult.merge)
   }

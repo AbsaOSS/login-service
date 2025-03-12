@@ -18,13 +18,12 @@ package za.co.absa.loginsvc.rest.config.provider
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import za.co.absa.loginsvc.rest.config.auth.{ActiveDirectoryLDAPConfig, UsersConfig}
+import za.co.absa.loginsvc.rest.config.auth.{ActiveDirectoryLDAPConfig, LdapRetryConfig, UsersConfig}
 import za.co.absa.loginsvc.rest.config.BaseConfig
 import za.co.absa.loginsvc.rest.config.jwt.KeyConfig
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.FiniteDuration
-
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.FiniteDuration
 
@@ -51,6 +50,7 @@ class ConfigProviderTest extends AnyFlatSpec with Matchers  {
     activeDirectoryLDAPConfig.serviceAccount.username shouldBe "CN=svc-ldap,OU=Users,OU=Accounts,DC=domain,DC=subdomain,DC=com"
     activeDirectoryLDAPConfig.serviceAccount.password shouldBe "password"
     activeDirectoryLDAPConfig.enableKerberos shouldBe None
+    activeDirectoryLDAPConfig.ldapRetry shouldBe Some(LdapRetryConfig(1, 10))
     activeDirectoryLDAPConfig.attributes shouldBe Some(Map("mail" -> "email", "displayname" -> "displayname"))
   }
 

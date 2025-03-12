@@ -45,6 +45,14 @@ class ActiveDirectoryLDAPConfigTest extends AnyFlatSpec with Matchers {
       ConfigValidationError(ConfigValidationException("searchFilter is empty"))
   }
 
+  it should "fail on retryLdap missing parameters" in {
+    ldapCfg.copy(ldapRetry = Some(LdapRetryConfig(1, 0))).validate() shouldBe
+      ConfigValidationError(ConfigValidationException("delayMs is less than 10ms"))
+
+    ldapCfg.copy(ldapRetry = Some(LdapRetryConfig(0, 10))).validate() shouldBe
+      ConfigValidationError(ConfigValidationException("attempts is less than 1"))
+  }
+
   it should "pass validation if disabled despite missing values" in {
     ActiveDirectoryLDAPConfig(null, null, null, 0, null, None, None, None).validate() shouldBe ConfigValidationSuccess
   }

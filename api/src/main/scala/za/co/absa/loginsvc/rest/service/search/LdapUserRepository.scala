@@ -35,7 +35,7 @@ class LdapUserRepository(activeDirectoryLDAPConfig: ActiveDirectoryLDAPConfig)
 
   private val logger = LoggerFactory.getLogger(classOf[LdapUserRepository])
   private val serviceAccount = activeDirectoryLDAPConfig.serviceAccount
-  private val retryConfig = activeDirectoryLDAPConfig.LdapRetry
+  private val retryConfig = activeDirectoryLDAPConfig.ldapRetry
   private val context = getDirContext(serviceAccount.username, serviceAccount.password)
 
   def searchForUser(username: String): Option[User] = {
