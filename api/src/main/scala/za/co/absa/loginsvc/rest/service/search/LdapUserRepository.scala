@@ -36,13 +36,13 @@ class LdapUserRepository(activeDirectoryLDAPConfig: ActiveDirectoryLDAPConfig)
   private val logger = LoggerFactory.getLogger(classOf[LdapUserRepository])
   private val serviceAccount = activeDirectoryLDAPConfig.serviceAccount
   private val retryConfig = activeDirectoryLDAPConfig.ldapRetry
-  private val context = getDirContext(serviceAccount.username, serviceAccount.password)
 
   def searchForUser(username: String): Option[User] = {
     logger.info(s"Searching for user in Ldap: $username")
+    val context = getDirContext(serviceAccount.username, serviceAccount.password)
     try {
-      val users = retryConfig.fold(contextSearch(username))(x =>
-        retrySearchAsync(x.attempts, x.delayMs, username))
+      val users = retryConfig.fold(contextSearch(username, context))(x =>
+        retrySearchAsync(x.attempts, x.delayMs, username, context))
 
       if (users.nonEmpty) {
         logger.info(s"User found in Ldap: $username")
@@ -108,9 +108,9 @@ class LdapUserRepository(activeDirectoryLDAPConfig: ActiveDirectoryLDAPConfig)
     User(username, groups, extraAttributes)
   }
 
-  private def retrySearchAsync(attempts: Int, delayMs: Int, username: String): List[User] = {
+  private def retrySearchAsync(attempts: Int, delayMs: Int, username: String, context: DirContext): List[User] = {
     def attempt(n: Int): Future[List[User]] = Future {
-      Try(contextSearch(username)) match {
+      Try(contextSearch(username, context)) match {
         case Success(searchResults) => searchResults
         case Failure(ex) if n <= attempts =>
           logger.error(s"AD authentication failed on attempt $n: ${ex.getMessage}. Retrying in ${delayMs * n}ms...")
@@ -125,7 +125,7 @@ class LdapUserRepository(activeDirectoryLDAPConfig: ActiveDirectoryLDAPConfig)
     Await.result(attempt(1), Duration.Inf)
   }
 
-  private def contextSearch(username: String): List[User] = {
+  private def contextSearch(username: String, context: DirContext): List[User] = {
     context
       .search(activeDirectoryLDAPConfig.domain.split("\\.").map(part => s"dc=$part").mkString(","),
         activeDirectoryLDAPConfig.searchFilter.replace("{1}", username),
