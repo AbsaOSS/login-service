@@ -14,7 +14,7 @@ loginsvc:
     auth:
       provider:
         ldap:
-          order: 2
+          order: 0
           domain: "some.domain.com"
           url: "ldaps://some.domain.com:636/"
           search-filter: "(samaccountname={1})"
