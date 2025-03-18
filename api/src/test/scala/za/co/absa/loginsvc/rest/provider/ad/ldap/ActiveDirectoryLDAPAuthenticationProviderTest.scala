@@ -19,7 +19,6 @@ package za.co.absa.loginsvc.rest.provider.ad.ldap
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.{mock, times, verify, when}
 import org.mockito.invocation.InvocationOnMock
-import org.mockito.stubbing.Answer
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import org.springframework.security.authentication.{
@@ -66,7 +65,7 @@ class ActiveDirectoryLDAPAuthenticationProviderTest extends AnyFlatSpec with Mat
         new User("user", "password", Collections.singleton(
           new SimpleGrantedAuthority("ROLE_USER"))), Map("testAtt" -> None))
       val auth = new UsernamePasswordAuthenticationToken(userDetails, "password", userDetails.getAuthorities)
-      config.ldapRetry.fold(auth)({ x =>
+      config.ldapRetry.fold(auth)({ _ =>
         if (counter < 4) {
           counter += 1
           throw new RuntimeException("TestException")

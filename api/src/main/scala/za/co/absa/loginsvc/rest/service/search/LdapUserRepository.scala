@@ -106,12 +106,12 @@ class LdapUserRepository(activeDirectoryLDAPConfig: ActiveDirectoryLDAPConfig)
     def attempt(n: Int): Future[List[User]] = Future {
       Try(contextSearch(username)) match {
         case Success(searchResults) => searchResults
-        case Failure(ex) if n <= attempts =>
+        case Failure(ex) if n < attempts =>
           logger.error(s"AD authentication failed on attempt $n: ${ex.getMessage}. Retrying in ${delayMs * n}ms...")
           Thread.sleep(delayMs * n)
           Await.result(attempt(n + 1), Duration.Inf)
         case Failure(ex) =>
-          logger.error(s"Search of user $username: ${ex.getMessage}", ex)
+          logger.error(s"Search of user $username failed after $n attempts:: ${ex.getMessage}", ex)
           ex.printStackTrace()
           throw ex
       }
@@ -119,7 +119,7 @@ class LdapUserRepository(activeDirectoryLDAPConfig: ActiveDirectoryLDAPConfig)
     Await.result(attempt(1), Duration.Inf)
   }
 
-  private def contextSearch(username: String): List[User] = {
+  private[search] def contextSearch(username: String): List[User] = {
     try {
       val context = getDirContext(serviceAccount.username, serviceAccount.password)
       val userList = context
