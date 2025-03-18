@@ -42,14 +42,7 @@ class ActiveDirectoryLDAPAuthenticationProvider(config: ActiveDirectoryLDAPConfi
   private val logger = LoggerFactory.getLogger(classOf[ActiveDirectoryLDAPAuthenticationProvider])
   logger.debug(s"ActiveDirectoryLDAPAuthenticationProvider init")
 
-  private val baseImplementation = {
-    val impl = new SpringSecurityActiveDirectoryLdapAuthenticationProvider(config.domain, config.url)
-
-    impl.setSearchFilter(config.searchFilter)
-    impl.setUserDetailsContextMapper(new LDAPUserDetailsContextMapperWithOptions(config.attributes.getOrElse(Map.empty)))
-
-    impl
-  }
+  private val baseImplementation = createAuthenticationProvider
 
   override def authenticate(authentication: Authentication): Authentication = {
     val username = authentication.getName
@@ -92,7 +85,7 @@ class ActiveDirectoryLDAPAuthenticationProvider(config: ActiveDirectoryLDAPConfi
     def attempt(n: Int): Future[Authentication] = Future {
       Try(baseImplementation.authenticate(authentication)) match {
         case Success(auth) => auth
-        case Failure(ex) if isRetryableException(ex) && n <= attempts =>
+        case Failure(ex) if isRetryableException(ex) && n < attempts =>
           logger.error(s"AD authentication failed on attempt $n: ${ex.getMessage}. Retrying in ${delayMs * n}ms...")
           Thread.sleep(delayMs * n)
           Await.result(attempt(n + 1), Duration.Inf)
@@ -100,7 +93,7 @@ class ActiveDirectoryLDAPAuthenticationProvider(config: ActiveDirectoryLDAPConfi
           logger.error(s"Login of user ${authentication.getName}: ${ex.getMessage}", ex)
           throw new BadCredentialsException(ex.getMessage)
         case Failure(ex) =>
-          logger.error(s"Login of user ${authentication.getName}: ${ex.getMessage}", ex)
+          logger.error(s"Login of user ${authentication.getName} failed after $n attempts: ${ex.getMessage}", ex)
           ex.printStackTrace()
           throw ex
       }
@@ -115,7 +108,16 @@ class ActiveDirectoryLDAPAuthenticationProvider(config: ActiveDirectoryLDAPConfi
     }
   }
 
-  private case class UserDetailsWithExtras(userDetails: UserDetails, extraAttributes: Map[String, Option[AnyRef]]) extends UserDetails {
+  private[ldap] def createAuthenticationProvider: AuthenticationProvider = {
+    val impl = new SpringSecurityActiveDirectoryLdapAuthenticationProvider(config.domain, config.url)
+
+    impl.setSearchFilter(config.searchFilter)
+    impl.setUserDetailsContextMapper(new LDAPUserDetailsContextMapperWithOptions(config.attributes.getOrElse(Map.empty)))
+
+    impl
+  }
+
+  private[ldap] case class UserDetailsWithExtras(userDetails: UserDetails, extraAttributes: Map[String, Option[AnyRef]]) extends UserDetails {
     override def getAuthorities: util.Collection[_ <: GrantedAuthority] = userDetails.getAuthorities
     override def getPassword: String = userDetails.getPassword
     override def getUsername: String = userDetails.getUsername
@@ -140,7 +142,5 @@ class ActiveDirectoryLDAPAuthenticationProvider(config: ActiveDirectoryLDAPConfi
 
       UserDetailsWithExtras(fromBase, extraAttributes)
     }
-
   }
-
 }
