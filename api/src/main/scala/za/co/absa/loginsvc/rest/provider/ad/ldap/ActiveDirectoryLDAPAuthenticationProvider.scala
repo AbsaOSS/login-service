@@ -25,10 +25,13 @@ import org.springframework.security.ldap.authentication.ad.{ActiveDirectoryLdapA
 import org.springframework.security.ldap.userdetails.LdapUserDetailsMapper
 import za.co.absa.loginsvc.model.User
 import za.co.absa.loginsvc.rest.config.auth.ActiveDirectoryLDAPConfig
-import za.co.absa.loginsvc.rest.provider.ConfigUsersAuthenticationProvider
 
 import java.util
 import scala.collection.JavaConverters._
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
+import scala.util.{Failure, Success, Try}
 
 /**
  * Enhances ActiveDirectoryLdapAuthenticationProvider from Spring Security LDAP library
@@ -39,31 +42,15 @@ class ActiveDirectoryLDAPAuthenticationProvider(config: ActiveDirectoryLDAPConfi
   private val logger = LoggerFactory.getLogger(classOf[ActiveDirectoryLDAPAuthenticationProvider])
   logger.debug(s"ActiveDirectoryLDAPAuthenticationProvider init")
 
-  private val baseImplementation = {
-    val impl = new SpringSecurityActiveDirectoryLdapAuthenticationProvider(config.domain, config.url)
-
-    impl.setSearchFilter(config.searchFilter)
-    impl.setUserDetailsContextMapper(new LDAPUserDetailsContextMapperWithOptions(config.attributes.getOrElse(Map.empty)))
-
-    impl
-  }
+  private val baseImplementation = createAuthenticationProvider
 
   override def authenticate(authentication: Authentication): Authentication = {
     val username = authentication.getName
     logger.info(s"Login of user $username via LDAP")
 
-    val fromBase = try {
-       baseImplementation.authenticate(authentication)
-    } catch {
-      case bc: BadCredentialsException =>
-        logger.error(s"Login of user $username: ${bc.getMessage}", bc)
-        throw new BadCredentialsException(bc.getMessage) // rethrow, but strip trace - no need to pollute logs
-
-      case re: RuntimeException => // other exception
-        logger.error(s"Login of user $username: ${re.getMessage}", re)
-        re.printStackTrace()
-        throw re // rethrow, just get info to logs
-    }
+    val fromBase = config.ldapRetry
+      .fold(singleAttemptAuth(authentication))(x =>
+        retryAuthAsync(x.attempts, x.delayMs, authentication))
 
     val fromBasePrincipal = fromBase.getPrincipal.asInstanceOf[UserDetailsWithExtras]
     val principal = User(
@@ -79,8 +66,58 @@ class ActiveDirectoryLDAPAuthenticationProvider(config: ActiveDirectoryLDAPConfi
 
   override def supports(authentication: Class[_]): Boolean = baseImplementation.supports(authentication)
 
+  private def singleAttemptAuth(authentication: Authentication): Authentication = {
+    try {
+      baseImplementation.authenticate(authentication)
+    } catch {
+      case bc: BadCredentialsException =>
+        logger.error(s"Login of user ${authentication.getName}: ${bc.getMessage}", bc)
+        throw new BadCredentialsException(bc.getMessage)
 
-  private case class UserDetailsWithExtras(userDetails: UserDetails, extraAttributes: Map[String, Option[AnyRef]]) extends UserDetails {
+      case re: RuntimeException =>
+        logger.error(s"Login of user ${authentication.getName}: ${re.getMessage}", re)
+        re.printStackTrace()
+        throw re
+    }
+  }
+
+  private def retryAuthAsync(attempts: Int, delayMs: Int, authentication: Authentication): Authentication = {
+    def attempt(n: Int): Future[Authentication] = Future {
+      Try(baseImplementation.authenticate(authentication)) match {
+        case Success(auth) => auth
+        case Failure(ex) if isRetryableException(ex) && n <= attempts =>
+          logger.error(s"AD authentication failed on attempt $n: ${ex.getMessage}. Retrying in ${delayMs * n}ms...")
+          Thread.sleep(delayMs * n)
+          Await.result(attempt(n + 1), Duration.Inf)
+        case Failure(ex: BadCredentialsException) =>
+          logger.error(s"Login of user ${authentication.getName}: ${ex.getMessage}", ex)
+          throw new BadCredentialsException(ex.getMessage)
+        case Failure(ex) =>
+          logger.error(s"Login of user ${authentication.getName} failed after $n attempts: ${ex.getMessage}", ex)
+          ex.printStackTrace()
+          throw ex
+      }
+    }
+    Await.result(attempt(1), Duration.Inf)
+  }
+
+  private def isRetryableException(ex: Throwable): Boolean = {
+    ex match {
+      case _: BadCredentialsException => false
+      case _ => true
+    }
+  }
+
+  private[ldap] def createAuthenticationProvider: AuthenticationProvider = {
+    val impl = new SpringSecurityActiveDirectoryLdapAuthenticationProvider(config.domain, config.url)
+
+    impl.setSearchFilter(config.searchFilter)
+    impl.setUserDetailsContextMapper(new LDAPUserDetailsContextMapperWithOptions(config.attributes.getOrElse(Map.empty)))
+
+    impl
+  }
+
+  private[ldap] case class UserDetailsWithExtras(userDetails: UserDetails, extraAttributes: Map[String, Option[AnyRef]]) extends UserDetails {
     override def getAuthorities: util.Collection[_ <: GrantedAuthority] = userDetails.getAuthorities
     override def getPassword: String = userDetails.getPassword
     override def getUsername: String = userDetails.getUsername
@@ -105,7 +142,5 @@ class ActiveDirectoryLDAPAuthenticationProvider(config: ActiveDirectoryLDAPConfi
 
       UserDetailsWithExtras(fromBase, extraAttributes)
     }
-
   }
-
 }
