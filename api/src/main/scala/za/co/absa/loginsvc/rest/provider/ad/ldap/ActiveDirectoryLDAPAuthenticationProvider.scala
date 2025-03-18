@@ -85,7 +85,7 @@ class ActiveDirectoryLDAPAuthenticationProvider(config: ActiveDirectoryLDAPConfi
     def attempt(n: Int): Future[Authentication] = Future {
       Try(baseImplementation.authenticate(authentication)) match {
         case Success(auth) => auth
-        case Failure(ex) if isRetryableException(ex) && n < attempts =>
+        case Failure(ex) if isRetryableException(ex) && n <= attempts =>
           logger.error(s"AD authentication failed on attempt $n: ${ex.getMessage}. Retrying in ${delayMs * n}ms...")
           Thread.sleep(delayMs * n)
           Await.result(attempt(n + 1), Duration.Inf)

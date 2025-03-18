@@ -106,7 +106,7 @@ class LdapUserRepository(activeDirectoryLDAPConfig: ActiveDirectoryLDAPConfig)
     def attempt(n: Int): Future[List[User]] = Future {
       Try(contextSearch(username)) match {
         case Success(searchResults) => searchResults
-        case Failure(ex) if n < attempts =>
+        case Failure(ex) if n <= attempts =>
           logger.error(s"AD authentication failed on attempt $n: ${ex.getMessage}. Retrying in ${delayMs * n}ms...")
           Thread.sleep(delayMs * n)
           Await.result(attempt(n + 1), Duration.Inf)

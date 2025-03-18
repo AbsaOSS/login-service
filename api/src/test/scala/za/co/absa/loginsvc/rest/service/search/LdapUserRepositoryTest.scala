@@ -28,7 +28,7 @@ class LdapUserRepositoryTest extends AnyFlatSpec with Matchers {
     "CN=%s,OU=Users,OU=Accounts,DC=domain,DC=subdomain,DC=com",
     Option(integratedCfg),
     None)
-  private val ldapCfg = ActiveDirectoryLDAPConfig(
+  private val ldapCfgNoRetries = ActiveDirectoryLDAPConfig(
     "some.domain.com",
     "ldaps://some.domain.com:636/",
     "SomeAccount",
@@ -38,16 +38,17 @@ class LdapUserRepositoryTest extends AnyFlatSpec with Matchers {
     None,
     None)
 
-  private val testUser: User = User("user",
+  private val testUser: User = User(
+    "user",
     Seq("group1", "group2"),
     Map("testAtt" -> None))
 
-  private class TestLdapUserRepository(config: ActiveDirectoryLDAPConfig)
+  private class TestLdapUserRepositoryEventuallySucceeding(config: ActiveDirectoryLDAPConfig)
     extends LdapUserRepository(config) {
-    var counter: Int = 1
+    var counter: Int = 0
     override def contextSearch(username: String): List[User] = {
       config.ldapRetry.fold(List(testUser))(_ => {
-        if(counter < 4) {
+        if(counter < 3) {
           counter += 1
           throw new RuntimeException("TestException")
         }
@@ -57,29 +58,29 @@ class LdapUserRepositoryTest extends AnyFlatSpec with Matchers {
   }
 
   "ContextSearch" should "only be called once when ldapRetry is None" in {
-    val testLdapUserRepository = new TestLdapUserRepository(ldapCfg)
+    val testLdapUserRepository = new TestLdapUserRepositoryEventuallySucceeding(ldapCfgNoRetries)
     val user = testLdapUserRepository.searchForUser(testUser.name)
 
-    assert(testLdapUserRepository.counter == 1)
+    assert(testLdapUserRepository.counter == 0)
     assert(user.get == testUser)
   }
 
   "authenticate" should "be called 4 times before a successful attempt occurs" in {
     val retryConfig = LdapRetryConfig(4, 100)
-    val ldapConfig = ldapCfg.copy(ldapRetry = Some(retryConfig))
+    val ldapCfg = ldapCfgNoRetries.copy(ldapRetry = Some(retryConfig))
 
-    val testLdapUserRepository = new TestLdapUserRepository(ldapConfig)
+    val testLdapUserRepository = new TestLdapUserRepositoryEventuallySucceeding(ldapCfg)
     val user = testLdapUserRepository.searchForUser(testUser.name)
 
-    assert(testLdapUserRepository.counter == 4)
+    assert(testLdapUserRepository.counter == 3)
     assert(user.get == testUser)
   }
 
   "authenticate" should "be fail after 2 retries" in {
     val retryConfig = LdapRetryConfig(2, 100)
-    val ldapConfig = ldapCfg.copy(ldapRetry = Some(retryConfig))
+    val ldapCfg = ldapCfgNoRetries.copy(ldapRetry = Some(retryConfig))
 
-    val testLdapUserRepository = new TestLdapUserRepository(ldapConfig)
+    val testLdapUserRepository = new TestLdapUserRepositoryEventuallySucceeding(ldapCfg)
 
     assertThrows[RuntimeException] {
       testLdapUserRepository.searchForUser(testUser.name)
