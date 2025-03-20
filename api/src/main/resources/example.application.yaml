@@ -77,11 +77,16 @@ loginsvc:
               #region: "region"
               #username-field-name: "username"
               #password-field-name: "password"
+          # Enables Kerberos Authentication to the Login-Service
           #enable-kerberos:
             #krb-file-location: "/etc/krb5.conf"
             #keytab-file-location: "/etc/keytab"
             #spn: "HTTP/Host"
             #debug: true
+          # Enable the ability for ldap calls to be retried if the service is unreachable
+          #ldap-retry:
+            #attempts: 3
+            #delay-ms: 100
           attributes:
             # The FieldName is the key used to search ldap and the value is the value used to name the JWT claim.
             # ldapFieldName: claimFieldName

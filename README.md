@@ -175,6 +175,46 @@ A Keytab file needs to be created and attached to the service. The SPN needs to 
 is used in the keytab and matches the host of the Login Service. The `debug` property is used when
 additional information is required from the logs when testing the service.
 
+### Enable Ldap authentication retries
+When Ldap authentication is used, there is the option to enable ldap service retries.
+This allows the service to retry and repeat calls to the Ldap service when the service is unreachable.
+This protects the user from authentication errors when there are brief interruptions in the Ldap service or network.
+The Config to enable this will look like this:
+```
+        ldap:
+          # Auth Protocol
+          # Set the order of the protocol starting from 1
+          # Set to 0 to disable or simply exclude the ldap tag from config
+          # NOTE: At least 1 auth protocol needs to be enabled
+          order: 2
+          domain: "some.domain.com"
+          url: "ldaps://some.domain.com:636/"
+          search-filter: "(samaccountname={1})"
+          service-account:
+            account-pattern: "CN=%s,OU=Users,OU=CORP Accounts,DC=corp,DC=dsarena,DC=com"
+            in-config-account:
+                username: "svc-ldap"
+                password: "password"
+          ldap-retry:
+            attempts: 3
+            delay-ms: 100
+          attributes:
+            <ldapFieldName>: "<claimName>"
+```
+
+Adding the `ldap-retry` property to the config will enable Ldap retry functionality.
+The `attempts` property dictates the amount of retry attempts will occur before an exception is communicated to the user.
+The `delay-ms` indicates the base timing between each delay. The delay for each retry is multiplied by the current attempt.
+In the above example configuration, the process for failure will work as follows:
+1. Initial communication to Ldap occurs and fails
+2. 100ms delay
+3. 1st retry attempt occurs and fails
+4. 200ms delay
+5. 2nd retry attempt occurs and fails
+6. 300ms delay
+7. 3rd retry attempt occurs and fails
+8. Authentication fails and exception is communicated to user.
+
 ### ActiveDirectoryLDAPAuthenticationProvider
 Uses LDAP(s) to authenticate user in Active Directory and to fetch groups that this user belongs to.
 
