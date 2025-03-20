@@ -102,7 +102,7 @@ The 2 methods currently enabled are config specified users:
 ```
 loginsvc.rest.auth.provider.users.order = 1
 ```
-and ldap:
+and LDAP:
 ```
 loginsvc.rest.auth.provider.ldap.order = 2
 ```
@@ -112,18 +112,18 @@ In order to disable an authentication protocol, set the `order` property to `0`
 or just exclude the properties from the config for that auth provider.
 Please ensure at least one auth method is enabled.
 
-For the service account used to search Ldap, the Service Account Name and password may be specified in the config file.
+For the service account used to search LDAP, the Service Account Name and password may be specified in the config file.
 For a more secure approach, the service account name and password may be specified in AWS Secrets Manager and the application will fetch them from there.
 
 The config also allows the user to specify additional claims to be added to the JWT token. 
-These can be sourced from ldap or specified directly in the config depending on the auth provider used.
+These can be sourced from LDAP or specified directly in the config depending on the auth provider used.
 
 Format of attributes list under LDAP in config is:
 ```
         ldap:
           # Auth Protocol
           # Set the order of the protocol starting from 1
-          # Set to 0 to disable or simply exclude the ldap tag from config
+          # Set to 0 to disable or simply exclude the LDAP tag from config
           # NOTE: At least 1 auth protocol needs to be enabled
           order: 2
           domain: "some.domain.com"
@@ -140,34 +140,18 @@ Format of attributes list under LDAP in config is:
 
 `ldapFieldName` is the name of the field in the LDAP server and `claimName` is the name of the claim that will be added to the JWT token.
 
-### Enabling SPNEGO authentication with Ldap
-When Ldap authentication is used, there is the option of adding SPNEGO authentication via kerberos.
+### Enabling SPNEGO authentication with LDAP
+When LDAP authentication is used, there is the option of adding SPNEGO authentication via kerberos.
 This will allow users to authenticate via Basic Auth or Kerberos Tickets.
 The Config to enable this will look like this:
 ```
         ldap:
-          # Auth Protocol
-          # Set the order of the protocol starting from 1
-          # Set to 0 to disable or simply exclude the ldap tag from config
-          # NOTE: At least 1 auth protocol needs to be enabled
-          order: 2
-          domain: "some.domain.com"
-          url: "ldaps://some.domain.com:636/"
-          search-filter: "(samaccountname={1})"
-          service-account:
-            account-pattern: "CN=%s,OU=Users,OU=CORP Accounts,DC=corp,DC=dsarena,DC=com"
-            in-config-account:
-                username: "svc-ldap"
-                password: "password"
           enable-kerberos:
             krb-file-location: "/etc/krb5.conf"
             keytab-file-location: "/etc/keytab"
             spn: "HTTP/Host"
             debug: true
-          attributes:
-            <ldapFieldName>: "<claimName>"
 ```
-
 Adding the `enable-kerberos` property to the config will enable SPNEGO authentication.
 In order to facilitate the kerberos authentication, you will need to provide a krb5 file that includes 
 the kerberos configuration details such as domains and Kerberos distribution center address.
@@ -175,38 +159,22 @@ A Keytab file needs to be created and attached to the service. The SPN needs to 
 is used in the keytab and matches the host of the Login Service. The `debug` property is used when
 additional information is required from the logs when testing the service.
 
-### Enable Ldap authentication retries
-When Ldap authentication is used, there is the option to enable ldap service retries.
-This allows the service to retry and repeat calls to the Ldap service when the service is unreachable.
-This protects the user from authentication errors when there are brief interruptions in the Ldap service or network.
+### Enable LDAP authentication retries
+When LDAP authentication is used, there is the option to enable LDAP service retries.
+This allows the service to retry and repeat calls to the LDAP service when the service is unreachable.
+This protects the user from authentication errors when there are brief interruptions in the Ldap service or on the network.
 The Config to enable this will look like this:
 ```
         ldap:
-          # Auth Protocol
-          # Set the order of the protocol starting from 1
-          # Set to 0 to disable or simply exclude the ldap tag from config
-          # NOTE: At least 1 auth protocol needs to be enabled
-          order: 2
-          domain: "some.domain.com"
-          url: "ldaps://some.domain.com:636/"
-          search-filter: "(samaccountname={1})"
-          service-account:
-            account-pattern: "CN=%s,OU=Users,OU=CORP Accounts,DC=corp,DC=dsarena,DC=com"
-            in-config-account:
-                username: "svc-ldap"
-                password: "password"
           ldap-retry:
             attempts: 3
             delay-ms: 100
-          attributes:
-            <ldapFieldName>: "<claimName>"
 ```
-
-Adding the `ldap-retry` property to the config will enable Ldap retry functionality.
+Adding the `ldap-retry` property to the config will enable LDAP retry functionality.
 The `attempts` property dictates the amount of retry attempts will occur before an exception is communicated to the user.
 The `delay-ms` indicates the base timing between each delay. The delay for each retry is multiplied by the current attempt.
 In the above example configuration, the process for failure will work as follows:
-1. Initial communication to Ldap occurs and fails
+1. Initial communication to LDAP occurs and fails
 2. 100ms delay
 3. 1st retry attempt occurs and fails
 4. 200ms delay
