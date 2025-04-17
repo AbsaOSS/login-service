@@ -1,8 +1,7 @@
 package za.co.absa.loginsvc.rest.service.actuator
 
-import org.springframework.beans.factory.annotation.{Autowired, Value}
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.actuate.health.{Health, HealthIndicator}
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.stereotype.Component
 import za.co.absa.loginsvc.rest.config.provider.AuthConfigProvider
 
