@@ -34,5 +34,4 @@ class ActuatorHealthTest extends AnyFlatSpec with Matchers with ActuatorTestBase
     val health = healthService.health()
     assert(health.getStatus == Status.UP)
   }
-  //TODO: Add more tests for each dependency (Example Ldap when implemented fully) - issue #20
 }
