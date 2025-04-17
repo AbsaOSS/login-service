@@ -107,10 +107,6 @@ springdoc:
   show-actuator: true
 
 management:
-  health:
-    ldap:
-      # TODO: Enable Ldap check for actuator/health when fully Implemented - issue #34
-      enabled: "false"
   # Expose information under Actuator/info
   info:
     # Exposes any property marked under "info" in the config
@@ -138,7 +134,7 @@ management:
           - "info"
   endpoint:
     health:
-      show-details: "never"
+      show-details: "always"
 
 # Information to be exposed by the 'env' tag in the springboot actuator
 info:
