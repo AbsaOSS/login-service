@@ -51,7 +51,7 @@ class LdapHealthServiceTest extends AnyFlatSpec with Matchers {
     val ldapHealthService: LdapHealthService = new LdapHealthService(configProvider)
     val health = ldapHealthService.health()
 
-    health shouldBe Health.up().withDetail("reason", "ldap order parameter is set to 0, setting it to disabled").build()
+    health shouldBe Health.up().withDetail("reason", "ldap order parameter is set to 0. ldap is disabled.").build()
   }
 
   "LdapHealthService" should "Return Up when ActiveDirectoryLDAPConfig is None" in {
@@ -63,7 +63,7 @@ class LdapHealthServiceTest extends AnyFlatSpec with Matchers {
     val ldapHealthService: LdapHealthService = new LdapHealthService(configProvider)
     val health = ldapHealthService.health()
 
-    health shouldBe Health.up().withDetail("reason", "ldap authentication not found in configuration, setting it to disabled").build()
+    health shouldBe Health.up().withDetail("reason", "ldap authentication not found in configuration. ldap is disabled.").build()
   }
 
   "LdapHealthService" should "Return Down when Ldap connection fails" in {

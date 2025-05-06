@@ -30,10 +30,10 @@ class LdapHealthService @Autowired() (authConfigsProvider: AuthConfigProvider) e
   override def health(): Health = {
     val activeDirectoryLDAPConfig = authConfigsProvider.getLdapConfig
     activeDirectoryLDAPConfig
-      .fold(Health.up().withDetail("reason", "ldap authentication not found in configuration, setting it to disabled").build()) (config =>
+      .fold(Health.up().withDetail("reason", "ldap authentication not found in configuration. ldap is disabled.").build()) (config =>
         if(config.order <= 0)
           {
-            Health.up().withDetail("reason", "ldap order parameter is set to 0, setting it to disabled").build()
+            Health.up().withDetail("reason", "ldap order parameter is set to 0. ldap is disabled.").build()
           }
         else
           {
