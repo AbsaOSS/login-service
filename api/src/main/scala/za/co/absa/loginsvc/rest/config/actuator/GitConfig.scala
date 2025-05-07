@@ -30,26 +30,30 @@ object GitPropertiesGenerator {
   private var branch: String = _
   private var commitId: String = _
   private var commitTime: String = _
+  private var latestVersion: String = _
   def generateGitProperties(writeFile: Boolean): Unit = {
     val dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
     setProperties(
       getGitOutput("git rev-parse --abbrev-ref HEAD").getOrElse("unknown"),
       getGitOutput("git rev-parse HEAD").getOrElse("unknown"),
-      dateFormat.format(getGitOutput("git show -s --format=%ct HEAD").map(_.toLong * 1000).getOrElse(0L))
+      dateFormat.format(getGitOutput("git show -s --format=%ct HEAD").map(_.toLong * 1000).getOrElse(0L)),
+      getGitOutput("git describe --tags --abbrev=0").getOrElse("unknown")
     )
     if(writeFile)
       writeGitPropertiesToFile()
   }
 
-  def setProperties(branch: String, commitId: String, commitTime: String): Unit = {
+  def setProperties(branch: String, commitId: String, commitTime: String, latestVersion: String): Unit = {
     this.branch = branch
     this.commitId = commitId
     this.commitTime = commitTime
+    this.latestVersion = latestVersion
   }
 
   def getBranch: String = branch
   def getCommitId: String = commitId
   def getCommitTime: String = commitTime
+  def getLatestVersion: String = latestVersion
 
   private def getGitOutput(command: String): Option[String] = {
     Try(sys.process.Process(command).lineStream_!.headOption)
@@ -62,12 +66,13 @@ object GitPropertiesGenerator {
   }
 
   private def writeGitPropertiesToFile() : Unit = {
-    val gitPropertiesFile = "service\\src\\main\\resources\\git.properties"
+    val gitPropertiesFile = "api\\src\\main\\resources\\git.properties"
     val writer = new PrintWriter(gitPropertiesFile)
     val content =
       s"""|git.branch=${this.branch}
           |git.commit.id=${this.commitId}
           |git.commit.time=${this.commitTime}
+          |git.build.version=${this.latestVersion}
           |""".stripMargin
 
     try {

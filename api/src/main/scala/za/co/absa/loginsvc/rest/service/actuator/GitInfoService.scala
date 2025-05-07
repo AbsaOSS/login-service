@@ -35,6 +35,9 @@ class GitInfoService(@Value("${management.info.git.enabled:false}")
         "commit" -> Map(
           "id" -> GitPropertiesGenerator.getCommitId,
           "time" -> GitPropertiesGenerator.getCommitTime
+        ),
+        "build" -> Map(
+          "version" -> GitPropertiesGenerator.getLatestVersion
         )
       ))
     }

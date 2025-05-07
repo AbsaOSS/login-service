@@ -27,7 +27,7 @@ import za.co.absa.loginsvc.rest.service.actuator.GitInfoService
 @SpringBootTest
 class GitInfoServiceTest extends AnyFlatSpec with Matchers {
 
-  GitPropertiesGenerator.setProperties("Test1","Test2","Test3")
+  GitPropertiesGenerator.setProperties("Test1","Test2","Test3","Test4")
   private val infoService: GitInfoService = new GitInfoService(true, true)
 
   "GitInfoService" should "contribute git information" in {
@@ -40,6 +40,9 @@ class GitInfoServiceTest extends AnyFlatSpec with Matchers {
       "commit" -> Map(
         "id" -> GitPropertiesGenerator.getCommitId,
         "time" -> GitPropertiesGenerator.getCommitTime
+      ),
+      "build" -> Map(
+        "version" -> GitPropertiesGenerator.getLatestVersion
       )
     )
     verify(builderMock).withDetail("git", expectedDetails)
