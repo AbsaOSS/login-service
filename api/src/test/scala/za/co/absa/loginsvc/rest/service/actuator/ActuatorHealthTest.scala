@@ -14,19 +14,24 @@
  * limitations under the License.
  */
 
-package za.co.absa.loginsvc.rest.actuator.tooling
+package za.co.absa.loginsvc.rest.service.actuator
 
-import java.nio.file.{Files, Paths}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.actuate.health.{HealthEndpoint, Status}
 import org.springframework.boot.test.context.SpringBootTest
-import za.co.absa.loginsvc.rest.config.actuator.GitPropertiesGenerator
+import org.springframework.test.context.{TestContextManager, TestPropertySource}
 
 @SpringBootTest
-class GitPropertiesGeneratorTool extends AnyFlatSpec with Matchers {
+@TestPropertySource(properties = Array("spring.config.location=api/src/test/resources/application.yaml"))
+class ActuatorHealthTest extends AnyFlatSpec with Matchers with ActuatorTestBase {
 
-  ignore should "generate git.properties file" in {
-    GitPropertiesGenerator.generateGitProperties(true)
-    assert(Files.exists(Paths.get("service\\src\\main\\resources\\git.properties")))
+  @Autowired
+  private var healthService: HealthEndpoint = _
+
+  "The Overall HealthEndpoint Status" should "return UP" in {
+    val health = healthService.health()
+    assert(health.getStatus == Status.UP)
   }
 }

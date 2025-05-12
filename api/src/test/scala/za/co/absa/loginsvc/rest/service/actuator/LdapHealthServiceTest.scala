@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package za.co.absa.loginsvc.rest.actuator
+package za.co.absa.loginsvc.rest.service.actuator
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -23,6 +23,9 @@ import org.springframework.boot.test.context.SpringBootTest
 import za.co.absa.loginsvc.rest.config.auth.{ActiveDirectoryLDAPConfig, LdapUserCredentialsConfig, ServiceAccountConfig, UsersConfig}
 import za.co.absa.loginsvc.rest.config.provider.AuthConfigProvider
 import za.co.absa.loginsvc.rest.service.actuator.LdapHealthService
+
+import javax.naming.CommunicationException
+import javax.naming.directory.DirContext
 
 @SpringBootTest
 class LdapHealthServiceTest extends AnyFlatSpec with Matchers {
@@ -42,13 +45,20 @@ class LdapHealthServiceTest extends AnyFlatSpec with Matchers {
     None,
     None)
 
+  private class testLdapHealthService(authConfigProvider: AuthConfigProvider)
+    extends LdapHealthService(authConfigProvider) {
+    override private[actuator] def getContext(config:ActiveDirectoryLDAPConfig): DirContext = {
+      throw new CommunicationException("some.domain.com:636")
+    }
+  }
+
   "LdapHealthService" should "Return Up on Order 0" in {
     val configProvider = new AuthConfigProvider {
       override def getLdapConfig: Option[ActiveDirectoryLDAPConfig] = Some(ldapCfgZeroOrder)
 
       override def getUsersConfig: Option[UsersConfig] = None
     }
-    val ldapHealthService: LdapHealthService = new LdapHealthService(configProvider)
+    val ldapHealthService: LdapHealthService = new testLdapHealthService(configProvider)
     val health = ldapHealthService.health()
 
     health shouldBe Health.up().withDetail("reason", "ldap order parameter is set to 0. ldap is disabled.").build()
@@ -60,7 +70,7 @@ class LdapHealthServiceTest extends AnyFlatSpec with Matchers {
 
       override def getUsersConfig: Option[UsersConfig] = None
     }
-    val ldapHealthService: LdapHealthService = new LdapHealthService(configProvider)
+    val ldapHealthService: LdapHealthService = new testLdapHealthService(configProvider)
     val health = ldapHealthService.health()
 
     health shouldBe Health.up().withDetail("reason", "ldap authentication not found in configuration. ldap is disabled.").build()
@@ -72,7 +82,7 @@ class LdapHealthServiceTest extends AnyFlatSpec with Matchers {
 
       override def getUsersConfig: Option[UsersConfig] = None
     }
-    val ldapHealthService: LdapHealthService = new LdapHealthService(configProvider)
+    val ldapHealthService: LdapHealthService = new testLdapHealthService(configProvider)
     val health = ldapHealthService.health()
 
     health shouldBe Health.down().withDetail("reason", "Failed to connect: some.domain.com:636").build()

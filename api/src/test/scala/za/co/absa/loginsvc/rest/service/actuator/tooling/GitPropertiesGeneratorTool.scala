@@ -14,24 +14,19 @@
  * limitations under the License.
  */
 
-package za.co.absa.loginsvc.rest.actuator
+package za.co.absa.loginsvc.rest.service.actuator.tooling
 
+import java.nio.file.{Files, Paths}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.actuate.info.InfoEndpoint
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.test.context.{TestContextManager, TestPropertySource}
+import za.co.absa.loginsvc.rest.config.actuator.GitPropertiesGenerator
 
 @SpringBootTest
-@TestPropertySource(properties = Array("spring.config.location=api/src/test/resources/application.yaml"))
-class ActuatorInfoTest extends AnyFlatSpec with Matchers with ActuatorTestBase {
+class GitPropertiesGeneratorTool extends AnyFlatSpec with Matchers {
 
-  @Autowired
-  private var infoService: InfoEndpoint = _
-
-  "The info Endpoint" should "return the correct test value" in {
-    val info = infoService.info()
-    assert(info.toString == "{test=This is a test value}")
+  ignore should "generate git.properties file" in {
+    GitPropertiesGenerator.generateGitProperties(true)
+    assert(Files.exists(Paths.get("service\\src\\main\\resources\\git.properties")))
   }
 }

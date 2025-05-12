@@ -14,24 +14,24 @@
  * limitations under the License.
  */
 
-package za.co.absa.loginsvc.rest.actuator
+package za.co.absa.loginsvc.rest.service.actuator
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.actuate.health.{HealthEndpoint, Status}
+import org.springframework.boot.actuate.info.InfoEndpoint
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.{TestContextManager, TestPropertySource}
 
 @SpringBootTest
 @TestPropertySource(properties = Array("spring.config.location=api/src/test/resources/application.yaml"))
-class ActuatorHealthTest extends AnyFlatSpec with Matchers with ActuatorTestBase {
+class ActuatorInfoTest extends AnyFlatSpec with Matchers with ActuatorTestBase {
 
   @Autowired
-  private var healthService: HealthEndpoint = _
+  private var infoService: InfoEndpoint = _
 
-  "The Overall HealthEndpoint Status" should "return UP" in {
-    val health = healthService.health()
-    assert(health.getStatus == Status.UP)
+  "The info Endpoint" should "return the correct test value" in {
+    val info = infoService.info()
+    assert(info.toString == "{test=This is a test value}")
   }
 }
