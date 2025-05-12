@@ -34,10 +34,10 @@ object GitPropertiesGenerator {
   def generateGitProperties(writeFile: Boolean): Unit = {
     val dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
     setProperties(
-      getGitOutput("git rev-parse --abbrev-ref HEAD").getOrElse("unknown"),
-      getGitOutput("git rev-parse HEAD").getOrElse("unknown"),
-      dateFormat.format(getGitOutput("git show -s --format=%ct HEAD").map(_.toLong * 1000).getOrElse(0L)),
-      getGitOutput("git describe --tags --abbrev=0").getOrElse("unknown")
+      branch = getGitOutput("git rev-parse --abbrev-ref HEAD").getOrElse("unknown"),
+      commitId = getGitOutput("git rev-parse HEAD").getOrElse("unknown"),
+      commitTime = dateFormat.format(getGitOutput("git show -s --format=%ct HEAD").map(_.toLong * 1000).getOrElse(0L)),
+      latestVersion = getGitOutput("git describe --tags --abbrev=0").getOrElse("unknown")
     )
     if(writeFile)
       writeGitPropertiesToFile()

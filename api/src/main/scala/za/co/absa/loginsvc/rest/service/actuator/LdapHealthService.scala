@@ -19,6 +19,7 @@ package za.co.absa.loginsvc.rest.service.actuator
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.actuate.health.{Health, HealthIndicator}
 import org.springframework.stereotype.Component
+import za.co.absa.loginsvc.rest.config.auth.ActiveDirectoryLDAPConfig
 import za.co.absa.loginsvc.rest.config.provider.AuthConfigProvider
 
 import java.util
@@ -37,22 +38,28 @@ class LdapHealthService @Autowired() (authConfigsProvider: AuthConfigProvider) e
           }
         else
           {
-            val env = new util.Hashtable[String, String]
-            env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory")
-            env.put(Context.PROVIDER_URL, config.url)
-            env.put(Context.SECURITY_AUTHENTICATION, "simple")
-            env.put(Context.SECURITY_PRINCIPAL, config.serviceAccount.username)
-            env.put(Context.SECURITY_CREDENTIALS, config.serviceAccount.password)
-
             try {
-              val ctx: DirContext = new InitialDirContext(env)
+              val ctx: DirContext = getContext(config)
               ctx.close()
               Health.up().withDetail("reason", s"Successfully connected to ${config.url}").build()
             }
             catch {
               case e: NamingException =>
                 Health.down().withDetail("reason", s"Failed to connect: ${e.getMessage}").build()
+              case e: Exception =>
+                Health.down().withDetail("reason", s"Unexpected exception: ${e.getMessage}").build()
             }
           })
+  }
+
+  private[actuator] def getContext(config: ActiveDirectoryLDAPConfig): DirContext ={
+    val env = new util.Hashtable[String, String]
+    env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory")
+    env.put(Context.PROVIDER_URL, config.url)
+    env.put(Context.SECURITY_AUTHENTICATION, "simple")
+    env.put(Context.SECURITY_PRINCIPAL, config.serviceAccount.username)
+    env.put(Context.SECURITY_CREDENTIALS, config.serviceAccount.password)
+
+    new InitialDirContext(env)
   }
 }
