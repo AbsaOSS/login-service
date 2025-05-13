@@ -87,6 +87,4 @@ class LdapHealthServiceTest extends AnyFlatSpec with Matchers {
 
     health shouldBe Health.down().withDetail("reason", "Failed to connect: some.domain.com:636").build()
   }
-
-
 }
