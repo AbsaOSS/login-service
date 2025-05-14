@@ -14,7 +14,7 @@ loginsvc:
     auth:
       provider:
         ldap:
-          order: 2
+          order: 0
           domain: "some.domain.com"
           url: "ldaps://some.domain.com:636/"
           search-filter: "(samaccountname={1})"
@@ -59,10 +59,6 @@ springdoc:
   show-actuator: true
 
 management:
-  health:
-    ldap:
-      #TODO: Enable Ldap check for actuator/health when fully Implemented - issue #34
-      enabled: "false"
   info:
     env:
       enabled: "true"

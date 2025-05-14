@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package za.co.absa.loginsvc.rest.actuator
+package za.co.absa.loginsvc.rest.service.actuator
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -34,5 +34,4 @@ class ActuatorHealthTest extends AnyFlatSpec with Matchers with ActuatorTestBase
     val health = healthService.health()
     assert(health.getStatus == Status.UP)
   }
-  //TODO: Add more tests for each dependency (Example Ldap when implemented fully) - issue #20
 }

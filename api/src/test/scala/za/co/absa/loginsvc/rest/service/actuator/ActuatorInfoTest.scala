@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package za.co.absa.loginsvc.rest.actuator
+package za.co.absa.loginsvc.rest.service.actuator
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers

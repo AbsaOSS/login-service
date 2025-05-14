@@ -24,18 +24,20 @@ class GitConfigTest extends AnyFlatSpec with Matchers {
   "The constructor" should " not generate git.properties" in {
     val gitConfig = GitConfig(generateGitProperties = false, generateGitPropertiesFile = false)
 
-    GitPropertiesGenerator.setProperties("Test1", "Test2", "Test3")
+    GitPropertiesGenerator.setProperties("Test1", "Test2", "Test3","Test4")
     assert(GitPropertiesGenerator.getBranch == "Test1" &&
       GitPropertiesGenerator.getCommitId == "Test2" &&
-      GitPropertiesGenerator.getCommitTime == "Test3")
+      GitPropertiesGenerator.getCommitTime == "Test3" &&
+      GitPropertiesGenerator.getLatestVersion == "Test4")
   }
 
   "The constructor" should "generate git.properties" in {
-    GitPropertiesGenerator.setProperties("Test1", "Test2", "Test3")
+    GitPropertiesGenerator.setProperties("Test1", "Test2", "Test3","Test4")
     GitPropertiesGenerator.generateGitProperties(false)
     assert(GitPropertiesGenerator.getBranch != "Test1" &&
       GitPropertiesGenerator.getCommitId != "Test2" &&
-      GitPropertiesGenerator.getCommitTime != "Test3")
+      GitPropertiesGenerator.getCommitTime != "Test3"&&
+      GitPropertiesGenerator.getLatestVersion != "Test4")
   }
 
 }

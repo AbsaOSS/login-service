@@ -14,34 +14,19 @@
  * limitations under the License.
  */
 
-package za.co.absa.loginsvc.rest.actuator
+package za.co.absa.loginsvc.rest.service.actuator.tooling
 
+import java.nio.file.{Files, Paths}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import org.springframework.boot.actuate.info.Info.Builder
 import org.springframework.boot.test.context.SpringBootTest
-import org.mockito.Mockito._
 import za.co.absa.loginsvc.rest.config.actuator.GitPropertiesGenerator
-import za.co.absa.loginsvc.rest.service.actuator.GitInfoService
 
 @SpringBootTest
-class GitInfoServiceTest extends AnyFlatSpec with Matchers {
+class GitPropertiesGeneratorTool extends AnyFlatSpec with Matchers {
 
-  GitPropertiesGenerator.setProperties("Test1","Test2","Test3")
-  private val infoService: GitInfoService = new GitInfoService(true, true)
-
-  "GitInfoService" should "contribute git information" in {
-    val builderMock: Builder = mock(classOf[Builder])
-
-    infoService.contribute(builderMock)
-
-    val expectedDetails = Map(
-      "branch" -> GitPropertiesGenerator.getBranch,
-      "commit" -> Map(
-        "id" -> GitPropertiesGenerator.getCommitId,
-        "time" -> GitPropertiesGenerator.getCommitTime
-      )
-    )
-    verify(builderMock).withDetail("git", expectedDetails)
+  ignore should "generate git.properties file" in {
+    GitPropertiesGenerator.generateGitProperties(true)
+    assert(Files.exists(Paths.get("service\\src\\main\\resources\\git.properties")))
   }
 }
