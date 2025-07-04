@@ -93,6 +93,51 @@ class TokenController @Autowired()(jwtService: JWTService) {
 
   @Tags(Array(new Tag(name = "token")))
   @Operation(
+    summary = "Generates access and refresh JWTs",
+    description = """Generates access and refresh JWTs signed by the private key, verifiable by the public key available at /token/public-key. RSA256 is used.""",
+    responses = Array(
+      new ApiResponse(responseCode = "200", description = "JWTs are retrieved in the response body",
+        content = Array(new Content(
+          schema = new Schema(implementation = classOf[TokensWrapper]),
+          examples = Array(new ExampleObject(value = "{\n  \"token\": \"abcd123.efgh456.ijkl789\",\n  \"refresh\": \"ab12.cd34.ef56\"\n}")))
+        )
+      ),
+      new ApiResponse(responseCode = "401", description = "Auth error",
+        content = Array(new Content(
+          schema = new Schema(implementation = classOf[String]), examples = Array(new ExampleObject(value = "Error: response status is 401")))
+        ))
+    )
+  )
+  @Parameter(in = ParameterIn.QUERY, name = "group-prefixes", schema = new Schema(implementation = classOf[String]), example = "pam-,dehdl-",
+    description = "Prefixes of groups only to be returned in JWT user object (,-separated)")
+  @GetMapping(
+    path = Array("/experimental/get-generate"),
+    produces = Array(MediaType.APPLICATION_JSON_VALUE)
+  )
+  @ResponseStatus(HttpStatus.OK)
+  @SecurityRequirement(name = "basicAuth")
+  @SecurityRequirement(name = "negotiate")
+  def generateTokenExperimentalGet(authentication: Authentication, @RequestParam("group-prefixes") groupPrefixes: Optional[String]): CompletableFuture[TokensWrapper] = {
+
+    val user: User = authentication.getPrincipal match {
+      case u: User => u
+      case k: KerberosUserDetails => k.getUser
+      case _ => throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not authenticated or unknown principal type")
+    }
+    val groupPrefixesStrScala = groupPrefixes.toScalaOption
+
+    val filteredGroupsUser = user.applyIfDefined(groupPrefixesStrScala) { (user: User, prefixesStr: String) =>
+      val prefixes = prefixesStr.trim.split(',')
+      user.filterGroupsByPrefixes(prefixes.toSet)
+    }
+
+    val accessJwt = jwtService.generateAccessToken(filteredGroupsUser)
+    val refreshJwt = jwtService.generateRefreshToken(filteredGroupsUser)
+    Future.successful(TokensWrapper.fromTokens(accessJwt, refreshJwt))
+  }
+
+  @Tags(Array(new Tag(name = "token")))
+  @Operation(
     summary = "Refreshes access JWT",
     // note: further implementation, perhaps in https://github.com/AbsaOSS/login-service/issues/76, may issue new refresh tokens
     description = """Refreshed access JWT and (currently original) refresh JWTs signed by the private key, verifiable by the public key available at /token/public-key. RSA256 is used.""",
