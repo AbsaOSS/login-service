@@ -21,7 +21,7 @@ import org.springframework.core.io.FileSystemResource
 import org.springframework.security.authentication.ProviderManager
 import org.springframework.security.kerberos.authentication.{KerberosAuthenticationProvider, KerberosServiceAuthenticationProvider}
 import org.springframework.security.kerberos.authentication.sun.{SunJaasKerberosClient, SunJaasKerberosTicketValidator}
-import org.springframework.security.kerberos.web.authentication.SpnegoAuthenticationProcessingFilter
+import org.springframework.security.kerberos.web.authentication.{SpnegoAuthenticationProcessingFilter, SpnegoEntryPoint}
 import za.co.absa.loginsvc.rest.config.auth.ActiveDirectoryLDAPConfig
 
 class KerberosSPNEGOAuthenticationProvider(activeDirectoryLDAPConfig: ActiveDirectoryLDAPConfig) {
