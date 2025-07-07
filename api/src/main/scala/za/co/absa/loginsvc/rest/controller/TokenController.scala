@@ -94,7 +94,7 @@ class TokenController @Autowired()(jwtService: JWTService) {
   @Tags(Array(new Tag(name = "token")))
   @Operation(
     summary = "Generates access and refresh JWTs",
-    description = """Generates access and refresh JWTs signed by the private key, verifiable by the public key available at /token/public-key. RSA256 is used.""",
+    description = """This is a direct copy of /token/generate, just GET at a different path. Generates access and refresh JWTs signed by the private key, verifiable by the public key available at /token/public-key. RSA256 is used.""",
     responses = Array(
       new ApiResponse(responseCode = "200", description = "JWTs are retrieved in the response body",
         content = Array(new Content(
