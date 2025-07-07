@@ -28,6 +28,7 @@ import za.co.absa.loginsvc.rest.provider.kerberos.KerberosSPNEGOAuthenticationPr
 
 import javax.servlet.http.{HttpServletRequest, HttpServletResponse}
 import org.springframework.security.core.AuthenticationException
+import org.springframework.security.kerberos.web.authentication.SpnegoEntryPoint
 
 @Configuration
 @EnableWebSecurity
@@ -36,12 +37,20 @@ class SecurityConfig @Autowired()(authConfigsProvider: AuthConfigProvider) {
   private val ldapConfig = authConfigsProvider.getLdapConfig.orNull
 
   @Bean
+  def spnegoEntryPoint(): SpnegoEntryPoint = {
+    new SpnegoEntryPoint("/token/experimental/get-generate")
+  }
+
+  @Bean
   def filterChain(http: HttpSecurity): SecurityFilterChain = {
     http
       .csrf()
         .disable()
       .cors()
         .and()
+      .exceptionHandling()
+        .authenticationEntryPoint(spnegoEntryPoint())
+      .and()
       .authorizeRequests()
       .antMatchers(
         "/v3/api-docs*", // /v3/api-docs + /v3/api-docs.yaml
