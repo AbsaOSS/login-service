@@ -23,7 +23,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import io.swagger.v3.oas.annotations.tags.{Tag, Tags}
 import io.swagger.v3.oas.annotations.{Operation, Parameter}
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.http.{HttpStatus, MediaType}
+import org.springframework.http.{HttpHeaders, HttpStatus, MediaType, ResponseEntity}
 import org.springframework.security.core.Authentication
 import org.springframework.web.bind.annotation._
 import org.springframework.web.server.ResponseStatusException
@@ -92,24 +92,7 @@ class TokenController @Autowired()(jwtService: JWTService) {
   }
 
   @Tags(Array(new Tag(name = "token")))
-  @Operation(
-    summary = "Generates access and refresh JWTs",
-    description = """This is a direct copy of /token/generate, just GET at a different path. Generates access and refresh JWTs signed by the private key, verifiable by the public key available at /token/public-key. RSA256 is used.""",
-    responses = Array(
-      new ApiResponse(responseCode = "200", description = "JWTs are retrieved in the response body",
-        content = Array(new Content(
-          schema = new Schema(implementation = classOf[TokensWrapper]),
-          examples = Array(new ExampleObject(value = "{\n  \"token\": \"abcd123.efgh456.ijkl789\",\n  \"refresh\": \"ab12.cd34.ef56\"\n}")))
-        )
-      ),
-      new ApiResponse(responseCode = "401", description = "Auth error",
-        content = Array(new Content(
-          schema = new Schema(implementation = classOf[String]), examples = Array(new ExampleObject(value = "Error: response status is 401")))
-        ))
-    )
-  )
-  @Parameter(in = ParameterIn.QUERY, name = "group-prefixes", schema = new Schema(implementation = classOf[String]), example = "pam-,dehdl-",
-    description = "Prefixes of groups only to be returned in JWT user object (,-separated)")
+  // todo desc
   @GetMapping(
     path = Array("/experimental/get-generate"),
     produces = Array(MediaType.APPLICATION_JSON_VALUE)
@@ -117,7 +100,11 @@ class TokenController @Autowired()(jwtService: JWTService) {
   @ResponseStatus(HttpStatus.OK)
   @SecurityRequirement(name = "basicAuth")
   @SecurityRequirement(name = "negotiate")
-  def generateTokenExperimentalGet(authentication: Authentication, @RequestParam("group-prefixes") groupPrefixes: Optional[String]): CompletableFuture[TokensWrapper] = {
+  def generateTokenExperimentalGet(
+                                    authentication: Authentication,
+                                    @RequestParam("group-prefixes") groupPrefixes: Optional[String],
+                                    @RequestParam("redirect-url") redirectUrl: Optional[String]
+                                  ): CompletableFuture[ResponseEntity[TokensWrapper]] = {
 
     val user: User = authentication.getPrincipal match {
       case u: User => u
@@ -133,7 +120,22 @@ class TokenController @Autowired()(jwtService: JWTService) {
 
     val accessJwt = jwtService.generateAccessToken(filteredGroupsUser)
     val refreshJwt = jwtService.generateRefreshToken(filteredGroupsUser)
-    Future.successful(TokensWrapper.fromTokens(accessJwt, refreshJwt))
+
+    val redirectUrlStrScala = redirectUrl.toScalaOption
+    redirectUrlStrScala.fold(
+      // no redirect
+      Future.successful(
+        new ResponseEntity(TokensWrapper.fromTokens(accessJwt, refreshJwt), HttpStatus.OK)
+      )
+    ){ targetUrl =>
+      // redirect to
+      val headers = new HttpHeaders()
+      headers.add("Location", s"targetUrl?access=${accessJwt.token}") // todo do better
+      Future.successful(
+        new ResponseEntity(TokensWrapper.fromTokens(accessJwt, refreshJwt), headers, HttpStatus.FOUND)
+      )
+    }
+
   }
 
   @Tags(Array(new Tag(name = "token")))
