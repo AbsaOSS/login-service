@@ -18,7 +18,7 @@ package za.co.absa.loginsvc.rest.provider.ad.ldap
 
 import org.slf4j.LoggerFactory
 import org.springframework.ldap.core.DirContextOperations
-import org.springframework.security.authentication.{AuthenticationProvider, BadCredentialsException, UsernamePasswordAuthenticationToken}
+import org.springframework.security.authentication.{AuthenticationProvider, BadCredentialsException, InternalAuthenticationServiceException, UsernamePasswordAuthenticationToken}
 import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.security.core.{Authentication, GrantedAuthority}
 import org.springframework.security.ldap.authentication.ad.{ActiveDirectoryLdapAuthenticationProvider => SpringSecurityActiveDirectoryLdapAuthenticationProvider}
@@ -45,6 +45,8 @@ class ActiveDirectoryLDAPAuthenticationProvider(config: ActiveDirectoryLDAPConfi
   private val baseImplementation = createAuthenticationProvider
 
   override def authenticate(authentication: Authentication): Authentication = {
+    throw LdapConnectionException(s"LDAP connection issuexxx", null)
+
     val username = authentication.getName
     logger.info(s"Login of user $username via LDAP")
 
@@ -82,23 +84,37 @@ class ActiveDirectoryLDAPAuthenticationProvider(config: ActiveDirectoryLDAPConfi
   }
 
   private def retryAuthAsync(attempts: Int, delayMs: Int, authentication: Authentication): Authentication = {
-    def attempt(n: Int): Future[Authentication] = Future {
+//    def attempt(n: Int): Future[Authentication] = Future {
       Try(baseImplementation.authenticate(authentication)) match {
         case Success(auth) => auth
-        case Failure(ex) if isRetryableException(ex) && n <= attempts =>
-          logger.error(s"AD authentication failed on attempt $n: ${ex.getMessage}. Retrying in ${delayMs * n}ms...")
-          Thread.sleep(delayMs * n)
-          Await.result(attempt(n + 1), Duration.Inf)
+//        case Failure(ex) if isRetryableException(ex) && n <= attempts =>
+//          logger.error(s"AD authentication failed on attempt $n: ${ex.getMessage}. Retrying in ${delayMs * n}ms...")
+//          Thread.sleep(delayMs * n)
+//          Await.result(attempt(n + 1), Duration.Inf)
         case Failure(ex: BadCredentialsException) =>
           logger.error(s"Login of user ${authentication.getName}: ${ex.getMessage}", ex)
           throw new BadCredentialsException(ex.getMessage)
+
+        case Failure(iase: InternalAuthenticationServiceException) =>
+          logger.error(s"InternalAuthenticationServiceException: ${iase.getMessage}", iase)
+          iase.printStackTrace()
+
+          iase.getCause match {
+            case ce: org.springframework.ldap.CommunicationException =>
+              logger.error(s"CommunicationException: ${ce.getMessage}", ce)
+              throw LdapConnectionException(s"LDAP connection issue: ${ce.getMessage}", ce)
+            case other =>
+              logger.error(s"other exception ${other.getClass.getName}: ${other.getMessage}", other)
+              throw other
+          }
+
         case Failure(ex) =>
-          logger.error(s"Login of user ${authentication.getName} failed after $n attempts: ${ex.getMessage}", ex)
+          logger.error(s"Login of user ${authentication.getName} failed after n attempts: ${ex.getMessage}", ex)
           ex.printStackTrace()
           throw ex
       }
-    }
-    Await.result(attempt(1), Duration.Inf)
+//    }
+//    Await.result(attempt(1), Duration.Inf)
   }
 
   private def isRetryableException(ex: Throwable): Boolean = {

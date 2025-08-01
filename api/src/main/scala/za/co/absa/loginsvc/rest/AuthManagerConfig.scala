@@ -35,7 +35,7 @@ import scala.collection.immutable.SortedMap
  *  based on the config
  * @param authConfigsProvider
  */
-@Configuration
+//@Configuration
 class AuthManagerConfig @Autowired()(authConfigsProvider: AuthConfigProvider){
 
   private val usersConfig: Option[UsersConfig] = authConfigsProvider.getUsersConfig
