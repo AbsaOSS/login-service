@@ -32,14 +32,14 @@ import za.co.absa.loginsvc.model.User
 import za.co.absa.loginsvc.rest.config.provider.ConfigProvider
 import za.co.absa.loginsvc.rest.model.{AccessToken, RefreshToken}
 import za.co.absa.loginsvc.rest.service.jwt.JWTService
-import za.co.absa.loginsvc.rest.{FakeAuthentication, RestResponseEntityExceptionHandler, SecurityConfig}
+import za.co.absa.loginsvc.rest.{AuthManagerConfig, FakeAuthentication, RestResponseEntityExceptionHandler, SecurityConfig}
 
 import java.security.interfaces.RSAPublicKey
 import java.util.Base64
 import scala.concurrent.duration._
 
 @TestPropertySource(properties = Array("spring.config.location=api/src/test/resources/application.yaml"))
-@Import(Array(classOf[ConfigProvider], classOf[SecurityConfig], classOf[RestResponseEntityExceptionHandler]))
+@Import(Array(classOf[ConfigProvider], classOf[SecurityConfig], classOf[RestResponseEntityExceptionHandler], classOf[AuthManagerConfig]))
 @WebMvcTest(controllers = Array(classOf[TokenController]))
 class TokenControllerTest extends AnyFlatSpec
   with ControllerIntegrationTestBase {
