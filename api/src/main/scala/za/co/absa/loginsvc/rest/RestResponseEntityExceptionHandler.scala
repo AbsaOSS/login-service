@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.http.{HttpStatus, ResponseEntity}
 import org.springframework.web.bind.annotation.{ControllerAdvice, ExceptionHandler, RestController}
 import za.co.absa.loginsvc.rest.model.RestMessage
+import za.co.absa.loginsvc.rest.provider.ad.ldap.LdapConnectionException
 
 @ControllerAdvice(annotations = Array(classOf[RestController]))
 class RestResponseEntityExceptionHandler {
@@ -35,6 +36,15 @@ class RestResponseEntityExceptionHandler {
   def handleInvalidSignatureException(exception: Exception): ResponseEntity[RestMessage] = {
     logger.error(exception.getMessage)
     ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(RestMessage(exception.getMessage))
+  }
+
+  @ExceptionHandler(value = Array(
+    // LDAP connection errors (during Kerberos lookup)
+    classOf[LdapConnectionException]
+  ))
+  def handleLdapConnectionException(exception: Exception): ResponseEntity[RestMessage] = {
+    logger.error(exception.getMessage)
+    ResponseEntity.status(HttpStatus.GATEWAY_TIMEOUT).body(RestMessage(exception.getMessage))
   }
 
   @ExceptionHandler(value = Array(
