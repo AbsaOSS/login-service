@@ -78,6 +78,10 @@ class SecurityConfig @Autowired()(authConfigsProvider: AuthConfigProvider, authM
 
   private def customAuthenticationEntryPoint: AuthenticationEntryPoint =
     (request: HttpServletRequest, response: HttpServletResponse, authException: AuthenticationException) => {
+      if (isKerberosEnabled) {
+        response.addHeader("WWW-Authenticate", """Basic realm="Realm"""")
+        response.addHeader("WWW-Authenticate", "Negotiate")
+      }
       authException match {
         case LdapConnectionException(msg, _) =>
           response.setStatus(HttpServletResponse.SC_GATEWAY_TIMEOUT);
