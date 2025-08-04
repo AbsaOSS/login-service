@@ -37,13 +37,7 @@ case class KerberosUserDetailsService(activeDirectoryLDAPConfig: ActiveDirectory
 
     val ldapContext = new LdapUserRepository(activeDirectoryLDAPConfig)
     logger.info(s"Searching for kerberos user:$name")
-    val userOption = try {
-      ldapContext.searchForUser(name)
-    } catch {
-      case re: Exception =>
-        logger.error(s"search for kerberos user $name failed: ${re.getMessage}", re)
-        throw re
-    }
+    val userOption = ldapContext.searchForUser(name)
 
     if(userOption.isEmpty)
       throw new BadCredentialsException(s"Cannot find kerberos user, $name, in Ldap")

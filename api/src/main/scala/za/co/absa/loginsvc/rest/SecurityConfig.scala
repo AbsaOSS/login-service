@@ -86,10 +86,6 @@ class SecurityConfig @Autowired()(authConfigsProvider: AuthConfigProvider, authM
 
         case _ =>
           response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-          if (isKerberosEnabled) {
-            response.addHeader("WWW-Authenticate", """Basic realm="Realm"""")
-            response.addHeader("WWW-Authenticate", "Negotiate")
-          }
       }
     }
 
