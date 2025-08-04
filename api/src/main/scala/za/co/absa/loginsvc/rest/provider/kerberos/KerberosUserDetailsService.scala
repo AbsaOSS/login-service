@@ -16,11 +16,13 @@
 
 package za.co.absa.loginsvc.rest.provider.kerberos
 
+import io.jsonwebtoken.UnsupportedJwtException
 import org.slf4j.LoggerFactory
 import org.springframework.security.authentication.BadCredentialsException
 import org.springframework.security.core.userdetails.{UserDetails, UserDetailsService}
 import za.co.absa.loginsvc.rest.config.auth.ActiveDirectoryLDAPConfig
 import za.co.absa.loginsvc.rest.model.KerberosUserDetails
+import za.co.absa.loginsvc.rest.provider.ad.ldap.LdapConnectionException
 import za.co.absa.loginsvc.rest.service.search.LdapUserRepository
 
 case class KerberosUserDetailsService(activeDirectoryLDAPConfig: ActiveDirectoryLDAPConfig) extends UserDetailsService {
@@ -37,7 +39,12 @@ case class KerberosUserDetailsService(activeDirectoryLDAPConfig: ActiveDirectory
 
     val ldapContext = new LdapUserRepository(activeDirectoryLDAPConfig)
     logger.info(s"Searching for kerberos user:$name")
-    val userOption = ldapContext.searchForUser(name)
+    val userOption = try {
+      ldapContext.searchForUser(name)
+    } catch {
+      case lc: LdapConnectionException => throw lc
+      case _ => throw new UnsupportedJwtException(s"User $name not found")
+    }
 
     if(userOption.isEmpty)
       throw new BadCredentialsException(s"Cannot find kerberos user, $name, in Ldap")

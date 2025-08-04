@@ -143,7 +143,7 @@ class LdapUserRepository(activeDirectoryLDAPConfig: ActiveDirectoryLDAPConfig)
     } catch {
       // while there should be no direct NamingExceptions from getDirContext (-> 504), there may still be some during context search -> 401
       case re: Exception =>
-        logger.error(s"search of user $username (LDAP lookup for Kerberos): ${re.getMessage}", re)
+        logger.error(s"search of user $username (LDAP lookup): ${re.getMessage}", re)
         re.printStackTrace()
         throw re
     }
