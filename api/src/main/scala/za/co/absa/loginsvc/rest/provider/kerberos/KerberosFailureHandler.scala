@@ -16,13 +16,17 @@
 
 package za.co.absa.loginsvc.rest.provider.kerberos
 
+import org.slf4j.LoggerFactory
 import org.springframework.security.core.AuthenticationException
 import org.springframework.security.web.authentication.AuthenticationFailureHandler
 import za.co.absa.loginsvc.rest.provider.ad.ldap.LdapConnectionException
+import za.co.absa.loginsvc.rest.service.search.LdapUserRepository
 
 import javax.servlet.http.{HttpServletRequest, HttpServletResponse}
 
 class KerberosFailureHandler extends AuthenticationFailureHandler {
+
+  private val logger = LoggerFactory.getLogger(classOf[KerberosFailureHandler])
 
   override def onAuthenticationFailure(
     request: HttpServletRequest,
@@ -30,15 +34,19 @@ class KerberosFailureHandler extends AuthenticationFailureHandler {
     exception: AuthenticationException): Unit = {
     response.addHeader("WWW-Authenticate", """Basic realm="Realm"""")
     response.addHeader("WWW-Authenticate", "Negotiate")
+    response.setContentType("application/json")
+    response.getWriter.write(s"""{"error": "Error handled by handler ${exception.getClass.getName}"}""")
+    response.getWriter.write(s"""{"error": "Inner Error handled by handler ${exception.getCause.getClass.getName}"}""")
+
     exception.getCause match {
       case LdapConnectionException(msg, _) =>
-        response.setStatus(HttpServletResponse.SC_GATEWAY_TIMEOUT);
-        response.setContentType("application/json");
-        response.getWriter.write(s"""{"error": "LDAP connection failed: $msg"}""");
+        response.setStatus(HttpServletResponse.SC_GATEWAY_TIMEOUT)
+        response.setContentType("application/json")
+        response.getWriter.write(s"""{"error": "LDAP connection failed: $msg"}""")
       case _ =>
-        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-        response.setContentType("application/json");
-        response.getWriter.write(s"""{"error": "User unauthorized"}""");
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED)
+        response.setContentType("application/json")
+        response.getWriter.write(s"""{"error": "User unauthorized"}""")
     }
   }
 }
