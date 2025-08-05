@@ -66,7 +66,7 @@ class LdapUserRepository(activeDirectoryLDAPConfig: ActiveDirectoryLDAPConfig)
       new InitialLdapContext(env, Array[Control](new PagedResultsControl(1000, Control.CRITICAL)))
     } catch {
       case ne: NamingException =>
-        throw LdapConnectionException(s"LDAP connection issue (LDAP init for Kerberos): ${ne.getMessage}", ne)
+        throw LdapConnectionException(s"LDAP connection issue (LDAP init): ${ne.getMessage}", ne)
       case other =>
         throw other
     }
@@ -144,7 +144,6 @@ class LdapUserRepository(activeDirectoryLDAPConfig: ActiveDirectoryLDAPConfig)
       // while there should be no direct NamingExceptions from getDirContext (-> 504), there may still be some during context search -> 401
       case re: Exception =>
         logger.error(s"search of user $username (LDAP lookup): ${re.getMessage}", re)
-        re.printStackTrace()
         throw re
     }
   }

@@ -1,6 +1,5 @@
 package za.co.absa.loginsvc.rest.provider.kerberos
 
-import org.springframework.http.HttpStatus
 import org.springframework.security.core.AuthenticationException
 import org.springframework.security.web.authentication.AuthenticationFailureHandler
 import za.co.absa.loginsvc.rest.provider.ad.ldap.LdapConnectionException
@@ -20,9 +19,10 @@ class KerberosFailureHandler extends AuthenticationFailureHandler {
         response.setStatus(HttpServletResponse.SC_GATEWAY_TIMEOUT);
         response.setContentType("application/json");
         response.getWriter.write(s"""{"error": "LDAP connection failed: $msg"}""");
-
       case _ =>
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setContentType("application/json");
+        response.getWriter.write(s"""{"error": "User unauthorized"}""");
     }
   }
 }
