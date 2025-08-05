@@ -26,6 +26,7 @@ import za.co.absa.loginsvc.model.User
 import za.co.absa.loginsvc.rest.config.jwt.InMemoryKeyConfig
 import za.co.absa.loginsvc.rest.config.provider.JwtConfigProvider
 import za.co.absa.loginsvc.rest.model.{AccessToken, RefreshToken, Token}
+import za.co.absa.loginsvc.rest.provider.ad.ldap.LdapConnectionException
 import za.co.absa.loginsvc.rest.service.jwt.JWTService.{extractUserFrom, parseWithKeys}
 import za.co.absa.loginsvc.rest.service.search.UserSearchService
 
@@ -137,7 +138,8 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider, authSearchSe
         val prefixedGroups = searchedUser.groups.intersect(userFromOldAccessToken.groups) // only keep groups that were in old token
         User(searchedUser.name, prefixedGroups, searchedUser.optionalAttributes)
       } catch {
-        case _: Throwable => throw new UnsupportedJwtException(s"User ${userFromOldAccessToken.name} not found")
+        case lc: LdapConnectionException => throw lc
+        case _ => throw new UnsupportedJwtException(s"User ${userFromOldAccessToken.name} not found")
       }
     } // check if user still exists
 

@@ -19,9 +19,9 @@ package za.co.absa.loginsvc.rest
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.{Bean, Configuration}
-import org.springframework.security.authentication.{AuthenticationManager, AuthenticationProvider}
+import org.springframework.security.authentication.{AuthenticationManager, AuthenticationProvider, ProviderManager}
+import org.springframework.security.config.annotation.ObjectPostProcessor
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder
-import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import za.co.absa.loginsvc.rest.config.auth.{ActiveDirectoryLDAPConfig, ConfigOrdering, UsersConfig}
 import za.co.absa.loginsvc.rest.config.provider.AuthConfigProvider
 import za.co.absa.loginsvc.rest.config.validation.ConfigValidationException
@@ -36,7 +36,7 @@ import scala.collection.immutable.SortedMap
  * @param authConfigsProvider
  */
 @Configuration
-class AuthManagerConfig @Autowired()(authConfigsProvider: AuthConfigProvider){
+class AuthManagerConfig @Autowired()(authConfigsProvider: AuthConfigProvider, objectProcessor: ObjectPostProcessor[Object]){
 
   private val usersConfig: Option[UsersConfig] = authConfigsProvider.getUsersConfig
   private val adLDAPConfig: Option[ActiveDirectoryLDAPConfig] = authConfigsProvider.getLdapConfig
@@ -44,15 +44,14 @@ class AuthManagerConfig @Autowired()(authConfigsProvider: AuthConfigProvider){
   private val logger = LoggerFactory.getLogger(classOf[AuthManagerConfig])
 
   @Bean
-  def authManager(http: HttpSecurity): AuthenticationManager = {
-
-    val authenticationManagerBuilder = http.getSharedObject(classOf[AuthenticationManagerBuilder]).parentAuthenticationManager(null)
+  def authManager(): AuthenticationManager = {
     val configs: Array[ConfigOrdering] = Array(usersConfig, adLDAPConfig).flatten
     val orderedProviders = createAuthProviders(configs)
 
     if(orderedProviders.isEmpty)
       throw ConfigValidationException("No authentication method enabled in config")
 
+    val authenticationManagerBuilder = new AuthenticationManagerBuilder(objectProcessor)
     orderedProviders.zipWithIndex.foreach { case (authProvider, index) =>
       logger.info(s"Authentication method ${authProvider.getClass.getSimpleName} has been initialized at order ${index + 1}")
       authenticationManagerBuilder.authenticationProvider(authProvider)
