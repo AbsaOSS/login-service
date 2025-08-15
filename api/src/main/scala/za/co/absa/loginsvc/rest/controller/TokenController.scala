@@ -28,6 +28,7 @@ import org.springframework.security.core.Authentication
 import org.springframework.web.bind.annotation._
 import org.springframework.web.server.ResponseStatusException
 import za.co.absa.loginsvc.model.User
+import za.co.absa.loginsvc.rest.config.provider.ExperimentalRestConfigProvider
 import za.co.absa.loginsvc.rest.model.{KerberosUserDetails, PublicKey, PublicKeySet, TokensWrapper}
 import za.co.absa.loginsvc.rest.service.jwt.JWTService
 import za.co.absa.loginsvc.utils.OptionUtils.ImplicitBuilderExt
@@ -40,9 +41,10 @@ import scala.concurrent.duration.FiniteDuration
 
 @RestController
 @RequestMapping(Array("/token"))
-class TokenController @Autowired()(jwtService: JWTService) {
+class TokenController @Autowired()(jwtService: JWTService, experimentalConfigProvider: ExperimentalRestConfigProvider) {
 
   private lazy val refreshExpDuration: FiniteDuration = jwtService.getConfiguredRefreshExpDuration
+  private lazy val experimentalRestConfig = experimentalConfigProvider.getExperimentalRestConfig
 
   import za.co.absa.loginsvc.utils.implicits._
 
@@ -118,6 +120,7 @@ class TokenController @Autowired()(jwtService: JWTService) {
   @SecurityRequirement(name = "basicAuth")
   @SecurityRequirement(name = "negotiate")
   def generateTokenExperimentalGet(authentication: Authentication, @RequestParam("group-prefixes") groupPrefixes: Optional[String]): CompletableFuture[TokensWrapper] = {
+    failIfExperimentalIsNotAllowed()
 
     val user: User = authentication.getPrincipal match {
       case u: User => u
@@ -237,6 +240,12 @@ class TokenController @Autowired()(jwtService: JWTService) {
 
     import scala.collection.JavaConverters._
     Future.successful(jwk.toJSONObject(true).asScala.toMap)
+  }
+
+  private def failIfExperimentalIsNotAllowed(): Unit = {
+    if (!experimentalRestConfig.enabled) {
+      throw ExperimentalFeaturesNotEnabledException("To use, you need to enable experimental features in config: `loginsvc.rest.experimental.enabled=true`")
+    }
   }
 }
 

@@ -24,25 +24,26 @@ import pureconfig.generic.auto._
 import pureconfig.module.yaml._
 import za.co.absa.loginsvc.rest.config.actuator.GitConfig
 import za.co.absa.loginsvc.rest.config.auth._
+import za.co.absa.loginsvc.rest.config.experimental.ExperimentalRestConfig
 import za.co.absa.loginsvc.rest.config.jwt.{AwsSecretsManagerKeyConfig, InMemoryKeyConfig, KeyConfig}
 import za.co.absa.loginsvc.rest.config.validation.ConfigValidationException
-import za.co.absa.loginsvc.rest.config.BaseConfig
 
 @Component
 class ConfigProvider(@Value("${spring.config.location}") yamlPath: String)
   extends JwtConfigProvider
-    with AuthConfigProvider {
+    with AuthConfigProvider
+    with ExperimentalRestConfigProvider {
 
   private val logger = LoggerFactory.getLogger(classOf[ConfigProvider])
   private val yamlConfig: YamlConfigSource = YamlConfigSource.file(yamlPath)
 
-  if(yamlConfig.value().isRight) logger.info(s"Config File successfully loaded from $yamlPath")
+  if (yamlConfig.value().isRight) logger.info(s"Config File successfully loaded from $yamlPath")
   else throw ConfigValidationException(s"Config File could not be loaded from $yamlPath")
 
   //GitConfig needs to be initialized at startup
   getGitConfig
 
-  def getJwtKeyConfig : KeyConfig = {
+  def getJwtKeyConfig: KeyConfig = {
     val inMemoryKeyConfig: Option[InMemoryKeyConfig] = createConfigClass[InMemoryKeyConfig]("loginsvc.rest.jwt.generate-in-memory")
     val awsSecretsManagerKeyConfig: Option[AwsSecretsManagerKeyConfig] = createConfigClass[AwsSecretsManagerKeyConfig]("loginsvc.rest.jwt.aws-secrets-manager")
 
@@ -70,15 +71,15 @@ class ConfigProvider(@Value("${spring.config.location}") yamlPath: String)
     }
   }
 
-  def getLdapConfig : Option[ActiveDirectoryLDAPConfig] = {
+  def getLdapConfig: Option[ActiveDirectoryLDAPConfig] = {
     val ldapConfigOption = createConfigClass[ActiveDirectoryLDAPConfig]("loginsvc.rest.auth.provider.ldap")
-    if(ldapConfigOption.nonEmpty)
+    if (ldapConfigOption.nonEmpty)
       ldapConfigOption.get.throwErrors()
 
     ldapConfigOption
   }
 
-  def getUsersConfig : Option[UsersConfig] = {
+  def getUsersConfig: Option[UsersConfig] = {
     val userConfigOption = createConfigClass[UsersConfig]("loginsvc.rest.auth.provider.users")
     if (userConfigOption.nonEmpty)
       userConfigOption.get.throwErrors()
@@ -91,10 +92,14 @@ class ConfigProvider(@Value("${spring.config.location}") yamlPath: String)
       getOrElse(GitConfig(generateGitProperties = false, generateGitPropertiesFile = false))
   }
 
-  private def createConfigClass[A](nameSpace : String)(implicit reader: ConfigReader[A]) : Option[A] = {
-    val configProperty : ConfigSource = this.yamlConfig.at(nameSpace)
-    val configClass : Option[A] = configProperty.load[A].toOption
-    if(configProperty.value().isRight && configClass.isEmpty)
+  override def getExperimentalRestConfig: ExperimentalRestConfig = {
+    createConfigClass[ExperimentalRestConfig]("loginsvc.rest.experimental").getOrElse(ExperimentalRestConfig.default)
+  }
+
+  private def createConfigClass[A](nameSpace: String)(implicit reader: ConfigReader[A]): Option[A] = {
+    val configProperty: ConfigSource = this.yamlConfig.at(nameSpace)
+    val configClass: Option[A] = configProperty.load[A].toOption
+    if (configProperty.value().isRight && configClass.isEmpty)
       throw ConfigValidationException(s"Config properties $nameSpace found but could not be parsed, please check if correct")
 
     configClass

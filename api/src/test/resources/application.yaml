@@ -44,6 +44,8 @@ loginsvc:
               attributes:
                 displayname: "User Two"
                 mail: "user@two.org"
+    experimental:
+      enabled: true
 
 # App Config
 spring:

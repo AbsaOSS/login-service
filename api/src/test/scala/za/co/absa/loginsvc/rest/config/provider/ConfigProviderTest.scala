@@ -19,17 +19,15 @@ package za.co.absa.loginsvc.rest.config.provider
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import za.co.absa.loginsvc.rest.config.auth.{ActiveDirectoryLDAPConfig, LdapRetryConfig, UsersConfig}
-import za.co.absa.loginsvc.rest.config.BaseConfig
+import za.co.absa.loginsvc.rest.config.experimental.ExperimentalRestConfig
 import za.co.absa.loginsvc.rest.config.jwt.KeyConfig
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.FiniteDuration
-import java.util.concurrent.TimeUnit
-import scala.concurrent.duration.FiniteDuration
 
-class ConfigProviderTest extends AnyFlatSpec with Matchers  {
+class ConfigProviderTest extends AnyFlatSpec with Matchers {
 
-  private val configProvider : ConfigProvider = new ConfigProvider("api/src/test/resources/application.yaml")
+  private val configProvider: ConfigProvider = new ConfigProvider("api/src/test/resources/application.yaml")
 
   "The jwtConfig properties" should "Match" in {
     val keyConfig: KeyConfig = configProvider.getJwtKeyConfig
@@ -67,5 +65,10 @@ class ConfigProviderTest extends AnyFlatSpec with Matchers  {
     usersConfig.knownUsers(1).attributes shouldBe Some(Map("mail" -> "user@two.org", "displayname" -> "User Two"))
     usersConfig.knownUsers(1).password shouldBe "password2"
     usersConfig.knownUsers(1).username shouldBe "user2"
+  }
+
+  "The experimental config" should "be loaded correctly" in {
+    val experimentalConfig: ExperimentalRestConfig = configProvider.getExperimentalRestConfig
+    experimentalConfig.enabled shouldBe true
   }
 }

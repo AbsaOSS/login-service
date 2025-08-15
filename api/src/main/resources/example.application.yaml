@@ -93,6 +93,10 @@ loginsvc:
             mail: "email"
             displayname: "displayname"
 
+    experimental:
+      # ability to enable experimental endpoints (default=false)
+      enabled: false
+
 # App Config
 spring:
   application:

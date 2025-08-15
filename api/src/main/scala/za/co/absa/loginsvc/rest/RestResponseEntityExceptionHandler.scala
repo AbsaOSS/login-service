@@ -19,6 +19,7 @@ package za.co.absa.loginsvc.rest
 import org.slf4j.LoggerFactory
 import org.springframework.http.{HttpStatus, ResponseEntity}
 import org.springframework.web.bind.annotation.{ControllerAdvice, ExceptionHandler, RestController}
+import za.co.absa.loginsvc.rest.controller.ExperimentalFeaturesNotEnabledException
 import za.co.absa.loginsvc.rest.model.RestMessage
 import za.co.absa.loginsvc.rest.provider.ad.ldap.LdapConnectionException
 
@@ -46,6 +47,15 @@ class RestResponseEntityExceptionHandler {
     logger.error(exception.getMessage)
     ResponseEntity.status(HttpStatus.GATEWAY_TIMEOUT).body(RestMessage(exception.getMessage))
   }
+
+  @ExceptionHandler(value = Array(
+    classOf[ExperimentalFeaturesNotEnabledException]
+  ))
+  def handleExperimentalFeaturesNotEnabledException(exception: Exception): ResponseEntity[RestMessage] = {
+    logger.error(exception.getMessage)
+    ResponseEntity.status(HttpStatus.CONFLICT).body(RestMessage(exception.getMessage))
+  }
+
 
   @ExceptionHandler(value = Array(
     classOf[java.security.SignatureException], // other signature exceptions, e.g signature mismatch, malformed, ...
