@@ -18,7 +18,7 @@ package za.co.absa.loginsvc.rest.provider.ad.ldap
 
 import org.slf4j.LoggerFactory
 import org.springframework.ldap.core.DirContextOperations
-import org.springframework.security.authentication.{AuthenticationProvider, BadCredentialsException, UsernamePasswordAuthenticationToken}
+import org.springframework.security.authentication.{AuthenticationProvider, BadCredentialsException, InternalAuthenticationServiceException, UsernamePasswordAuthenticationToken}
 import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.security.core.{Authentication, GrantedAuthority}
 import org.springframework.security.ldap.authentication.ad.{ActiveDirectoryLdapAuthenticationProvider => SpringSecurityActiveDirectoryLdapAuthenticationProvider}
@@ -89,11 +89,25 @@ class ActiveDirectoryLDAPAuthenticationProvider(config: ActiveDirectoryLDAPConfi
           logger.error(s"AD authentication failed on attempt $n: ${ex.getMessage}. Retrying in ${delayMs * n}ms...")
           Thread.sleep(delayMs * n)
           Await.result(attempt(n + 1), Duration.Inf)
+
         case Failure(ex: BadCredentialsException) =>
           logger.error(s"Login of user ${authentication.getName}: ${ex.getMessage}", ex)
           throw new BadCredentialsException(ex.getMessage)
+
+        case Failure(iase: InternalAuthenticationServiceException) =>
+          iase.getCause match {
+            case ce: org.springframework.ldap.CommunicationException =>
+              logger.error(s"InternalAuthenticationServiceException-CommunicationException: ${ce.getMessage}", ce)
+              ce.printStackTrace()
+              throw LdapConnectionException(s"LDAP connection issue: ${ce.getMessage}", ce)
+            case other =>
+              other.printStackTrace()
+              logger.error(s"InternalAuthenticationServiceException (other): ${other.getClass.getName}: ${other.getMessage}", other)
+              throw other
+          }
+
         case Failure(ex) =>
-          logger.error(s"Login of user ${authentication.getName} failed after $n attempts: ${ex.getMessage}", ex)
+          logger.error(s"Login of user ${authentication.getName} failed after n attempts: ${ex.getMessage}", ex)
           ex.printStackTrace()
           throw ex
       }

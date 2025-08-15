@@ -19,9 +19,10 @@ package za.co.absa.loginsvc.rest.service.search
 import org.slf4j.LoggerFactory
 import za.co.absa.loginsvc.model.User
 import za.co.absa.loginsvc.rest.config.auth.ActiveDirectoryLDAPConfig
+import za.co.absa.loginsvc.rest.provider.ad.ldap.LdapConnectionException
 
 import java.util
-import javax.naming.Context
+import javax.naming.{Context, NamingException}
 import javax.naming.directory.{Attributes, DirContext, SearchControls, SearchResult}
 import javax.naming.ldap.{Control, InitialLdapContext, PagedResultsControl}
 import scala.collection.JavaConverters.enumerationAsScalaIteratorConverter
@@ -60,7 +61,16 @@ class LdapUserRepository(activeDirectoryLDAPConfig: ActiveDirectoryLDAPConfig)
     env.put(Context.SECURITY_PRINCIPAL, principal)
     env.put(Context.SECURITY_CREDENTIALS, credential)
 
-    new InitialLdapContext(env, Array[Control](new PagedResultsControl(1000, Control.CRITICAL)))
+    // converting LDAP connection errors into LdapConnectionException
+    try {
+      new InitialLdapContext(env, Array[Control](new PagedResultsControl(1000, Control.CRITICAL)))
+    } catch {
+      case ne: NamingException =>
+        throw LdapConnectionException(s"LDAP connection issue (LDAP init): ${ne.getMessage}", ne)
+      case other =>
+        throw other
+    }
+
   }
 
   private def getSimpleSearchControls: SearchControls = {
@@ -131,9 +141,9 @@ class LdapUserRepository(activeDirectoryLDAPConfig: ActiveDirectoryLDAPConfig)
       context.close()
       userList
     } catch {
+      // while there should be no direct NamingExceptions from getDirContext (-> 504), there may still be some during context search -> 401
       case re: Exception =>
-        logger.error(s"search of user $username: ${re.getMessage}", re)
-        re.printStackTrace()
+        logger.error(s"search of user $username (LDAP lookup): ${re.getMessage}", re)
         throw re
     }
   }

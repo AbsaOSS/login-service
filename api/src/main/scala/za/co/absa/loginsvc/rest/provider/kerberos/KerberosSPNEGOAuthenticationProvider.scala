@@ -45,6 +45,7 @@ class KerberosSPNEGOAuthenticationProvider(activeDirectoryLDAPConfig: ActiveDire
     {
       val filter: SpnegoAuthenticationProcessingFilter = new SpnegoAuthenticationProcessingFilter()
       filter.setAuthenticationManager(new ProviderManager(kerberosServiceAuthenticationProvider))
+      filter.setFailureHandler(new KerberosFailureHandler)
       filter.afterPropertiesSet()
       filter
     }

@@ -18,12 +18,15 @@ package za.co.absa.loginsvc.rest
 
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.{Bean, Configuration}
+import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.config.http.SessionCreationPolicy
-import org.springframework.security.web.SecurityFilterChain
+import org.springframework.security.core.AuthenticationException
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter
+import org.springframework.security.web.{AuthenticationEntryPoint, SecurityFilterChain}
 import za.co.absa.loginsvc.rest.config.provider.AuthConfigProvider
+import za.co.absa.loginsvc.rest.provider.ad.ldap.LdapConnectionException
 import za.co.absa.loginsvc.rest.provider.kerberos.KerberosSPNEGOAuthenticationProvider
 
 import javax.servlet.http.{HttpServletRequest, HttpServletResponse}
@@ -32,25 +35,32 @@ import org.springframework.security.kerberos.web.authentication.SpnegoEntryPoint
 
 @Configuration
 @EnableWebSecurity
-class SecurityConfig @Autowired()(authConfigsProvider: AuthConfigProvider) {
+class SecurityConfig @Autowired()(authConfigsProvider: AuthConfigProvider, authManager: AuthenticationManager) {
 
   private val ldapConfig = authConfigsProvider.getLdapConfig.orNull
+  private val isKerberosEnabled = authConfigsProvider.getLdapConfig.exists(_.enableKerberos.isDefined)
 
   @Bean
   def spnegoEntryPoint(): SpnegoEntryPoint = {
     new SpnegoEntryPoint("/token/experimental/get-generate")
   }
 
+    /* ???
+    .exceptionHandling()
+    .authenticationEntryPoint(spnegoEntryPoint())
+    .and()
+     */
+
   @Bean
   def filterChain(http: HttpSecurity): SecurityFilterChain = {
     http
+      .exceptionHandling()
+        .authenticationEntryPoint(customAuthenticationEntryPoint)
+        .and()
       .csrf()
         .disable()
       .cors()
         .and()
-      .exceptionHandling()
-        .authenticationEntryPoint(spnegoEntryPoint())
-      .and()
       .authorizeRequests()
       .antMatchers(
         "/v3/api-docs*", // /v3/api-docs + /v3/api-docs.yaml
@@ -66,29 +76,34 @@ class SecurityConfig @Autowired()(authConfigsProvider: AuthConfigProvider) {
       .sessionManagement()
         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
         .and()
-      .httpBasic()
+      // like "httpBasic", but with special handling fo custom exceptions:
+      .addFilterAt(new BasicAuthenticationFilter(authManager, customAuthenticationEntryPoint), classOf[BasicAuthenticationFilter])
 
-    if(ldapConfig != null)
-      {
-        if(ldapConfig.enableKerberos.isDefined)
-        {
-          val kerberos = new KerberosSPNEGOAuthenticationProvider(ldapConfig)
-
-          http.addFilterBefore(
-              kerberos.spnegoAuthenticationProcessingFilter,
-              classOf[BasicAuthenticationFilter])
-              .exceptionHandling()
-              .authenticationEntryPoint((request: HttpServletRequest,
-                                         response: HttpServletResponse,
-                                         authException: AuthenticationException) => {
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED)
-                response.addHeader("WWW-Authenticate", """Basic realm="Realm"""")
-                response.addHeader("WWW-Authenticate", "Negotiate")
-              })
-        }
-      }
+    if (isKerberosEnabled) {
+      val kerberos = new KerberosSPNEGOAuthenticationProvider(ldapConfig)
+      http.addFilterBefore(
+        kerberos.spnegoAuthenticationProcessingFilter,
+        classOf[BasicAuthenticationFilter])
+    }
 
     http.build()
   }
+
+  private def customAuthenticationEntryPoint: AuthenticationEntryPoint =
+    (request: HttpServletRequest, response: HttpServletResponse, authException: AuthenticationException) => {
+      if (isKerberosEnabled) {
+        response.addHeader("WWW-Authenticate", """Basic realm="Realm"""")
+        response.addHeader("WWW-Authenticate", "Negotiate")
+      }
+      authException match {
+        case LdapConnectionException(msg, _) =>
+          response.setStatus(HttpServletResponse.SC_GATEWAY_TIMEOUT);
+          response.setContentType("application/json");
+          response.getWriter.write(s"""{"error": "LDAP connection failed: $msg"}""");
+
+        case _ =>
+          response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+      }
+    }
 
 }
