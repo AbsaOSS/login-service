@@ -28,6 +28,7 @@ import org.springframework.security.core.Authentication
 import org.springframework.web.bind.annotation._
 import org.springframework.web.server.ResponseStatusException
 import za.co.absa.loginsvc.model.User
+import za.co.absa.loginsvc.rest.config.provider.ExperimentalRestConfigProvider
 import za.co.absa.loginsvc.rest.model.{KerberosUserDetails, PublicKey, PublicKeySet, TokensWrapper}
 import za.co.absa.loginsvc.rest.service.jwt.JWTService
 import za.co.absa.loginsvc.utils.OptionUtils.ImplicitBuilderExt
@@ -40,9 +41,10 @@ import scala.concurrent.duration.FiniteDuration
 
 @RestController
 @RequestMapping(Array("/token"))
-class TokenController @Autowired()(jwtService: JWTService) {
+class TokenController @Autowired()(jwtService: JWTService, experimentalConfigProvider: ExperimentalRestConfigProvider) {
 
   private lazy val refreshExpDuration: FiniteDuration = jwtService.getConfiguredRefreshExpDuration
+  private lazy val experimentalRestConfig = experimentalConfigProvider.getExperimentalRestConfig
 
   import za.co.absa.loginsvc.utils.implicits._
 
@@ -73,6 +75,52 @@ class TokenController @Autowired()(jwtService: JWTService) {
   @SecurityRequirement(name = "basicAuth")
   @SecurityRequirement(name = "negotiate")
   def generateToken(authentication: Authentication, @RequestParam("group-prefixes") groupPrefixes: Optional[String]): CompletableFuture[TokensWrapper] = {
+
+    val user: User = authentication.getPrincipal match {
+      case u: User => u
+      case k: KerberosUserDetails => k.getUser
+      case _ => throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not authenticated or unknown principal type")
+    }
+    val groupPrefixesStrScala = groupPrefixes.toScalaOption
+
+    val filteredGroupsUser = user.applyIfDefined(groupPrefixesStrScala) { (user: User, prefixesStr: String) =>
+      val prefixes = prefixesStr.trim.split(',')
+      user.filterGroupsByPrefixes(prefixes.toSet)
+    }
+
+    val accessJwt = jwtService.generateAccessToken(filteredGroupsUser)
+    val refreshJwt = jwtService.generateRefreshToken(filteredGroupsUser)
+    Future.successful(TokensWrapper.fromTokens(accessJwt, refreshJwt))
+  }
+
+  @Tags(Array(new Tag(name = "token")))
+  @Operation(
+    summary = "Generates access and refresh JWTs",
+    description = """This is a direct copy of /token/generate, just GET at a different path. Generates access and refresh JWTs signed by the private key, verifiable by the public key available at /token/public-key. RSA256 is used.""",
+    responses = Array(
+      new ApiResponse(responseCode = "200", description = "JWTs are retrieved in the response body",
+        content = Array(new Content(
+          schema = new Schema(implementation = classOf[TokensWrapper]),
+          examples = Array(new ExampleObject(value = "{\n  \"token\": \"abcd123.efgh456.ijkl789\",\n  \"refresh\": \"ab12.cd34.ef56\"\n}")))
+        )
+      ),
+      new ApiResponse(responseCode = "401", description = "Auth error",
+        content = Array(new Content(
+          schema = new Schema(implementation = classOf[String]), examples = Array(new ExampleObject(value = "Error: response status is 401")))
+        ))
+    )
+  )
+  @Parameter(in = ParameterIn.QUERY, name = "group-prefixes", schema = new Schema(implementation = classOf[String]), example = "pam-,dehdl-",
+    description = "Prefixes of groups only to be returned in JWT user object (,-separated)")
+  @GetMapping(
+    path = Array("/experimental/get-generate"),
+    produces = Array(MediaType.APPLICATION_JSON_VALUE)
+  )
+  @ResponseStatus(HttpStatus.OK)
+  @SecurityRequirement(name = "basicAuth")
+  @SecurityRequirement(name = "negotiate")
+  def generateTokenExperimentalGet(authentication: Authentication, @RequestParam("group-prefixes") groupPrefixes: Optional[String]): CompletableFuture[TokensWrapper] = {
+    failIfExperimentalIsNotAllowed()
 
     val user: User = authentication.getPrincipal match {
       case u: User => u
@@ -192,6 +240,12 @@ class TokenController @Autowired()(jwtService: JWTService) {
 
     import scala.collection.JavaConverters._
     Future.successful(jwk.toJSONObject(true).asScala.toMap)
+  }
+
+  private def failIfExperimentalIsNotAllowed(): Unit = {
+    if (!experimentalRestConfig.enabled) {
+      throw ExperimentalFeaturesNotEnabledException("To use, you need to enable experimental features in config: `loginsvc.rest.experimental.enabled=true`")
+    }
   }
 }
 

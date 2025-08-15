@@ -30,6 +30,8 @@ import za.co.absa.loginsvc.rest.provider.ad.ldap.LdapConnectionException
 import za.co.absa.loginsvc.rest.provider.kerberos.KerberosSPNEGOAuthenticationProvider
 
 import javax.servlet.http.{HttpServletRequest, HttpServletResponse}
+import org.springframework.security.core.AuthenticationException
+import org.springframework.security.kerberos.web.authentication.SpnegoEntryPoint
 
 @Configuration
 @EnableWebSecurity
@@ -37,6 +39,7 @@ class SecurityConfig @Autowired()(authConfigsProvider: AuthConfigProvider, authM
 
   private val ldapConfig = authConfigsProvider.getLdapConfig.orNull
   private val isKerberosEnabled = authConfigsProvider.getLdapConfig.exists(_.enableKerberos.isDefined)
+
 
   @Bean
   def filterChain(http: HttpSecurity): SecurityFilterChain = {
