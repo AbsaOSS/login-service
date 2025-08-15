@@ -40,10 +40,10 @@ class SecurityConfig @Autowired()(authConfigsProvider: AuthConfigProvider, authM
   private val ldapConfig = authConfigsProvider.getLdapConfig.orNull
   private val isKerberosEnabled = authConfigsProvider.getLdapConfig.exists(_.enableKerberos.isDefined)
 
-  @Bean
-  def spnegoEntryPoint(): SpnegoEntryPoint = {
-    new SpnegoEntryPoint("/token/experimental/get-generate")
-  }
+//  @Bean
+//  def spnegoEntryPoint(): SpnegoEntryPoint = {
+//    new SpnegoEntryPoint("/token/experimental/get-generate")
+//  }
 
     /* ???
     .exceptionHandling()
