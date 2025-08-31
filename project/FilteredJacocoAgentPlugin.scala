@@ -14,8 +14,6 @@ import scala.sys.process.*
  */
 object FilteredJacocoAgentPlugin extends AutoPlugin {
   object autoImport {
-//    val jacocoPluginEnabled = settingKey[Boolean]("Marker: this project has the JaCoCo plugin enabled")
-
     val jacocoVersion    = settingKey[String]("JaCoCo version")
     val jacocoExecFile   = settingKey[File]("Per-module JaCoCo .exec file (Test)")
     val jacocoItExecFile = settingKey[File]("Per-module JaCoCo .exec file (IntegrationTest)")
@@ -26,8 +24,7 @@ object FilteredJacocoAgentPlugin extends AutoPlugin {
     val jacocoFailOnMissingExec =
       settingKey[Boolean]("Fail jacocoReport if .exec is missing (default: false – warn & skip)")
 
-//    val jacocoClean   = taskKey[Unit]("Clean JaCoCo outputs and sbt-jacoco leftovers (per module)")
-//    val jacocoReport  = taskKey[File]("Generate JaCoCo HTML/XML/CSV report from this module's .exec")
+    val jacocoReportName = settingKey[String]("Title used for JaCoCo HTML report")
 
     // Root-only helpers (NO MERGE): just run per-module tasks across aggregated projects
     val jacocoCleanAll  = taskKey[Unit]("Run jacocoClean in all aggregated modules (no merge)")
@@ -136,7 +133,13 @@ object FilteredJacocoAgentPlugin extends AutoPlugin {
     jacocoAppend     := false,
     jacocoFailOnMissingExec := false,
 
-    // --- JMF tool wiring
+//    jacocoReportName := s"Report: ${name.value} - scala:${scalaVersion.value}",
+    jacocoReportName := {
+      val moduleId = thisProject.value.id            // or: thisProjectRef.value.project
+      s"Report: $moduleId - scala:${scalaVersion.value}"
+    },
+
+  // --- JMF tool wiring
     ivyConfigurations += Jmf,
 
     jmfOutDir   := target.value / "jmf",
@@ -291,6 +294,7 @@ object FilteredJacocoAgentPlugin extends AutoPlugin {
       val failOnMiss = jacocoFailOnMissingExec.value
       val cp = (Test / dependencyClasspath).value
       val cli = cliJar(cp)
+      val title = jacocoReportName.value
 
       // Class dirs (filter to existing)
       val mainClasses: File = Def.taskDyn {
@@ -315,7 +319,8 @@ object FilteredJacocoAgentPlugin extends AutoPlugin {
         val args = Seq("java","-jar", cli.getAbsolutePath, "report", execFile.getAbsolutePath) ++
           classDirs.flatMap(d => Seq("--classfiles",  d.getAbsolutePath)) ++
           srcDirs  .flatMap(d => Seq("--sourcefiles", d.getAbsolutePath)) ++
-          Seq("--html", reportDir.getAbsolutePath,
+          Seq("--name", title,
+            "--html", reportDir.getAbsolutePath,
             "--xml",  (reportDir / "jacoco.xml").getAbsolutePath,
             "--csv",  (reportDir / "jacoco.csv").getAbsolutePath)
 
