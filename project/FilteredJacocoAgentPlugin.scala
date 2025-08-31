@@ -36,6 +36,16 @@ object FilteredJacocoAgentPlugin extends AutoPlugin {
     val jacocoReportAll = taskKey[Unit]("Run jacocoReport in all aggregated modules (no merge)")
 
     val jacocoSetUserDirToBuildRoot = settingKey[Boolean]("Mimic non-forked runs by setting -Duser.dir to the build root for forked tests")
+
+    val jmfCoreVersion     = settingKey[String]("JMF core library version")
+    val Jmf                = config("jmf").hide
+    val jmfRewrite         = taskKey[File]("Rewrite compiled classes using JMF tool; returns output dir")
+    val jmfOutDir          = settingKey[File]("JMF output base dir")
+    val jmfRulesFile       = settingKey[File]("JMF rules file")
+    val jmfCliMain         = settingKey[String]("Main class of the JMF CLI")
+    val jmfDryRun          = settingKey[Boolean]("Dry-run rewriter")
+    val jmfEnabled         = settingKey[Boolean]("Enable JMF rewriting")
+    val jmfPrepareForTests = taskKey[Unit]("Run JMF rewrite when enabled (no self-ref to test)")
   }
   import autoImport.*
 
@@ -66,10 +76,12 @@ object FilteredJacocoAgentPlugin extends AutoPlugin {
   override def projectSettings: Seq[Setting[_]] = Seq(
     // ---- coordinates
     jacocoVersion := "0.8.12",
+    jmfCoreVersion := "0.1.7",
     libraryDependencies ++= Seq(
       // pull the agent with the runtime classifier (this is the actual -javaagent jar)
       ("org.jacoco" % "org.jacoco.agent" % jacocoVersion.value % Test).classifier("runtime"),
-      ("org.jacoco" % "org.jacoco.cli"   % jacocoVersion.value % Test).classifier("nodeps")
+      ("org.jacoco" % "org.jacoco.cli"   % jacocoVersion.value % Test).classifier("nodeps"),
+      "io.github.moranaapps" % "jacoco-method-filter-core_2.12" % jmfCoreVersion.value % Jmf.name,
     ),
     jacocoSetUserDirToBuildRoot := true,
 
@@ -81,7 +93,92 @@ object FilteredJacocoAgentPlugin extends AutoPlugin {
     jacocoAppend     := false,
     jacocoFailOnMissingExec := false,
 
-    // ---- fork so -javaagent is applied
+    // --- JMF tool wiring
+    ivyConfigurations += Jmf,
+
+    jmfOutDir   := target.value / "jmf",
+    jmfRulesFile:= (ThisBuild / baseDirectory).value / "jacoco-method-filter-rules.txt",
+    jmfCliMain  := "io.moranaapps.jacocomethodfilter.CoverageRewriter",
+    jmfDryRun   := false,
+    jmfEnabled  := true,
+
+    // the rewrite task (your code, lightly cleaned)
+    jmfRewrite := {
+      val _           = (Compile / compile).value            // ensure classes exist
+      val classesIn   = (Compile / classDirectory).value
+      if (!classesIn.exists) sys.error(s"[jmf] compiled classes not found: ${classesIn.getAbsolutePath}")
+      val hasClasses  = (classesIn ** sbt.GlobFilter("*.class")).get.nonEmpty
+      if (!hasClasses) sys.error(s"[jmf] no .class files under ${classesIn.getAbsolutePath}. Nothing to rewrite.")
+
+      val log         = streams.value.log
+      val outDir      = jmfOutDir.value / "classes-filtered"
+      IO.delete(outDir); IO.createDirectory(outDir)
+
+      val toolJars    = (Jmf / update).value.matching(artifactFilter(`type` = "jar")).distinct
+      log.info("[jmf] tool CP:\n" + toolJars.map(f => s"  - ${f.getAbsolutePath}").mkString("\n"))
+
+      val cpStr       = toolJars.mkString(java.io.File.pathSeparator)
+      val args        = Seq(
+        "java","-cp", cpStr, jmfCliMain.value,
+        "--in",   classesIn.getAbsolutePath,
+        "--out",  outDir.getAbsolutePath,
+        "--rules",jmfRulesFile.value.getAbsolutePath
+      ) ++ (if (jmfDryRun.value) Seq("--dry-run") else Seq())
+
+      log.info(s"[jmf] rewrite: ${args.mkString(" ")}")
+      val code = scala.sys.process.Process(args, baseDirectory.value).!
+      if (code != 0) sys.error(s"[jmf] rewriter failed ($code)")
+      outDir
+    },
+
+    // If disabled, do nothing. If enabled, add rewritten dir to classpath before tests run.
+//    Test / unmanagedClasspath ++= Def.taskDyn {
+//      if (jmfEnabled.value) Def.task { Seq(Attributed.blank(jmfRewrite.value)) }
+//      else                  Def.task { Seq.empty[Attributed[File]] }
+//    }.value,
+
+    // 1) preparatory task (already defined earlier)
+    jmfPrepareForTests := Def.taskDyn {
+      if (jmfEnabled.value) Def.task { jmfRewrite.value; () }
+      else                  Def.task { () }
+    }.value,
+
+    // 2) Hook into test + testQuick (regular tasks)
+//    Test / test      := (Test / test).dependsOn(jmfPrepareForTests).value,
+//    Test / testQuick := (Test / testQuick).dependsOn(jmfPrepareForTests).value,
+
+    Test / fullClasspath := Def.taskDyn {
+      // Gather the usual ingredients
+      val testOut    = (Test / classDirectory).value                      // test classes dir
+      val mainOut    = (Compile / classDirectory).value                   // original main classes dir
+      val deps       = (Test / internalDependencyClasspath).value
+      val ext        = (Test / externalDependencyClasspath).value
+      val unmanaged  = (Test / unmanagedClasspath).value
+      val scalaJars  = (Test / scalaInstance).value.allJars.map(Attributed.blank(_)).toVector
+      val resources  = (Test / resourceDirectories).value.map(Attributed.blank)
+
+      // Builder that places `rewritten` first, then testOut, then all the rest,
+      // and finally the original mainOut (so rewritten shadows it).
+      def build(rewritten: Option[File]) = Def.task {
+        val prefix: Vector[Attributed[File]] =
+          rewritten.toVector.map(Attributed.blank) :+ Attributed.blank(testOut)
+
+        val rest = (deps ++ ext ++ scalaJars ++ resources ++ unmanaged)
+          .filterNot(a =>
+            a.data == mainOut ||
+              a.data == testOut ||
+              rewritten.exists(_ == a.data)
+          )
+
+        // Re-add original mainOut at the very end to preserve completeness
+        (prefix ++ rest :+ Attributed.blank(mainOut))
+      }
+
+      if (jmfEnabled.value) build(Some(jmfRewrite.value))
+      else                  build(None)
+    }.value,
+
+      // ---- fork so -javaagent is applied
     Test / fork := true,
 
     // Attach agent for Test
@@ -121,12 +218,14 @@ object FilteredJacocoAgentPlugin extends AutoPlugin {
       println(s"[jacoco] agent status: $status; user.dir=" + System.getProperty("user.dir"))
     },
 
+
     // ---- per-module clean
     jacocoClean := {
       val log    = streams.value.log
       val outDir = target.value / "jacoco"
       IO.delete(outDir)
       IO.createDirectory(outDir)
+      IO.delete(jmfOutDir.value)
 
       // remove sbt-jacoco leftovers if they ever existed
       val instrDir = (Test / crossTarget).value / "jacoco" / "instrumented-classes"
@@ -152,9 +251,11 @@ object FilteredJacocoAgentPlugin extends AutoPlugin {
       val cli          = cliJar(cp)
 
       // Class dirs (filter to existing)
-      val mainClasses  = (Compile / classDirectory).value
-      val testClasses  = (Test    / classDirectory).value
-      val classDirs    = Seq(mainClasses, testClasses).filter(_.exists)
+      val mainClasses: File = Def.taskDyn {
+        if (jmfEnabled.value) Def.task { jmfRewrite.value }
+        else                  Def.task { (Compile / classDirectory).value }
+      }.value
+      val classDirs    = Seq(mainClasses).filter(_.exists)
 
       // Source dirs: unmanaged + managed (filter to existing)
       val unmanagedSrc = (Compile / unmanagedSourceDirectories).value
