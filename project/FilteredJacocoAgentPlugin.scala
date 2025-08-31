@@ -1,5 +1,5 @@
-import sbt.*
 import sbt.Keys.*
+import sbt.{ScopeFilter, inProjects as inP, *}
 
 import scala.sys.process.*
 
@@ -10,14 +10,11 @@ import scala.sys.process.*
  * - Writes per-module .exec files (no merging)
  * - Generates per-module reports
  * - Provides root helpers: jacocoCleanAll / jacocoReportAll that just iterate modules (no merge)
- *
- * Typical:
- *   sbt "jacocoClean; test; jacocoReport"
- *   sbt "test; it:test; jacocoReport"              // if you also use IT
- *   sbt "test; jacocoReportAll"                    // at root: runs reports in all aggregated modules
  */
 object FilteredJacocoAgentPlugin extends AutoPlugin {
   object autoImport {
+    val jacocoPluginEnabled = settingKey[Boolean]("Marker: this project has the JaCoCo plugin enabled")
+
     val jacocoVersion    = settingKey[String]("JaCoCo version")
     val jacocoExecFile   = settingKey[File]("Per-module JaCoCo .exec file (Test)")
     val jacocoItExecFile = settingKey[File]("Per-module JaCoCo .exec file (IntegrationTest)")
@@ -52,6 +49,49 @@ object FilteredJacocoAgentPlugin extends AutoPlugin {
   override def requires = plugins.JvmPlugin
   override def trigger  = noTrigger
 
+  // ---- helper: all aggregated descendants (BFS), excluding the root itself
+  private def aggregatedDescendants(e: Extracted, root: ProjectRef): Vector[ProjectRef] = {
+    val s      = e.structure
+    val seen   = scala.collection.mutable.LinkedHashSet[ProjectRef](root)
+    val queue  = scala.collection.mutable.Queue[ProjectRef](root)
+    while (queue.nonEmpty) {
+      val ref = queue.dequeue()
+      val kids = Project.getProject(ref, s).toList.flatMap(_.aggregate)
+      kids.foreach { k => if (!seen(k)) { seen += k; queue.enqueue(k) } }
+    }
+    seen.toVector.tail // drop root
+  }
+
+  // ---- helper: only those that set jacocoPluginEnabled := true
+  private def enabledUnder(state: State): Vector[ProjectRef] = {
+    val e    = Project.extract(state)
+    val here = e.currentRef
+    val all  = aggregatedDescendants(e, here)            // children only (no root)
+    all.filter { ref =>
+      e.getOpt((ref / jacocoPluginEnabled): SettingKey[Boolean]).getOrElse(false)
+    }
+  }
+
+  // ---- commands
+  private lazy val jacocoCleanAllCmd  = Command.command("jacocoCleanAll") { state =>
+    val targets = enabledUnder(state)
+    if (targets.isEmpty) { println("[jacoco] nothing to clean (no enabled modules under this aggregate)."); state }
+    else targets.foldLeft(state) { (st, ref) => Command.process(s"${ref.project}/jacocoClean", st) }
+  }
+
+  private lazy val jacocoReportAllCmd = Command.command("jacocoReportAll") { state =>
+    val targets = enabledUnder(state)
+    if (targets.isEmpty) { println("[jacoco] nothing to report (no enabled modules under this aggregate)."); state }
+    else targets.foldLeft(state) { (st, ref) => Command.process(s"${ref.project}/jacocoReport", st) }
+  }
+
+  // ---- global defaults so keys exist everywhere (safe no-ops on projects without the plugin)
+  override def buildSettings: Seq[Def.Setting[_]] = Seq(
+    jacocoPluginEnabled := false, // overridden to true in projects that enable the plugin
+    // register commands + a convenient alias like sbt-jacoco had
+    commands ++= Seq(jacocoCleanAllCmd, jacocoReportAllCmd)
+  )
+
   private def findOnCp(cp: Seq[Attributed[File]])(p: File => Boolean): Option[File] =
     cp.map(_.data).find(p)
 
@@ -74,6 +114,8 @@ object FilteredJacocoAgentPlugin extends AutoPlugin {
   private val defaultExcludes = Seq("scala.*", "java.*", "sun.*", "jdk.*")
 
   override def projectSettings: Seq[Setting[_]] = Seq(
+    jacocoPluginEnabled := true,
+
     // ---- coordinates
     jacocoVersion := "0.8.12",
     jmfCoreVersion := "0.1.7",
@@ -104,48 +146,54 @@ object FilteredJacocoAgentPlugin extends AutoPlugin {
 
     // the rewrite task (your code, lightly cleaned)
     jmfRewrite := {
-      val _           = (Compile / compile).value            // ensure classes exist
-      val classesIn   = (Compile / classDirectory).value
-      if (!classesIn.exists) sys.error(s"[jmf] compiled classes not found: ${classesIn.getAbsolutePath}")
-      val hasClasses  = (classesIn ** sbt.GlobFilter("*.class")).get.nonEmpty
-      if (!hasClasses) sys.error(s"[jmf] no .class files under ${classesIn.getAbsolutePath}. Nothing to rewrite.")
+      val _         = (Compile / compile).value            // ok: at top level
+      val log       = streams.value.log
+      val classesIn = (Compile / classDirectory).value
+      val rules     = jmfRulesFile.value
 
-      val log         = streams.value.log
-      val outDir      = jmfOutDir.value / "classes-filtered"
-      IO.delete(outDir); IO.createDirectory(outDir)
+      // 👇 move the .value lookup OUTSIDE any ifs
+      val jmfUpdateReport = (Jmf / update).value
 
-      val toolJars    = (Jmf / update).value.matching(artifactFilter(`type` = "jar")).distinct
-      log.info("[jmf] tool CP:\n" + toolJars.map(f => s"  - ${f.getAbsolutePath}").mkString("\n"))
+      if (!classesIn.exists) {
+        log.warn(s"[jmf] compiled classes dir not found, skipping rewrite: ${classesIn.getAbsolutePath}")
+        classesIn
+      } else {
+        val hasClasses = (classesIn ** sbt.GlobFilter("*.class")).get.nonEmpty
+        if (!hasClasses) {
+          log.warn(s"[jmf] no .class files under ${classesIn.getAbsolutePath}; skipping rewrite.")
+          classesIn
+        } else if (!rules.exists) {
+          log.warn(s"[jmf] rules file not found (${rules.getAbsolutePath}); skipping rewrite.")
+          classesIn
+        } else {
+          val outDir   = jmfOutDir.value / "classes-filtered"
+          IO.delete(outDir); IO.createDirectory(outDir)
 
-      val cpStr       = toolJars.mkString(java.io.File.pathSeparator)
-      val args        = Seq(
-        "java","-cp", cpStr, jmfCliMain.value,
-        "--in",   classesIn.getAbsolutePath,
-        "--out",  outDir.getAbsolutePath,
-        "--rules",jmfRulesFile.value.getAbsolutePath
-      ) ++ (if (jmfDryRun.value) Seq("--dry-run") else Seq())
+          // 👇 now use the pre-fetched UpdateReport (no .value here)
+          val toolJars = jmfUpdateReport.matching(artifactFilter(`type` = "jar")).distinct
+          log.info("[jmf] tool CP:\n" + toolJars.map(f => s"  - ${f.getAbsolutePath}").mkString("\n"))
 
-      log.info(s"[jmf] rewrite: ${args.mkString(" ")}")
-      val code = scala.sys.process.Process(args, baseDirectory.value).!
-      if (code != 0) sys.error(s"[jmf] rewriter failed ($code)")
-      outDir
+          val cpStr = toolJars.mkString(java.io.File.pathSeparator)
+          val args  = Seq(
+            "java","-cp", cpStr, jmfCliMain.value,
+            "--in",   classesIn.getAbsolutePath,
+            "--out",  outDir.getAbsolutePath,
+            "--rules",rules.getAbsolutePath
+          ) ++ (if (jmfDryRun.value) Seq("--dry-run") else Seq())
+
+          log.info(s"[jmf] rewrite: ${args.mkString(" ")}")
+          val code = scala.sys.process.Process(args, baseDirectory.value).!
+          if (code != 0) sys.error(s"[jmf] rewriter failed ($code)")
+          outDir
+        }
+      }
     },
-
-    // If disabled, do nothing. If enabled, add rewritten dir to classpath before tests run.
-//    Test / unmanagedClasspath ++= Def.taskDyn {
-//      if (jmfEnabled.value) Def.task { Seq(Attributed.blank(jmfRewrite.value)) }
-//      else                  Def.task { Seq.empty[Attributed[File]] }
-//    }.value,
 
     // 1) preparatory task (already defined earlier)
     jmfPrepareForTests := Def.taskDyn {
       if (jmfEnabled.value) Def.task { jmfRewrite.value; () }
       else                  Def.task { () }
     }.value,
-
-    // 2) Hook into test + testQuick (regular tasks)
-//    Test / test      := (Test / test).dependsOn(jmfPrepareForTests).value,
-//    Test / testQuick := (Test / testQuick).dependsOn(jmfPrepareForTests).value,
 
     Test / fullClasspath := Def.taskDyn {
       // Gather the usual ingredients
@@ -178,7 +226,7 @@ object FilteredJacocoAgentPlugin extends AutoPlugin {
       else                  build(None)
     }.value,
 
-      // ---- fork so -javaagent is applied
+    // ---- fork so -javaagent is applied
     Test / fork := true,
 
     // Attach agent for Test
@@ -238,42 +286,48 @@ object FilteredJacocoAgentPlugin extends AutoPlugin {
 
     // ---- per-module report (only this module, no merge)
     jacocoReport := {
-      val log        = streams.value.log
-      val execFile   = jacocoExecFile.value
-      val reportDir  = jacocoReportDir.value
+      val log = streams.value.log
+      val execFile = jacocoExecFile.value
+      val reportDir = jacocoReportDir.value
       IO.createDirectory(reportDir)
 
       // PRE-compute (avoid linter warnings)
-      val moduleName   = name.value
-      val baseDir      = baseDirectory.value
-      val failOnMiss   = jacocoFailOnMissingExec.value
-      val cp           = (Test / dependencyClasspath).value
-      val cli          = cliJar(cp)
+      val moduleName = name.value
+      val baseDir = baseDirectory.value
+      val failOnMiss = jacocoFailOnMissingExec.value
+      val cp = (Test / dependencyClasspath).value
+      val cli = cliJar(cp)
 
       // Class dirs (filter to existing)
       val mainClasses: File = Def.taskDyn {
-        if (jmfEnabled.value) Def.task { jmfRewrite.value }
-        else                  Def.task { (Compile / classDirectory).value }
+        if (jmfEnabled.value) Def.task {
+          jmfRewrite.value
+        }
+        else Def.task {
+          (Compile / classDirectory).value
+        }
       }.value
-      val classDirs    = Seq(mainClasses).filter(_.exists)
+      val classDirs = Seq(mainClasses).filter(_.exists)
 
       // Source dirs: unmanaged + managed (filter to existing)
       val unmanagedSrc = (Compile / unmanagedSourceDirectories).value
-      val managedSrc   = (Compile / managedSourceDirectories).value
-      val srcDirs      = (unmanagedSrc ++ managedSrc).filter(_.exists)
+      val managedSrc = (Compile / managedSourceDirectories).value
+      val srcDirs = (unmanagedSrc ++ managedSrc).filter(_.exists)
 
       if (!execFile.exists) {
         val msg = s"[jacoco] .exec not found for $moduleName: $execFile . Run tests first."
-        if (failOnMiss) sys.error(msg) else { log.warn(msg); reportDir }
+        if (failOnMiss) sys.error(msg) else {
+          log.warn(msg); reportDir
+        }
       } else {
         // Build args correctly: repeat flags per path
-        val execArgs      = Seq(execFile.getAbsolutePath)
-        val classArgs     = classDirs.flatMap(d => Seq("--classfiles", d.getAbsolutePath))
-        val sourceArgs    = srcDirs.flatMap(d => Seq("--sourcefiles", d.getAbsolutePath))
-        val outArgs       = Seq(
+        val execArgs = Seq(execFile.getAbsolutePath)
+        val classArgs = classDirs.flatMap(d => Seq("--classfiles", d.getAbsolutePath))
+        val sourceArgs = srcDirs.flatMap(d => Seq("--sourcefiles", d.getAbsolutePath))
+        val outArgs = Seq(
           "--html", reportDir.getAbsolutePath,
-          "--xml",  (reportDir / "jacoco.xml").getAbsolutePath,
-          "--csv",  (reportDir / "jacoco.csv").getAbsolutePath
+          "--xml", (reportDir / "jacoco.xml").getAbsolutePath,
+          "--csv", (reportDir / "jacoco.csv").getAbsolutePath
         )
 
         log.info(s"[jacoco] cli jar: ${cli.getName}")
@@ -289,23 +343,6 @@ object FilteredJacocoAgentPlugin extends AutoPlugin {
         log.info(s"[jacoco] per-module HTML: ${reportDir / "index.html"}")
         reportDir
       }
-    },
-
-    // Root-only helpers (NO MERGE): run per-module tasks across aggregated refs
-    jacocoCleanAll := Def.taskDyn {
-      val aggs: Seq[ProjectRef] = thisProject.value.aggregate
-      if (aggs.isEmpty)
-        Def.task { streams.value.log.warn("No aggregated modules under this project."); () }
-      else
-        Def.task { () }.dependsOn(aggs.map(ref => ref / jacocoClean): _*)
-    }.value,
-
-    jacocoReportAll := Def.taskDyn {
-      val aggs: Seq[ProjectRef] = thisProject.value.aggregate
-      if (aggs.isEmpty)
-        Def.task { streams.value.log.warn("No aggregated modules under this project."); () }
-      else
-        Def.task { () }.dependsOn(aggs.map(ref => ref / jacocoReport): _*)
-    }.value
+    }
   )
 }

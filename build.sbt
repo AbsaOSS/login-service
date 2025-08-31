@@ -79,8 +79,6 @@ lazy val examples = project // no need to define file, because path is same as v
     publish / skip := true
   ).enablePlugins(AutomateHeaderPlugin)
   .dependsOn(clientLibrary)
-  .enablePlugins(FilteredJacocoAgentPlugin)
 
-//addCommandAlias("jacocoFiltered",
-//  ";api/jacocoFiltered; clientLibrary/jacocoFiltered; examples/jacocoFiltered"
-//)
+// Run clean + test + per-module reports across the whole build
+addCommandAlias("jacoco", "; clean; test; jacocoReportAll")
