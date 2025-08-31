@@ -1,3 +1,4 @@
+import JacocoBaseKeysPlugin.autoImport.*
 import sbt.Keys.*
 import sbt.{ScopeFilter, inProjects as inP, *}
 
@@ -13,7 +14,7 @@ import scala.sys.process.*
  */
 object FilteredJacocoAgentPlugin extends AutoPlugin {
   object autoImport {
-    val jacocoPluginEnabled = settingKey[Boolean]("Marker: this project has the JaCoCo plugin enabled")
+//    val jacocoPluginEnabled = settingKey[Boolean]("Marker: this project has the JaCoCo plugin enabled")
 
     val jacocoVersion    = settingKey[String]("JaCoCo version")
     val jacocoExecFile   = settingKey[File]("Per-module JaCoCo .exec file (Test)")
@@ -25,8 +26,8 @@ object FilteredJacocoAgentPlugin extends AutoPlugin {
     val jacocoFailOnMissingExec =
       settingKey[Boolean]("Fail jacocoReport if .exec is missing (default: false – warn & skip)")
 
-    val jacocoClean   = taskKey[Unit]("Clean JaCoCo outputs and sbt-jacoco leftovers (per module)")
-    val jacocoReport  = taskKey[File]("Generate JaCoCo HTML/XML/CSV report from this module's .exec")
+//    val jacocoClean   = taskKey[Unit]("Clean JaCoCo outputs and sbt-jacoco leftovers (per module)")
+//    val jacocoReport  = taskKey[File]("Generate JaCoCo HTML/XML/CSV report from this module's .exec")
 
     // Root-only helpers (NO MERGE): just run per-module tasks across aggregated projects
     val jacocoCleanAll  = taskKey[Unit]("Run jacocoClean in all aggregated modules (no merge)")
@@ -46,7 +47,7 @@ object FilteredJacocoAgentPlugin extends AutoPlugin {
   }
   import autoImport.*
 
-  override def requires = plugins.JvmPlugin
+  override def requires = JacocoBaseKeysPlugin
   override def trigger  = noTrigger
 
   // ---- helper: all aggregated descendants (BFS), excluding the root itself
@@ -114,7 +115,7 @@ object FilteredJacocoAgentPlugin extends AutoPlugin {
   private val defaultExcludes = Seq("scala.*", "java.*", "sun.*", "jdk.*")
 
   override def projectSettings: Seq[Setting[_]] = Seq(
-    jacocoPluginEnabled := true,
+    jacocoPluginEnabled := false,
 
     // ---- coordinates
     jacocoVersion := "0.8.12",
@@ -146,25 +147,24 @@ object FilteredJacocoAgentPlugin extends AutoPlugin {
 
     // the rewrite task (your code, lightly cleaned)
     jmfRewrite := {
-      val enabled   = jacocoPluginEnabled.value
-      val log       = streams.value.log
-      val classesIn = (Compile / classDirectory).value
-      val rules     = jmfRulesFile.value
-      val upd       = (Jmf / update).value            // ⬅️ hoisted OUTSIDE the if
+      val log        = streams.value.log
+      val enabled    = jacocoPluginEnabled.value
+
+      // ensure classes exist (safe to always do; test would compile anyway)
+      val _          = (Compile / compile).value
+
+      val classesIn  = (Compile / classDirectory).value
+      val rules      = jmfRulesFile.value
+      val upd        = (Jmf / update).value   // hoisted
 
       if (!enabled) classesIn
       else if (!classesIn.exists) {
-        log.warn(s"[jmf] compiled classes dir not found, skipping: ${classesIn.getAbsolutePath}")
-        classesIn
+        log.warn(s"[jmf] compiled classes dir not found, skipping: ${classesIn.getAbsolutePath}"); classesIn
       } else {
         val hasClasses = (classesIn ** sbt.GlobFilter("*.class")).get.nonEmpty
-        if (!hasClasses) {
-          log.warn(s"[jmf] no .class files under ${classesIn.getAbsolutePath}; skipping.")
-          classesIn
-        } else if (!rules.exists) {
-          log.warn(s"[jmf] rules file missing: ${rules.getAbsolutePath}; skipping.")
-          classesIn
-        } else {
+        if (!hasClasses) { log.warn(s"[jmf] no .class files under ${classesIn.getAbsolutePath}; skipping."); classesIn }
+        else if (!rules.exists) { log.warn(s"[jmf] rules file missing: ${rules.getAbsolutePath}; skipping."); classesIn }
+        else {
           val outDir   = jmfOutDir.value / "classes-filtered"
           IO.delete(outDir); IO.createDirectory(outDir)
 
