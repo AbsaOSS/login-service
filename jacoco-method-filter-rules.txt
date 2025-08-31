@@ -1,5 +1,0 @@
-# Exact method (descriptor pinned): contextSearch(String): List
-za.co.absa.loginsvc.rest.service.search.LdapUserRepository#contextSearch(Ljava/lang/String;)Lscala/collection/immutable/List;  id:context-search-exact
-
-# Looser: same method with any return, but constrain return via ret:
-#za.co.absa.loginsvc.rest.service.search.LdapUserRepository#contextSearch(*)*  ret:Lscala/collection/immutable/List;  id:context-search-ret

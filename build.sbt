@@ -80,8 +80,7 @@ lazy val examples = project // no need to define file, because path is same as v
   ).enablePlugins(AutomateHeaderPlugin)
   .dependsOn(clientLibrary)
 
-// Run clean + test + per-module reports across the whole build
+// Run activate jacoco + clean + test + per-module reports across the whole build + deactivate jacoco
 addCommandAlias("jacoco", "; jacocoOn; clean; test; jacocoReportAll; jacocoOff")
-
 addCommandAlias("jacocoOff",  "; set every jacocoPluginEnabled := false")
 addCommandAlias("jacocoOn",   "; set every jacocoPluginEnabled := true")

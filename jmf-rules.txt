@@ -1,0 +1,179 @@
+# jacoco-method-filter — Default Rules & HowTo (Scala + Java)
+#
+# This file defines which methods should be annotated as *Generated so JaCoCo ignores them.
+# One rule per line.
+#
+# ─────────────────────────────────────────────────────────────────────────────
+# HOW TO USE (quick)
+# 1) Replace YOUR.PACKAGE.ROOT with your project’s package root (e.g., com.example.app).
+# 2) Start with the CONSERVATIVE section only.
+# 3) If clean, enable STANDARD. Use AGGRESSIVE only inside DTO/auto‑generated packages.
+# 4) Keep rules narrow (by package), prefer flags (synthetic/bridge) for compiler artifacts,
+#    and add `id:` labels so logs are easy to read.
+#
+# ─────────────────────────────────────────────────────────────────────────────
+# ALLOWED SYNTAX (cheat sheet)
+#
+# General form:
+#   <FQCN_glob>#<method_glob>(<descriptor_glob>) [FLAGS and PREDICATES...]
+#
+# FQCN_glob (dot form; $ allowed for inner classes):
+#   Examples:  *.model.*,  com.example.*,  *
+#
+# method_glob (glob on method name):
+#   Examples:  copy   |   $anonfun$*   |   get*   |   *_$eq
+#
+# descriptor_glob (JVM descriptor in (args)ret). You may omit it entirely.
+#   • Omitting descriptor ⇒ treated as "(*)*" (any args, any return).
+#   • Short/empty forms "", "()", "(*)" normalize to "(*)*".
+#   Examples:
+#     (I)I                      # takes int, returns int
+#     (Ljava/lang/String;)V     # takes String, returns void
+#     ()  or  (*)  or omitted  # any args, any return
+#
+# FLAGS (optional) — space or comma separated:
+#   public | protected | private | synthetic | bridge | static | abstract
+#
+# PREDICATES (optional):
+#   ret:<glob>          # match return type only (e.g., ret:V, ret:I, ret:Lcom/example/*;)
+#   id:<string>         # identifier shown in logs/reports
+#   name-contains:<s>   # method name must contain <s>
+#   name-starts:<s>     # method name must start with <s>
+#   name-ends:<s>       # method name must end with <s>
+#
+# Notes
+# - Always use dot-form (com.example.Foo) for class names.
+# - Comments (# …) and blank lines are ignored.
+#
+# ─────────────────────────────────────────────────────────────────────────────
+# QUICK EXAMPLES
+#
+# Simple wildcards
+#   *#*(*)
+#     → Match EVERY method in EVERY class (any package). Useful only for diagnostics.
+#       "(*)" normalizes to "(*)*" ⇒ any args, any return.
+#   *.dto.*#*(*)
+#     → Match every method on any class under any package segment named "dto".
+#       Good when you treat DTOs as generated/boilerplate.
+
+# Scala case class helpers
+#   *.model.*#copy(*)
+#     → Matches Scala case-class `copy` methods under `*.model.*`.
+#       Hides boilerplate clones with any parameter list and any return.
+#   *.model.*#productArity()
+#     → Matches zero-arg `productArity` (case-class/Product API).
+#   *.model.*#productElement(*)
+#     → Matches `productElement(int)` (or any descriptor form) on case classes.
+#   *.model.*#productPrefix()
+#     → Matches `productPrefix()`; returns the case class' constructor name.
+
+# Companion objects and defaults
+#   *.model.*$*#apply(*)
+#     → Matches companion `apply` factories under `*.model.*` (any args).
+#       BE CAREFUL: can hide real factory logic; keep the package scope narrow.
+#   *.model.*$*#unapply(*)
+#     → Matches extractor `unapply` methods in companions under `*.model.*`.
+#   *#*$default$*(*)
+#     → Matches Scala-generated default-argument helpers everywhere.
+#       Safe to keep enabled; they’re compiler-synthesized.
+
+# Anonymous / synthetic / bridge
+#   *#$anonfun$*
+#     → Matches any method whose name contains `$anonfun$` (Scala lambdas).
+#       Consider adding `synthetic` and/or a package scope in real configs.
+#   *#*(*):synthetic            # any synthetic
+#     → Matches ANY method marked `synthetic` (compiler-generated).
+#       Powerful; scope by package to avoid hiding intentional glue code.
+#   *#*(*):bridge               # any bridge
+#     → Matches Java generic bridge methods the compiler inserts.
+#       Usually safe globally, but scoping is still recommended.
+
+# Setters / fluent APIs
+#   *.dto.*#*_$eq(*)
+#     → Matches Scala var setters in DTO packages (e.g., `name_=(...)`).
+#       Good for excluding trivial field writes.
+#   *.builder.*#with*(*)
+#     → Matches builder-style fluent setters (`withXxx(...)`) in builder pkgs.
+#       Treats chainable configuration as boilerplate.
+#   *.client.*#with*(*) ret:Lcom/api/client/*
+#     → Like above but ONLY when the return type matches your client package.
+#       The `ret:` predicate protects real logic that returns other types.
+
+# Return-type constraints
+#   *.jobs.*#*(*):ret:V
+#     → Any method under `*.jobs.*` returning `void` (`V`). Often orchestration.
+#   *.math.*#*(*):ret:I
+#     → Any method under `*.math.*` returning primitive int (`I`).
+#   *.model.*#*(*):ret:Lcom/example/model/*
+#     → Any method under `*.model.*` that returns a type in `com.example.model`.
+#       Handy when the *return type* uniquely identifies boilerplate.
+
+# ─────────────────────────────────────────────────────────────────────────────
+# DEFAULT RULES (start here; replace YOUR.PACKAGE.ROOT)
+# ─────────────────────────────────────────────────────────────────────────────
+#
+# SECTION: CONSERVATIVE (safe starters; mainly compiler/boilerplate)
+#
+YOUR.PACKAGE.ROOT.model.*#copy(*)                          id:case-copy
+YOUR.PACKAGE.ROOT.model.*#productArity()                   id:case-prod-arity
+YOUR.PACKAGE.ROOT.model.*#productElement(*)                id:case-prod-elem
+YOUR.PACKAGE.ROOT.model.*#productPrefix()                  id:case-prod-prefix
+YOUR.PACKAGE.ROOT.model.*$*#apply(*)                       id:comp-apply
+YOUR.PACKAGE.ROOT.model.*$*#unapply(*)                     id:comp-unapply
+YOUR.PACKAGE.ROOT.*#*$default$*(* )                        id:default-args
+YOUR.PACKAGE.ROOT.dto.*#*_$eq(* )                          id:scala-setter
+YOUR.PACKAGE.ROOT.*#*(* )  synthetic name-contains:$anonfun$  id:scala-anonfun
+YOUR.PACKAGE.ROOT.*#*(* )  synthetic                        id:synthetic-generic
+#
+# SECTION: STANDARD (enable after verifying impact)
+#
+# Scala product API beyond model (uncomment if polluting)
+# YOUR.PACKAGE.ROOT.*#productIterator()                    id:prod-iter
+# YOUR.PACKAGE.ROOT.*#canEqual(*)                          id:prod-canequal
+#
+# Scala 2 trait init stub
+# YOUR.PACKAGE.ROOT.*#<$init$>(* )                         id:trait-init
+#
+# Java generics bridge methods (safe)
+YOUR.PACKAGE.ROOT.*#*(* )  bridge                          id:java-bridge
+#
+# Java 8+ lambdas named "lambda$..."
+YOUR.PACKAGE.ROOT.*#*(* )  synthetic name-starts:lambda$   id:java-lambda
+#
+# Java synthetic accessors (compiler-generated)
+YOUR.PACKAGE.ROOT.*#*(* )  synthetic name-starts:access$   id:java-accessor
+#
+# Example return-type constraint (keep commented until you need it)
+# YOUR.PACKAGE.ROOT.*#*(* )  ret:Lscala/collection/immutable/List;  id:any-returns-list
+#
+# SECTION: AGGRESSIVE (opt-in; narrow by package to avoid hiding real logic)
+#
+# Lombok/Beans-style accessors – restrict to DTO-only packages
+# YOUR.PACKAGE.ROOT.dto.*#get*(*)     public               id:lombok-getter
+# YOUR.PACKAGE.ROOT.dto.*#is*(*)      public               id:lombok-boolean
+# YOUR.PACKAGE.ROOT.dto.*#set*(*)     public               id:lombok-setter
+#
+# Java Records: component accessors (often fine to count; usually leave off)
+# YOUR.PACKAGE.ROOT.dto.*#*()                              id:record-components
+#
+# Wider companion apply/unapply (ONLY if you’re sure)
+# YOUR.PACKAGE.ROOT.*$*#apply(*)                           id:wide-apply
+# YOUR.PACKAGE.ROOT.*$*#unapply(*)                         id:wide-unapply
+#
+# Fluent builder/client methods (consider ret: to restrict to clients)
+# YOUR.PACKAGE.ROOT.builder.*#with*(*)                     id:builder-with
+# YOUR.PACKAGE.ROOT.client.*#with*(*)  ret:Lcom/api/client/*  id:client-fluent
+#
+# SECTION: DIAGNOSTICS (temporary; use with --dry-run only)
+#
+# Show all anonfun matches under your root
+# YOUR.PACKAGE.ROOT.*#*(* )  name-contains:$anonfun$        id:diag-anonfun
+#
+# List all synthetic methods (broad; do not keep enabled)
+# YOUR.PACKAGE.ROOT.*#*(* )  synthetic                      id:diag-synthetic
+#
+# SECTION: GLOBAL SAFETY NETS (only if you cannot set a package root)
+#
+# *#*(* )  synthetic                      id:global-synthetic
+# *#*(* )  bridge                         id:global-bridge
+# *#*(* )  synthetic name-contains:$anonfun$  id:global-anonfun

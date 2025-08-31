@@ -142,7 +142,7 @@ object FilteredJacocoAgentPlugin extends AutoPlugin {
     ivyConfigurations += Jmf,
 
     jmfOutDir   := target.value / "jmf",
-    jmfRulesFile:= (ThisBuild / baseDirectory).value / "jacoco-method-filter-rules.txt",
+    jmfRulesFile:= (ThisBuild / baseDirectory).value / "jmf-rules.txt",
     jmfCliMain  := "io.moranaapps.jacocomethodfilter.CoverageRewriter",
     jmfDryRun   := false,
     jmfEnabled  := true,
