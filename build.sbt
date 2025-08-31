@@ -82,3 +82,5 @@ lazy val examples = project // no need to define file, because path is same as v
 
 // Run clean + test + per-module reports across the whole build
 addCommandAlias("jacoco", "; clean; test; jacocoReportAll")
+addCommandAlias("jacocoOff",  "; set every jacocoPluginEnabled := false")
+addCommandAlias("jacocoOn",   "; set every jacocoPluginEnabled := true")

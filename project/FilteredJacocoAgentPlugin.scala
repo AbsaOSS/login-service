@@ -146,40 +146,37 @@ object FilteredJacocoAgentPlugin extends AutoPlugin {
 
     // the rewrite task (your code, lightly cleaned)
     jmfRewrite := {
-      val _         = (Compile / compile).value            // ok: at top level
+      val enabled   = jacocoPluginEnabled.value
       val log       = streams.value.log
       val classesIn = (Compile / classDirectory).value
       val rules     = jmfRulesFile.value
+      val upd       = (Jmf / update).value            // ⬅️ hoisted OUTSIDE the if
 
-      // 👇 move the .value lookup OUTSIDE any ifs
-      val jmfUpdateReport = (Jmf / update).value
-
-      if (!classesIn.exists) {
-        log.warn(s"[jmf] compiled classes dir not found, skipping rewrite: ${classesIn.getAbsolutePath}")
+      if (!enabled) classesIn
+      else if (!classesIn.exists) {
+        log.warn(s"[jmf] compiled classes dir not found, skipping: ${classesIn.getAbsolutePath}")
         classesIn
       } else {
         val hasClasses = (classesIn ** sbt.GlobFilter("*.class")).get.nonEmpty
         if (!hasClasses) {
-          log.warn(s"[jmf] no .class files under ${classesIn.getAbsolutePath}; skipping rewrite.")
+          log.warn(s"[jmf] no .class files under ${classesIn.getAbsolutePath}; skipping.")
           classesIn
         } else if (!rules.exists) {
-          log.warn(s"[jmf] rules file not found (${rules.getAbsolutePath}); skipping rewrite.")
+          log.warn(s"[jmf] rules file missing: ${rules.getAbsolutePath}; skipping.")
           classesIn
         } else {
           val outDir   = jmfOutDir.value / "classes-filtered"
           IO.delete(outDir); IO.createDirectory(outDir)
 
-          // 👇 now use the pre-fetched UpdateReport (no .value here)
-          val toolJars = jmfUpdateReport.matching(artifactFilter(`type` = "jar")).distinct
+          val toolJars = upd.matching(artifactFilter(`type` = "jar")).distinct
           log.info("[jmf] tool CP:\n" + toolJars.map(f => s"  - ${f.getAbsolutePath}").mkString("\n"))
 
           val cpStr = toolJars.mkString(java.io.File.pathSeparator)
-          val args  = Seq(
-            "java","-cp", cpStr, jmfCliMain.value,
-            "--in",   classesIn.getAbsolutePath,
-            "--out",  outDir.getAbsolutePath,
-            "--rules",rules.getAbsolutePath
-          ) ++ (if (jmfDryRun.value) Seq("--dry-run") else Seq())
+          val args  = Seq("java","-cp", cpStr, jmfCliMain.value,
+            "--in", classesIn.getAbsolutePath,
+            "--out", outDir.getAbsolutePath,
+            "--rules", rules.getAbsolutePath) ++
+            (if (jmfDryRun.value) Seq("--dry-run") else Seq())
 
           log.info(s"[jmf] rewrite: ${args.mkString(" ")}")
           val code = scala.sys.process.Process(args, baseDirectory.value).!
@@ -205,25 +202,16 @@ object FilteredJacocoAgentPlugin extends AutoPlugin {
       val scalaJars  = (Test / scalaInstance).value.allJars.map(Attributed.blank(_)).toVector
       val resources  = (Test / resourceDirectories).value.map(Attributed.blank)
 
-      // Builder that places `rewritten` first, then testOut, then all the rest,
-      // and finally the original mainOut (so rewritten shadows it).
-      def build(rewritten: Option[File]) = Def.task {
-        val prefix: Vector[Attributed[File]] =
-          rewritten.toVector.map(Attributed.blank) :+ Attributed.blank(testOut)
-
+      def build(rewrittenOpt: Option[File]) = Def.task {
+        val rewrittenDifferent = rewrittenOpt.filter(_ != mainOut)
+        val prefix = rewrittenDifferent.toVector.map(Attributed.blank) :+ Attributed.blank(testOut)
         val rest = (deps ++ ext ++ scalaJars ++ resources ++ unmanaged)
-          .filterNot(a =>
-            a.data == mainOut ||
-              a.data == testOut ||
-              rewritten.exists(_ == a.data)
-          )
-
-        // Re-add original mainOut at the very end to preserve completeness
+          .filterNot(a => a.data == mainOut || a.data == testOut || rewrittenDifferent.exists(_ == a.data))
         (prefix ++ rest :+ Attributed.blank(mainOut))
       }
 
-      if (jmfEnabled.value) build(Some(jmfRewrite.value))
-      else                  build(None)
+      if (jacocoPluginEnabled.value) build(Some(jmfRewrite.value))
+      else                           build(None)
     }.value,
 
     // ---- fork so -javaagent is applied
@@ -231,24 +219,30 @@ object FilteredJacocoAgentPlugin extends AutoPlugin {
 
     // Attach agent for Test
     Test / forkOptions := {
-      val fo      = (Test / forkOptions).value
-      val cp      = (Test / dependencyClasspath).value
-      val agent   = agentJar(cp)
-      val dest    = jacocoExecFile.value.getAbsolutePath
-      val inc     = jacocoIncludes.value.mkString(":")
-      val exc     = jacocoExcludes.value.mkString(":")
-      val append  = if (jacocoAppend.value) "true" else "false"
+      val fo0      = (Test / forkOptions).value
+      val rootDir  = (LocalRootProject / baseDirectory).value
+      val baseFO   = fo0.withWorkingDirectory(rootDir) // keep tests running from repo root
+
+      // pre-compute values (avoids sbt linter warning about .value inside if)
+      val cp       = (Test / dependencyClasspath).value
+      val agent    = agentJar(cp)
+      val dest     = jacocoExecFile.value.getAbsolutePath
+      val inc      = jacocoIncludes.value.mkString(":")
+      val exc      = jacocoExcludes.value.mkString(":")
+      val append   = if (jacocoAppend.value) "true" else "false"
       val agentOpt =
         s"-javaagent:${agent.getAbsolutePath}=destfile=$dest,append=$append,output=file,includes=$inc,excludes=$exc,inclbootstrapclasses=false,jmx=false"
 
-      val rootDir = (LocalRootProject / baseDirectory).value // <- repo root
-      // log a hint
-      streams.value.log.info(s"[jacoco] agent jar: ${agent.getName}")
-      streams.value.log.info(s"[jacoco] setting fork working dir to: $rootDir")
+      val log = streams.value.log
+      log.info(s"[jacoco] setting fork working dir to: $rootDir")
 
-      fo
-        .withWorkingDirectory(rootDir)                         // fixes your file: api/src/... lookups
-        .withRunJVMOptions(fo.runJVMOptions :+ agentOpt)       // reliably add -javaagent
+      if (jacocoPluginEnabled.value) {
+        log.info(s"[jacoco] agent jar: ${agent.getName} (enabled)")
+        baseFO.withRunJVMOptions(baseFO.runJVMOptions :+ agentOpt)
+      } else {
+        log.info("[jacoco] disabled (jacocoPluginEnabled=false); NOT adding -javaagent")
+        baseFO
+      }
     },
 
     // Print one sanity line per test fork
@@ -300,12 +294,8 @@ object FilteredJacocoAgentPlugin extends AutoPlugin {
 
       // Class dirs (filter to existing)
       val mainClasses: File = Def.taskDyn {
-        if (jmfEnabled.value) Def.task {
-          jmfRewrite.value
-        }
-        else Def.task {
-          (Compile / classDirectory).value
-        }
+        if (jacocoPluginEnabled.value) Def.task { jmfRewrite.value }
+        else                           Def.task { (Compile / classDirectory).value }
       }.value
       val classDirs = Seq(mainClasses).filter(_.exists)
 
@@ -316,27 +306,18 @@ object FilteredJacocoAgentPlugin extends AutoPlugin {
 
       if (!execFile.exists) {
         val msg = s"[jacoco] .exec not found for $moduleName: $execFile . Run tests first."
-        if (failOnMiss) sys.error(msg) else {
-          log.warn(msg); reportDir
-        }
+        if (failOnMiss) sys.error(msg) else { log.warn(msg); reportDir }
+      } else if (classDirs.isEmpty) {
+        log.warn(s"[jacoco] no class dirs for $moduleName; skipping report.")
+        reportDir
       } else {
-        // Build args correctly: repeat flags per path
-        val execArgs = Seq(execFile.getAbsolutePath)
-        val classArgs = classDirs.flatMap(d => Seq("--classfiles", d.getAbsolutePath))
-        val sourceArgs = srcDirs.flatMap(d => Seq("--sourcefiles", d.getAbsolutePath))
-        val outArgs = Seq(
-          "--html", reportDir.getAbsolutePath,
-          "--xml", (reportDir / "jacoco.xml").getAbsolutePath,
-          "--csv", (reportDir / "jacoco.csv").getAbsolutePath
-        )
-
-        log.info(s"[jacoco] cli jar: ${cli.getName}")
-        log.info(s"[jacoco] exec: ${execFile.getAbsolutePath}")
-        log.info(s"[jacoco] class dirs: ${classDirs.mkString(", ")}")
-        log.info(s"[jacoco] source dirs: ${srcDirs.mkString(", ")}")
-
-        val args = Seq("java", "-jar", cli.getAbsolutePath, "report") ++
-          execArgs ++ classArgs ++ sourceArgs ++ outArgs
+        // repeat flags per path
+        val args = Seq("java","-jar", cli.getAbsolutePath, "report", execFile.getAbsolutePath) ++
+          classDirs.flatMap(d => Seq("--classfiles",  d.getAbsolutePath)) ++
+          srcDirs  .flatMap(d => Seq("--sourcefiles", d.getAbsolutePath)) ++
+          Seq("--html", reportDir.getAbsolutePath,
+            "--xml",  (reportDir / "jacoco.xml").getAbsolutePath,
+            "--csv",  (reportDir / "jacoco.csv").getAbsolutePath)
 
         val exit = scala.sys.process.Process(args, baseDir).!
         if (exit != 0) sys.error("JaCoCo report generation failed")
