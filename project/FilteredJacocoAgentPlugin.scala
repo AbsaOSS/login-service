@@ -133,7 +133,6 @@ object FilteredJacocoAgentPlugin extends AutoPlugin {
     jacocoAppend     := false,
     jacocoFailOnMissingExec := false,
 
-//    jacocoReportName := s"Report: ${name.value} - scala:${scalaVersion.value}",
     jacocoReportName := {
       val moduleId = thisProject.value.id            // or: thisProjectRef.value.project
       s"Report: $moduleId - scala:${scalaVersion.value}"
@@ -297,10 +296,12 @@ object FilteredJacocoAgentPlugin extends AutoPlugin {
       val title = jacocoReportName.value
 
       // Class dirs (filter to existing)
-      val mainClasses: File = Def.taskDyn {
-        if (jacocoPluginEnabled.value) Def.task { jmfRewrite.value }
-        else                           Def.task { (Compile / classDirectory).value }
-      }.value
+      val classesIn   = (Compile / classDirectory).value
+      val filteredDir = jmfOutDir.value / "classes-filtered"
+      val mainClasses =
+        if (jacocoPluginEnabled.value && filteredDir.exists) filteredDir
+        else classesIn
+
       val classDirs = Seq(mainClasses).filter(_.exists)
 
       // Source dirs: unmanaged + managed (filter to existing)
