@@ -44,7 +44,7 @@ jobs:
       - name: Build and run tests
         run: sbt ++${{matrix.scala}} jacoco
       - name: Add JaCoCo Report in PR comments
-        uses: MoranaApps/jacoco-report@v2.1.1
+        uses: MoranaApps/jacoco-report@v2
         with:
           token: '${{ secrets.GITHUB_TOKEN }}'
           paths: |
