@@ -81,6 +81,8 @@ class ActiveDirectoryLDAPAuthenticationProvider(config: ActiveDirectoryLDAPConfi
     }
   }
 
+
+
   private def retryAuthAsync(attempts: Int, delayMs: Int, authentication: Authentication): Authentication = {
     def attempt(n: Int): Future[Authentication] = Future {
       Try(baseImplementation.authenticate(authentication)) match {

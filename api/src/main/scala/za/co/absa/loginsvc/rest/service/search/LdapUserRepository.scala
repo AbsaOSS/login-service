@@ -129,6 +129,8 @@ class LdapUserRepository(activeDirectoryLDAPConfig: ActiveDirectoryLDAPConfig)
     Await.result(attempt(1), Duration.Inf)
   }
 
+
+
   private[search] def contextSearch(username: String): List[User] = {
     try {
       val context = getDirContext(serviceAccount.username, serviceAccount.password)

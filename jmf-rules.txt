@@ -109,71 +109,46 @@
 #       Handy when the *return type* uniquely identifies boilerplate.
 
 # ─────────────────────────────────────────────────────────────────────────────
-# DEFAULT RULES (start here; replace YOUR.PACKAGE.ROOT)
+# GLOBALS RULES
 # ─────────────────────────────────────────────────────────────────────────────
-#
-# SECTION: CONSERVATIVE (safe starters; mainly compiler/boilerplate)
-#
-YOUR.PACKAGE.ROOT.model.*#copy(*)                          id:case-copy
-YOUR.PACKAGE.ROOT.model.*#productArity()                   id:case-prod-arity
-YOUR.PACKAGE.ROOT.model.*#productElement(*)                id:case-prod-elem
-YOUR.PACKAGE.ROOT.model.*#productPrefix()                  id:case-prod-prefix
-YOUR.PACKAGE.ROOT.model.*$*#apply(*)                       id:comp-apply
-YOUR.PACKAGE.ROOT.model.*$*#unapply(*)                     id:comp-unapply
-YOUR.PACKAGE.ROOT.*#*$default$*(* )                        id:default-args
-YOUR.PACKAGE.ROOT.dto.*#*_$eq(* )                          id:scala-setter
-YOUR.PACKAGE.ROOT.*#*(* )  synthetic name-contains:$anonfun$  id:scala-anonfun
-YOUR.PACKAGE.ROOT.*#*(* )  synthetic                        id:synthetic-generic
-#
-# SECTION: STANDARD (enable after verifying impact)
-#
-# Scala product API beyond model (uncomment if polluting)
-# YOUR.PACKAGE.ROOT.*#productIterator()                    id:prod-iter
-# YOUR.PACKAGE.ROOT.*#canEqual(*)                          id:prod-canequal
-#
-# Scala 2 trait init stub
-# YOUR.PACKAGE.ROOT.*#<$init$>(* )                         id:trait-init
-#
-# Java generics bridge methods (safe)
-YOUR.PACKAGE.ROOT.*#*(* )  bridge                          id:java-bridge
-#
-# Java 8+ lambdas named "lambda$..."
-YOUR.PACKAGE.ROOT.*#*(* )  synthetic name-starts:lambda$   id:java-lambda
-#
-# Java synthetic accessors (compiler-generated)
-YOUR.PACKAGE.ROOT.*#*(* )  synthetic name-starts:access$   id:java-accessor
-#
-# Example return-type constraint (keep commented until you need it)
-# YOUR.PACKAGE.ROOT.*#*(* )  ret:Lscala/collection/immutable/List;  id:any-returns-list
-#
-# SECTION: AGGRESSIVE (opt-in; narrow by package to avoid hiding real logic)
-#
-# Lombok/Beans-style accessors – restrict to DTO-only packages
-# YOUR.PACKAGE.ROOT.dto.*#get*(*)     public               id:lombok-getter
-# YOUR.PACKAGE.ROOT.dto.*#is*(*)      public               id:lombok-boolean
-# YOUR.PACKAGE.ROOT.dto.*#set*(*)     public               id:lombok-setter
-#
-# Java Records: component accessors (often fine to count; usually leave off)
-# YOUR.PACKAGE.ROOT.dto.*#*()                              id:record-components
-#
-# Wider companion apply/unapply (ONLY if you’re sure)
-# YOUR.PACKAGE.ROOT.*$*#apply(*)                           id:wide-apply
-# YOUR.PACKAGE.ROOT.*$*#unapply(*)                         id:wide-unapply
-#
-# Fluent builder/client methods (consider ret: to restrict to clients)
-# YOUR.PACKAGE.ROOT.builder.*#with*(*)                     id:builder-with
-# YOUR.PACKAGE.ROOT.client.*#with*(*)  ret:Lcom/api/client/*  id:client-fluent
-#
-# SECTION: DIAGNOSTICS (temporary; use with --dry-run only)
-#
-# Show all anonfun matches under your root
-# YOUR.PACKAGE.ROOT.*#*(* )  name-contains:$anonfun$        id:diag-anonfun
-#
-# List all synthetic methods (broad; do not keep enabled)
-# YOUR.PACKAGE.ROOT.*#*(* )  synthetic                      id:diag-synthetic
-#
-# SECTION: GLOBAL SAFETY NETS (only if you cannot set a package root)
-#
-# *#*(* )  synthetic                      id:global-synthetic
-# *#*(* )  bridge                         id:global-bridge
-# *#*(* )  synthetic name-contains:$anonfun$  id:global-anonfun
+# ** all case class boilerplate
+
+# Scala case class helpers
+*#canEqual(*)                                           id:case-canequal
+*#equals(*)                                             id:case-equals
+*#apply(*)                                              id:case-apply
+*#unapply(*)                                            id:case-unapply
+*#hashCode(*)                                           id:case-hashcode
+*#copy(*)                                               id:case-copy
+*#copy$default$*(*)                                     id:case-copy-defaults
+*#productElement()                                      id:case-prod-element
+*#productArity()                                        id:case-prod-arity
+*#productPrefix()                                       id:case-prod-prefix
+*#productIterator()                                     id:case-prod-iterator
+*#tupled()                                              id:case-tupled
+*#curried()                                             id:case-curried
+*#toString()                                            id:case-tostring
+*#name()                                                id:case-name
+*#groups()                                              id:case-groups
+*#optionalAttributes()                                  id:case-optionalAttributes
+
+# Companion objects, constructors, and static definitions
+*$#<init>(*)                                            id:gen-ctor         # constructors
+*$#<clinit>()                                           id:gen-clinit       # static initializer blocks
+
+# Companion objects and defaults
+*$*#apply(*)                                            id:comp-apply
+*$*#unapply(*)                                          id:comp-unapply
+*$*#toString(*)                                         id:comp-tostring
+*$*#readResolve(*)                                      id:comp-readresolve
+
+# anonymous class created by a macro expansion
+*$macro$*#$anonfun$inst$macro$*                         id:macro-inst
+*$macro$*#inst$macro$*                                  id:macro-inst
+
+# lambda
+*#*  synthetic name-contains:$anonfun$                  id:scala-anonfun
+
+# ─────────────────────────────────────────────────────────────────────────────
+# DIRECT RULES
+# ─────────────────────────────────────────────────────────────────────────────
