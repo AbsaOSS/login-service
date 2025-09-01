@@ -389,7 +389,7 @@ sbt jacoco
 ```
 Code coverage will be generated on path:
 ```
-{project-root}/{module}/target/scala-{scala_version}/jacoco/report/html
+{project-root}/{module}/target/jacoco/report/index.html
 ```
 ## Health check endpoint
 Springboot Actuator is enabled for this project. This provides the user with an endpoint (readable via HTTP or JMX)
