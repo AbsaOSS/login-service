@@ -24,10 +24,6 @@ lazy val scala213 = "2.13.12"
 ThisBuild / scalaVersion := scala212
 ThisBuild / versionScheme := Some("early-semver")
 
-//lazy val commonJacocoReportSettings: JacocoReportSettings = JacocoReportSettings(
-//  formats = Seq(JacocoReportFormats.HTML, JacocoReportFormats.XML)
-//)
-
 lazy val commonJacocoExcludes: Seq[String] = Seq(
   "za.co.absa.loginsvc.rest.Application*"
 //      "za.co.absa.loginsvc.rest.config.BaseConfig" // class only
@@ -55,8 +51,6 @@ lazy val api = project // no need to define file, because path is same as val na
     webappWebInfClasses := true,
     inheritJarManifest := true,
     javacOptions ++= commonJavacOptions,
-//    jacocoReportSettings := commonJacocoReportSettings.withTitle(s"login-service:service Jacoco Report - scala:${scalaVersion.value}"),
-//    jacocoExcludes := commonJacocoExcludes,
     publish / skip := true
   ).enablePlugins(TomcatPlugin)
   .enablePlugins(AutomateHeaderPlugin)
