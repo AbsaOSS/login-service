@@ -70,7 +70,7 @@ object FilteredJacocoAgentPlugin extends AutoPlugin {
     }
   }
 
-  lazy val Jmf = config("jmf").extend(Compile)
+  lazy val jmf = config("jmf").extend(Compile)
 
   // ---- commands
   private lazy val jacocoCleanAllCmd  = Command.command("jacocoCleanAll") { state =>
@@ -79,11 +79,11 @@ object FilteredJacocoAgentPlugin extends AutoPlugin {
     else targets.foldLeft(state) { (st, ref) => Command.process(s"${ref.project}/jacocoClean", st) }
   }
 
-  private lazy val jacocoReportAllCmd = Command.command("jacocoReportAll") { state0 =>
-    val e         = Project.extract(state0)
+  private lazy val jacocoReportAllCmd = Command.command("jacocoReportAll") { state =>
+    val e         = Project.extract(state)
     val current   = e.currentRef
     // your existing helper (enabled projects under current aggregate)
-    val under     = enabledUnder(state0)
+    val under     = enabledUnder(state)
 
     // Also include current project if enabled
     val selfEnabled =
@@ -92,9 +92,10 @@ object FilteredJacocoAgentPlugin extends AutoPlugin {
     val targets = (if (selfEnabled) current +: under else under).distinct
 
     if (targets.isEmpty) {
-      println("[jacoco] nothing to report (no enabled modules here)."); state0
+      println("[jacoco] nothing to report (no enabled modules here).");
+      state
     } else {
-      targets.foldLeft(state0) { (st, ref) =>
+      targets.foldLeft(state) { (st, ref) =>
         Command.process(s"${ref.project}/jacocoReport", st)
       }
     }
@@ -138,7 +139,7 @@ object FilteredJacocoAgentPlugin extends AutoPlugin {
       // pull the agent with the runtime classifier (this is the actual -javaagent jar)
       ("org.jacoco" % "org.jacoco.agent" % jacocoVersion.value % Test).classifier("runtime"),
       ("org.jacoco" % "org.jacoco.cli"   % jacocoVersion.value % Test).classifier("nodeps"),
-      "io.github.moranaapps" %% "jacoco-method-filter-core" % jmfCoreVersion.value % Jmf.name,
+      "io.github.moranaapps" %% "jacoco-method-filter-core" % jmfCoreVersion.value % jmf.name,
     ),
     jacocoSetUserDirToBuildRoot := true,
 
@@ -156,7 +157,7 @@ object FilteredJacocoAgentPlugin extends AutoPlugin {
     },
 
     // --- JMF tool wiring
-    ivyConfigurations += Jmf,
+    ivyConfigurations += jmf,
 
     jmfOutDir   := target.value / "jmf",
     jmfRulesFile:= (ThisBuild / baseDirectory).value / "jmf-rules.txt",
@@ -171,7 +172,7 @@ object FilteredJacocoAgentPlugin extends AutoPlugin {
       val _          = (Compile / compile).value
 
       val rules      = jmfRulesFile.value
-      val upd        = (Jmf / update).value   // hoisted
+      val upd        = (jmf / update).value   // hoisted
       val log        = streams.value.log
       val outRoot    = jmfOutDir.value
       val mainCls    = jmfCliMain.value
@@ -185,7 +186,7 @@ object FilteredJacocoAgentPlugin extends AutoPlugin {
       val compileCp: Seq[File] = Attributed.data((Compile / fullClasspath).value)
 
       // Jmf-resolved jars (your jacoco-method-filter-core, etc.)
-      val jmfJars: Seq[File] = (Jmf / update).value.matching(artifactFilter(`type` = "jar")).distinct
+      val jmfJars: Seq[File] = (jmf / update).value.matching(artifactFilter(`type` = "jar")).distinct
 
       // Final runtime CP
       val cp: Seq[File] = (compileCp ++ jmfJars :+ (Compile / classDirectory).value).distinct
