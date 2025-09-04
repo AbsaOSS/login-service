@@ -1,4 +1,4 @@
-// JacocoBaseKeysPlugin.scala | last modified in v1.0.0
+// JacocoBaseKeysPlugin.scala | last modified in v1.0.0 + local changes
 
 import JacocoBaseKeysPlugin.autoImport.*
 import sbt.*
@@ -70,7 +70,7 @@ object FilteredJacocoAgentPlugin extends AutoPlugin {
     }
   }
 
-  lazy val jmf = config("jmf").extend(Compile)
+  lazy val Jmf = config("jmf").extend(Compile)
 
   // ---- commands
   private lazy val jacocoCleanAllCmd  = Command.command("jacocoCleanAll") { state =>
@@ -139,7 +139,7 @@ object FilteredJacocoAgentPlugin extends AutoPlugin {
       // pull the agent with the runtime classifier (this is the actual -javaagent jar)
       ("org.jacoco" % "org.jacoco.agent" % jacocoVersion.value % Test).classifier("runtime"),
       ("org.jacoco" % "org.jacoco.cli"   % jacocoVersion.value % Test).classifier("nodeps"),
-      "io.github.moranaapps" %% "jacoco-method-filter-core" % jmfCoreVersion.value % jmf.name,
+      "io.github.moranaapps" %% "jacoco-method-filter-core" % jmfCoreVersion.value % Jmf.name,
     ),
     jacocoSetUserDirToBuildRoot := true,
 
@@ -157,7 +157,7 @@ object FilteredJacocoAgentPlugin extends AutoPlugin {
     },
 
     // --- JMF tool wiring
-    ivyConfigurations += jmf,
+    ivyConfigurations += Jmf,
 
     jmfOutDir   := target.value / "jmf",
     jmfRulesFile:= (ThisBuild / baseDirectory).value / "jmf-rules.txt",
@@ -172,7 +172,7 @@ object FilteredJacocoAgentPlugin extends AutoPlugin {
       val _          = (Compile / compile).value
 
       val rules      = jmfRulesFile.value
-      val upd        = (jmf / update).value   // hoisted
+      val upd        = (Jmf / update).value   // hoisted
       val log        = streams.value.log
       val outRoot    = jmfOutDir.value
       val mainCls    = jmfCliMain.value
@@ -186,7 +186,7 @@ object FilteredJacocoAgentPlugin extends AutoPlugin {
       val compileCp: Seq[File] = Attributed.data((Compile / fullClasspath).value)
 
       // Jmf-resolved jars (your jacoco-method-filter-core, etc.)
-      val jmfJars: Seq[File] = (jmf / update).value.matching(artifactFilter(`type` = "jar")).distinct
+      val jmfJars: Seq[File] = (Jmf / update).value.matching(artifactFilter(`type` = "jar")).distinct
 
       // Final runtime CP
       val cp: Seq[File] = (compileCp ++ jmfJars :+ (Compile / classDirectory).value).distinct
