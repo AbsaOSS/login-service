@@ -25,4 +25,4 @@ case class PublicKey(
   @Schema(example = "ABCDEFGH1234", requiredMode = RequiredMode.REQUIRED,
     description = "The public key currently signing JWTs")
   key: String
-) extends AnyVal
+)
