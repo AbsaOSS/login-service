@@ -18,7 +18,7 @@ import Dependencies._
 ThisBuild / organization := "za.co.absa"
 
 lazy val scala212 = "2.12.17"
-lazy val scala213 = "2.13.12"
+lazy val scala213 = "2.13.13"
 
 ThisBuild / scalaVersion := scala212
 ThisBuild / versionScheme := Some("early-semver")
