@@ -29,4 +29,4 @@ case class PublicKeySet(
       {"key": "ZYXWVUT9876"},
     ]""")
   keys: List[PublicKey]
-) extends AnyVal
+)
