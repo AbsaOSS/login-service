@@ -33,17 +33,13 @@ import za.co.absa.loginsvc.rest.model.{KerberosUserDetails, PublicKey, PublicKey
 import za.co.absa.loginsvc.rest.service.jwt.JWTService
 import za.co.absa.loginsvc.utils.OptionUtils.ImplicitBuilderExt
 
-import java.util.concurrent.CompletableFuture
 import java.util.{Base64, Optional}
-import scala.concurrent.Future
-import scala.concurrent.duration.FiniteDuration
 
 
 @RestController
 @RequestMapping(Array("/token"))
 class TokenController @Autowired()(jwtService: JWTService, experimentalConfigProvider: ExperimentalRestConfigProvider) {
 
-  private lazy val refreshExpDuration: FiniteDuration = jwtService.getConfiguredRefreshExpDuration
   private lazy val experimentalRestConfig = experimentalConfigProvider.getExperimentalRestConfig
 
   import za.co.absa.loginsvc.utils.implicits._
@@ -74,7 +70,7 @@ class TokenController @Autowired()(jwtService: JWTService, experimentalConfigPro
   @ResponseStatus(HttpStatus.OK)
   @SecurityRequirement(name = "basicAuth")
   @SecurityRequirement(name = "negotiate")
-  def generateToken(authentication: Authentication, @RequestParam("group-prefixes") groupPrefixes: Optional[String]): CompletableFuture[TokensWrapper] = {
+  def generateToken(authentication: Authentication, @RequestParam("group-prefixes") groupPrefixes: Optional[String]): TokensWrapper = {
 
     val user: User = authentication.getPrincipal match {
       case u: User => u
@@ -90,7 +86,7 @@ class TokenController @Autowired()(jwtService: JWTService, experimentalConfigPro
 
     val accessJwt = jwtService.generateAccessToken(filteredGroupsUser)
     val refreshJwt = jwtService.generateRefreshToken(filteredGroupsUser)
-    Future.successful(TokensWrapper.fromTokens(accessJwt, refreshJwt))
+    TokensWrapper.fromTokens(accessJwt, refreshJwt)
   }
 
   @Tags(Array(new Tag(name = "token")))
@@ -119,7 +115,7 @@ class TokenController @Autowired()(jwtService: JWTService, experimentalConfigPro
   @ResponseStatus(HttpStatus.OK)
   @SecurityRequirement(name = "basicAuth")
   @SecurityRequirement(name = "negotiate")
-  def generateTokenExperimentalGet(authentication: Authentication, @RequestParam("group-prefixes") groupPrefixes: Optional[String]): CompletableFuture[TokensWrapper] = {
+  def generateTokenExperimentalGet(authentication: Authentication, @RequestParam("group-prefixes") groupPrefixes: Optional[String]): TokensWrapper = {
     failIfExperimentalIsNotAllowed()
 
     val user: User = authentication.getPrincipal match {
@@ -136,7 +132,7 @@ class TokenController @Autowired()(jwtService: JWTService, experimentalConfigPro
 
     val accessJwt = jwtService.generateAccessToken(filteredGroupsUser)
     val refreshJwt = jwtService.generateRefreshToken(filteredGroupsUser)
-    Future.successful(TokensWrapper.fromTokens(accessJwt, refreshJwt))
+    TokensWrapper.fromTokens(accessJwt, refreshJwt)
   }
 
   @Tags(Array(new Tag(name = "token")))
@@ -168,9 +164,9 @@ class TokenController @Autowired()(jwtService: JWTService, experimentalConfigPro
     produces = Array(MediaType.APPLICATION_JSON_VALUE)
   )
   @ResponseStatus(HttpStatus.OK)
-  def refreshToken(@RequestBody tokens: TokensWrapper): CompletableFuture[TokensWrapper] = {
+  def refreshToken(@RequestBody tokens: TokensWrapper): TokensWrapper = {
     val (refreshedAccessToken, refreshedRefreshToken) = jwtService.refreshTokens(tokens.accessToken, tokens.refreshToken)
-    Future.successful(TokensWrapper.fromTokens(refreshedAccessToken, refreshedRefreshToken))
+    TokensWrapper.fromTokens(refreshedAccessToken, refreshedRefreshToken)
   }
 
   @Tags(Array(new Tag(name = "token")))
@@ -191,10 +187,10 @@ class TokenController @Autowired()(jwtService: JWTService, experimentalConfigPro
     produces = Array(MediaType.APPLICATION_JSON_VALUE)
   )
   @ResponseStatus(HttpStatus.OK)
-  def getPublicKey(): CompletableFuture[PublicKey] = {
+  def getPublicKey(): PublicKey = {
     val (publicKey, _) = jwtService.publicKeys
     val publicKeyBase64 = Base64.getEncoder.encodeToString(publicKey.getEncoded)
-    Future.successful(PublicKey(publicKeyBase64))
+    PublicKey(publicKeyBase64)
   }
 
   @Tags(Array(new Tag(name = "token")))
@@ -204,7 +200,7 @@ class TokenController @Autowired()(jwtService: JWTService, experimentalConfigPro
     responses = Array(
       new ApiResponse(responseCode = "200", description = "Payload containing current and previous public keys is returned",
         content = Array(new Content(
-          schema = new Schema(implementation = classOf[PublicKey]),
+          schema = new Schema(implementation = classOf[PublicKeySet]),
           examples = Array(new ExampleObject(value = "{\n \"keys\": [\n {\n \"key\": \"ABCDEFGH1234\"\n}\n]\n}")))
         )
       )
@@ -215,12 +211,12 @@ class TokenController @Autowired()(jwtService: JWTService, experimentalConfigPro
     produces = Array(MediaType.APPLICATION_JSON_VALUE)
   )
   @ResponseStatus(HttpStatus.OK)
-  def getAllPublicKeys(): CompletableFuture[PublicKeySet] = {
+  def getAllPublicKeys(): PublicKeySet = {
     val (primaryPublicKey, optionalPublicKey) = jwtService.publicKeys
     val currentPublicKey = PublicKey(Base64.getEncoder.encodeToString(primaryPublicKey.getEncoded))
     val previousPublicKey = optionalPublicKey.map(pk =>
       PublicKey(Base64.getEncoder.encodeToString(pk.getEncoded)))
-    Future.successful(PublicKeySet(keys = currentPublicKey :: previousPublicKey.toList))
+    PublicKeySet(keys = currentPublicKey :: previousPublicKey.toList)
   }
 
   @Tags(Array(new Tag(name = "token")))
@@ -235,11 +231,11 @@ class TokenController @Autowired()(jwtService: JWTService, experimentalConfigPro
     produces = Array(MediaType.APPLICATION_JSON_VALUE)
   )
   @ResponseStatus(HttpStatus.OK)
-  def getPublicKeyJwks(): CompletableFuture[Map[String, AnyRef]] = {
+  def getPublicKeyJwks(): Map[String, AnyRef] = {
     val jwk = jwtService.jwks
 
     import scala.collection.JavaConverters._
-    Future.successful(jwk.toJSONObject(true).asScala.toMap)
+    jwk.toJSONObject(true).asScala.toMap
   }
 
   private def failIfExperimentalIsNotAllowed(): Unit = {
