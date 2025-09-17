@@ -103,10 +103,21 @@ case class AwsSecretsLdapUserConfig(private val secretName: String,
         throw e
     }
   }
+}
+
+case class AwsSsmLdapUserConfig(private val paramName: String,
+                                private val decryptIfSecure: Boolean,
+                                private val usernameFieldName: String,
+                                private val passwordFieldName: String) extends LdapUser
+{
+  private val logger = LoggerFactory.getLogger(classOf[LdapUser])
+
+  val (username, password) = getUsernameAndPasswordFromSsm
+  def throwOnErrors(): Unit = this.validate().throwOnErrors()
 
   private def getUsernameAndPasswordFromSsm: (String, String) = {
     try {
-      val responseOption = AwsSsmUtils.getParameter("test", true)
+      val responseOption = AwsSsmUtils.getParameter(paramName, decryptIfSecure)
       val objectMapper = new ObjectMapper()
 
       responseOption.fold(
@@ -114,11 +125,11 @@ case class AwsSecretsLdapUserConfig(private val secretName: String,
       ) {
         response => {
           val root = objectMapper.readTree(response)
-          val usernameNode = root.get("account")
-          val passwordNode = root.get("currentPassword")
+          val usernameNode = root.get(usernameFieldName)
+          val passwordNode = root.get(passwordFieldName)
 
           if (usernameNode == null || passwordNode == null) {
-            throw new Exception("Missing 'account' or 'currentPassword' fields in SSM JSON")
+            throw new Exception(s"Missing '$usernameFieldName' or '$passwordFieldName' fields in SSM JSON")
           }
 
           val username = usernameNode.asText()
