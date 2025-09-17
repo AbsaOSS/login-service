@@ -17,36 +17,36 @@
 package za.co.absa.loginsvc.rest.config.auth
 
 import org.slf4j.LoggerFactory
-import com.fasterxml.jackson.databind.{JsonNode, ObjectMapper}
+import com.fasterxml.jackson.databind.ObjectMapper
 import za.co.absa.loginsvc.rest.config.validation.{ConfigValidationException, ConfigValidationResult}
 import za.co.absa.loginsvc.rest.config.validation.ConfigValidationResult.{ConfigValidationError, ConfigValidationSuccess}
 import za.co.absa.loginsvc.utils.{AwsSecretsUtils, AwsSsmUtils}
 
 case class ServiceAccountConfig(private val accountPattern: String,
                                 private val inConfigAccount: Option[LdapUserCredentialsConfig],
-                                private val awsSecretsManagerAccount: Option[AwsSecretsLdapUserConfig])
+                                private val awsSecretsManagerAccount: Option[AwsSecretsLdapUserConfig],
+                                private val awsSystemsManagerAccount: Option[AwsSystemsManagerLdapUserConfig])
 {
-  private val ldapUserDetails: LdapUser = (inConfigAccount, awsSecretsManagerAccount) match {
-    case (Some(_), Some(_)) =>
-      throw ConfigValidationException("Both inConfigAccount and awsSecretsLdapUserConfig exist. Please choose only one.")
+  private val ldapUserDetails: LdapUser = chooseOne(
+    inConfigAccount,
+    awsSecretsManagerAccount,
+    awsSystemsManagerAccount)
 
-    case (None, None) =>
-      throw ConfigValidationException("Neither integratedLdapUserConfig nor awsSecretsLdapUserConfig exists. Exactly one of them should be present.")
-
-    case (Some(inConfig), None) =>
-      inConfig.throwOnErrors()
-      inConfig
-
-    case (None, Some(awsConfig)) =>
-      awsConfig.throwOnErrors()
-      awsConfig
-
-    case _ =>
-      throw ConfigValidationException("Error with current config concerning inConfigAccount or awsSecretsLdapUserConfig")
-  }
+  ldapUserDetails.throwOnErrors()
 
   val username: String = String.format(accountPattern, ldapUserDetails.username)
   val password: String = ldapUserDetails.password
+
+  private def chooseOne[T](options: Option[T]*): T = {
+    options.flatten match {
+      case Seq(value) =>
+        value
+      case Nil =>
+        throw ConfigValidationException("None of the options are defined. Exactly one of them should be present.")
+      case _ =>
+        throw ConfigValidationException("More than one option is defined. Please choose only one.")
+    }
+  }
 }
 
 case class LdapUserCredentialsConfig (username: String, password: String) extends LdapUser
@@ -105,10 +105,10 @@ case class AwsSecretsLdapUserConfig(private val secretName: String,
   }
 }
 
-case class AwsSsmLdapUserConfig(private val paramName: String,
-                                private val decryptIfSecure: Boolean,
-                                private val usernameFieldName: String,
-                                private val passwordFieldName: String) extends LdapUser
+case class AwsSystemsManagerLdapUserConfig(private val parameter: String,
+                                           private val decryptIfSecure: Boolean,
+                                           private val usernameFieldName: String,
+                                           private val passwordFieldName: String) extends LdapUser
 {
   private val logger = LoggerFactory.getLogger(classOf[LdapUser])
 
@@ -117,7 +117,7 @@ case class AwsSsmLdapUserConfig(private val paramName: String,
 
   private def getUsernameAndPasswordFromSsm: (String, String) = {
     try {
-      val responseOption = AwsSsmUtils.getParameter(paramName, decryptIfSecure)
+      val responseOption = AwsSsmUtils.getParameter(parameter, decryptIfSecure)
       val objectMapper = new ObjectMapper()
 
       responseOption.fold(
