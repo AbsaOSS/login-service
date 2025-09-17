@@ -17,9 +17,10 @@
 package za.co.absa.loginsvc.rest.config.auth
 
 import org.slf4j.LoggerFactory
+import com.fasterxml.jackson.databind.{JsonNode, ObjectMapper}
 import za.co.absa.loginsvc.rest.config.validation.{ConfigValidationException, ConfigValidationResult}
 import za.co.absa.loginsvc.rest.config.validation.ConfigValidationResult.{ConfigValidationError, ConfigValidationSuccess}
-import za.co.absa.loginsvc.utils.AwsSecretsUtils
+import za.co.absa.loginsvc.utils.{AwsSecretsUtils, AwsSsmUtils}
 
 case class ServiceAccountConfig(private val accountPattern: String,
                                 private val inConfigAccount: Option[LdapUserCredentialsConfig],
@@ -99,6 +100,37 @@ case class AwsSecretsLdapUserConfig(private val secretName: String,
     } catch {
       case e: Throwable =>
         logger.error(s"Error occurred retrieving account data from AWS Secrets Manager", e)
+        throw e
+    }
+  }
+
+  private def getUsernameAndPasswordFromSsm: (String, String) = {
+    try {
+      val responseOption = AwsSsmUtils.getParameter("test", true)
+      val objectMapper = new ObjectMapper()
+
+      responseOption.fold(
+        throw new Exception("Error retrieving username and password from from AWS Secrets Manager")
+      ) {
+        response => {
+          val root = objectMapper.readTree(response)
+          val usernameNode = root.get("account")
+          val passwordNode = root.get("currentPassword")
+
+          if (usernameNode == null || passwordNode == null) {
+            throw new Exception("Missing 'account' or 'currentPassword' fields in SSM JSON")
+          }
+
+          val username = usernameNode.asText()
+          val password = passwordNode.asText()
+
+          (username, password)
+        }
+      }
+    }
+    catch {
+      case e: Throwable =>
+        logger.error(s"Error occurred retrieving data from AWS Ssm", e)
         throw e
     }
   }
