@@ -67,6 +67,7 @@ jobs:
           from-tag-name: ${{ github.event.inputs.from-tag-name }}
           chapters: |
             - { title: No entry 🚫, label: duplicate }
+            - { title: No entry 🚫, label: no RN },
             - { title: Breaking Changes 💥, label: breaking-change }
             - { title: New Features 🎉, label: enhancement }
             - { title: New Features 🎉, label: feature }
