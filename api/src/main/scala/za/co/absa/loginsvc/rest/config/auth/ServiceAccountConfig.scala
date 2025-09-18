@@ -114,6 +114,28 @@ case class AwsSystemsManagerLdapUserConfig(private val parameter: String,
 
   val (username, password) = getUsernameAndPasswordFromSsm
   def throwOnErrors(): Unit = this.validate().throwOnErrors()
+  override def validate(): ConfigValidationResult = {
+    val results = Seq(
+      Option(parameter)
+        .map(_ => ConfigValidationSuccess)
+        .getOrElse(ConfigValidationError(ConfigValidationException("parameter is empty"))),
+
+      Option(decryptIfSecure)
+        .map(_ => ConfigValidationSuccess)
+        .getOrElse(ConfigValidationError(ConfigValidationException("decryptIfSecure is empty"))),
+
+      Option(usernameFieldName)
+        .map(_ => ConfigValidationSuccess)
+        .getOrElse(ConfigValidationError(ConfigValidationException("usernameFieldName is empty"))),
+
+      Option(passwordFieldName)
+        .map(_ => ConfigValidationSuccess)
+        .getOrElse(ConfigValidationError(ConfigValidationException("passwordFieldName is empty")))
+    )
+
+    val awsSecretsResultsMerge = results.foldLeft[ConfigValidationResult](ConfigValidationSuccess)(ConfigValidationResult.merge)
+    awsSecretsResultsMerge.merge(super.validate())
+  }
 
   private def getUsernameAndPasswordFromSsm: (String, String) = {
     try {
@@ -121,7 +143,7 @@ case class AwsSystemsManagerLdapUserConfig(private val parameter: String,
       val objectMapper = new ObjectMapper()
 
       responseOption.fold(
-        throw new Exception("Error retrieving username and password from from AWS Secrets Manager")
+        throw new Exception("Error retrieving username and password from from AWS Systems Manager")
       ) {
         response => {
           val root = objectMapper.readTree(response)

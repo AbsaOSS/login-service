@@ -22,7 +22,6 @@ import org.springframework.boot.actuate.health.Health
 import org.springframework.boot.test.context.SpringBootTest
 import za.co.absa.loginsvc.rest.config.auth.{ActiveDirectoryLDAPConfig, LdapUserCredentialsConfig, ServiceAccountConfig, UsersConfig}
 import za.co.absa.loginsvc.rest.config.provider.AuthConfigProvider
-import za.co.absa.loginsvc.rest.service.actuator.LdapHealthService
 
 import javax.naming.CommunicationException
 import javax.naming.directory.DirContext
@@ -34,6 +33,7 @@ class LdapHealthServiceTest extends AnyFlatSpec with Matchers {
   private val serviceAccountCfg = ServiceAccountConfig(
     "CN=%s,OU=Users,OU=Accounts,DC=domain,DC=subdomain,DC=com",
     Option(integratedCfg),
+    None,
     None)
   private val ldapCfgZeroOrder = ActiveDirectoryLDAPConfig(
     "some.domain.com",
