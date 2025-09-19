@@ -20,7 +20,9 @@ import software.amazon.awssdk.services.ssm.SsmClient
 import software.amazon.awssdk.services.ssm.model._
 import org.slf4j.LoggerFactory
 
-object AwsSsmUtils extends SsmUtils {
+object AwsSsmUtils extends AwsSsmUtils
+
+class AwsSsmUtils extends SsmUtils {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
