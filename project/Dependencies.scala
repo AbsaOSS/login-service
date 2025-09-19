@@ -64,6 +64,7 @@ object Dependencies {
   lazy val awsSecrets = "software.amazon.awssdk" % "secretsmanager" % "2.20.68"
   lazy val awsSts = "software.amazon.awssdk" % "sts" % "2.20.69"
   lazy val awsSoo = "software.amazon.awssdk" % "sso" % "2.20.69"
+  lazy val awsSsm = "software.amazon.awssdk" % "ssm" % "2.29.25"
 
   lazy val servletApi = "javax.servlet" % "javax.servlet-api" % "3.0.1" % Provided
 
@@ -104,6 +105,7 @@ object Dependencies {
     awsSecrets,
     awsSts,
     awsSoo,
+    awsSsm,
 
     springDoc,
 

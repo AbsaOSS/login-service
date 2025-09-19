@@ -77,6 +77,12 @@ loginsvc:
               #region: "region"
               #username-field-name: "username"
               #password-field-name: "password"
+          # As an Alternative to Secrets, you may use AWS Systems Manager
+          #aws-systems-manager-account
+            #parameter: "parameter path"
+            #decrypt-if-secure: true
+            #username-field-name: "username"
+            #password-field-name: "password"
           # Enables Kerberos Authentication to the Login-Service
           #enable-kerberos:
             #krb-file-location: "/etc/krb5.conf"

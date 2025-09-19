@@ -29,6 +29,7 @@ class ServiceAccountConfigTest extends AnyFlatSpec with Matchers {
   private val serviceAccountCfg = ServiceAccountConfig(
     "CN=%s,OU=Users,OU=Accounts,DC=domain,DC=subdomain,DC=com",
     Option(integratedCfg),
+    None,
     None)
 
   "ServiceAccountConfig" should "have validated and gotten the correct username and password" in {
@@ -42,19 +43,21 @@ class ServiceAccountConfigTest extends AnyFlatSpec with Matchers {
       ServiceAccountConfig(
         "CN=%s,OU=Users,OU=Accounts,DC=domain,DC=subdomain,DC=com",
         None,
+        None,
         None)
     }
-    bothNoneException.getMessage should be ("Neither integratedLdapUserConfig nor awsSecretsLdapUserConfig exists. Exactly one of them should be present.")
+    bothNoneException.getMessage should be ("None of the options are defined. Exactly one of them should be present.")
 
     val bothSomeException = intercept[ConfigValidationException]
       {
         ServiceAccountConfig(
           "CN=%s,OU=Users,OU=Accounts,DC=domain,DC=subdomain,DC=com",
           Some(integratedCfg),
-          Some(cloudCfg))
+          Some(cloudCfg),
+          None)
       }
 
-    bothSomeException.getMessage should be ("Both inConfigAccount and awsSecretsLdapUserConfig exist. Please choose only one.")
+    bothSomeException.getMessage should be ("More than one option is defined. Please choose only one.")
   }
 
   "LdapUserCredentialsConfig" should "return the correct validation results" in {

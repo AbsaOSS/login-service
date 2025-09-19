@@ -22,7 +22,6 @@ import org.springframework.boot.actuate.info.Info.Builder
 import org.springframework.boot.test.context.SpringBootTest
 import org.mockito.Mockito._
 import za.co.absa.loginsvc.rest.config.actuator.GitPropertiesGenerator
-import za.co.absa.loginsvc.rest.service.actuator.GitInfoService
 
 @SpringBootTest
 class GitInfoServiceTest extends AnyFlatSpec with Matchers {

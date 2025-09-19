@@ -28,7 +28,7 @@ import za.co.absa.loginsvc.rest.config.validation.ConfigValidationException
 class DefaultUserRepositoriesTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers with MockFactory {
 
   private val testConfig: ConfigProvider = new ConfigProvider("api/src/test/resources/application.yaml")
-  private val emptyServiceAccount = ServiceAccountConfig("", Option(LdapUserCredentialsConfig("", "")), None)
+  private val emptyServiceAccount = ServiceAccountConfig("", Option(LdapUserCredentialsConfig("", "")), None, None)
 
   private val enabledLdapTestConfig = Some(ActiveDirectoryLDAPConfig("", "", "", order = 2, emptyServiceAccount, None, None, None))
   private val enabledUsersConfig = testConfig.getUsersConfig // has order = 1

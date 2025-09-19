@@ -27,6 +27,7 @@ class LdapUserRepositoryTest extends AnyFlatSpec with Matchers {
   private val serviceAccountCfg = ServiceAccountConfig(
     "CN=%s,OU=Users,OU=Accounts,DC=domain,DC=subdomain,DC=com",
     Option(integratedCfg),
+    None,
     None)
   private val ldapCfgNoRetries = ActiveDirectoryLDAPConfig(
     "some.domain.com",

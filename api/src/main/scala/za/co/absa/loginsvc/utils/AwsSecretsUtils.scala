@@ -24,7 +24,9 @@ import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient
 import software.amazon.awssdk.services.secretsmanager.model.{GetSecretValueRequest, GetSecretValueResponse}
 import za.co.absa.loginsvc.rest.model.AwsSecret
 
-object AwsSecretsUtils extends SecretUtils {
+object AwsSecretsUtils extends AwsSecretsUtils
+
+class AwsSecretsUtils extends SecretUtils {
 
   private val logger = LoggerFactory.getLogger(getClass)
   def fetchSecret(
