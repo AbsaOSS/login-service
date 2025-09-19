@@ -60,7 +60,7 @@ case class AwsSecretsLdapUserConfig(private val secretName: String,
                                     private val passwordFieldName: String) extends LdapUser
 {
 
-  private val logger = LoggerFactory.getLogger(classOf[LdapUser])
+  private val logger = LoggerFactory.getLogger(classOf[AwsSecretsLdapUserConfig])
 
   val (username, password) = getUsernameAndPasswordFromSecret
   def throwOnErrors(): Unit = this.validate().throwOnErrors()
@@ -110,7 +110,7 @@ case class AwsSystemsManagerLdapUserConfig(private val parameter: String,
                                            private val usernameFieldName: String,
                                            private val passwordFieldName: String) extends LdapUser
 {
-  private val logger = LoggerFactory.getLogger(classOf[LdapUser])
+  private val logger = LoggerFactory.getLogger(classOf[AwsSystemsManagerLdapUserConfig])
 
   val (username, password) = getUsernameAndPasswordFromSsm
   def throwOnErrors(): Unit = this.validate().throwOnErrors()
