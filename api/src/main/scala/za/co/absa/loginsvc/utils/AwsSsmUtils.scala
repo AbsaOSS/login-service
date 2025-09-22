@@ -25,9 +25,10 @@ object AwsSsmUtils extends AwsSsmUtils
 class AwsSsmUtils extends SsmUtils {
 
   private val logger = LoggerFactory.getLogger(getClass)
+  private[utils] def getSsm: SsmClient = SsmClient.builder().build()
 
   def getParameter(paramName: String, decryptIfSecure: Boolean): Option[String] = {
-    val ssm: SsmClient = SsmClient.builder().build()
+    val ssm = getSsm
     val request = GetParameterRequest.builder()
       .name(paramName)
       .withDecryption(decryptIfSecure)

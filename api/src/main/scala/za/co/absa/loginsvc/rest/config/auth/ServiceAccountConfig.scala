@@ -87,9 +87,12 @@ case class AwsSecretsLdapUserConfig(private val secretName: String,
     awsSecretsResultsMerge.merge(super.validate())
   }
 
+  //Added for Testing Purposes
+  private[auth] def AwsUtils: AwsSecretsUtils = AwsSecretsUtils
+
   private def getUsernameAndPasswordFromSecret: (String, String) = {
     try {
-      val secretsOption = AwsSecretsUtils.fetchSecret(secretName, region, Array(usernameFieldName, passwordFieldName))
+      val secretsOption = AwsUtils.fetchSecret(secretName, region, Array(usernameFieldName, passwordFieldName))
 
       secretsOption.fold(
         throw new Exception("Error retrieving username and password from from AWS Secrets Manager")
@@ -137,9 +140,12 @@ case class AwsSystemsManagerLdapUserConfig(private val parameter: String,
     awsSecretsResultsMerge.merge(super.validate())
   }
 
+  //Added for Testing Purposes
+  private[auth] def AwsUtils: AwsSsmUtils = AwsSsmUtils
+
   private def getUsernameAndPasswordFromSsm: (String, String) = {
     try {
-      val responseOption = AwsSsmUtils.getParameter(parameter, decryptIfSecure)
+      val responseOption = AwsUtils.getParameter(parameter, decryptIfSecure)
       val objectMapper = new ObjectMapper()
 
       responseOption.fold(
