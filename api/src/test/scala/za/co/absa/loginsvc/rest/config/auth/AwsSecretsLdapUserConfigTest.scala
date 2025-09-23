@@ -16,6 +16,7 @@
 
 package za.co.absa.loginsvc.rest.config.auth
 
+import org.mockito.Mockito.{mock, when}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import za.co.absa.loginsvc.rest.model.AwsSecret
@@ -25,65 +26,45 @@ import java.time.Instant
 
 class AwsSecretsLdapUserConfigTest extends AnyFlatSpec with Matchers {
 
-  class AwsSecretsUtilsTestSuccess extends AwsSecretsUtils {
-    override def fetchSecret(secretName: String,
-                             region: String,
-                             secretFields: Array[String],
-                             versionStage: Option[String] = None): Option[AwsSecret] =
-    {
-      Some(AwsSecret(Map(
-            "accountName" -> "ldap-user123",
-            "accountPwd" -> "password456"),
-          Instant.now()))
-    }
-  }
-
-  class AwsSecretsUtilsTestFail extends AwsSecretsUtils {
-    override def fetchSecret(secretName: String,
-                             region: String,
-                             secretFields: Array[String],
-                             versionStage: Option[String] = None): Option[AwsSecret] = None
-  }
-
-  class AwsSecretsLdapUserConfigTestClass(secretName: String,
-                                          region: String,
-                                          usernameFieldName: String,
-                                          passwordFieldName: String,
-                                          testClass: AwsSecretsUtils)
-    extends AwsSecretsLdapUserConfig(
-      secretName,
-      region,
-      usernameFieldName,
-      passwordFieldName) {
-    override private[auth] def AwsUtils: AwsSecretsUtils = testClass
-  }
-
   "AwsSecretsLdapUserConfig" should "return a username and password when AwsSecretsUtils returns a value" in {
-    val awsSecretsUtilsTestSuccess = new AwsSecretsUtilsTestSuccess
-    val awsSecretsLdapUserConfigTestClass = new AwsSecretsLdapUserConfigTestClass(
+    val awsSecretsUtilsMock = mock(classOf[AwsSecretsUtils])
+    when(awsSecretsUtilsMock.fetchSecret(
+      "secret",
+      "region",
+      Array("accountName", "accountPwd")))
+      .thenAnswer(_ =>
+        Some(AwsSecret(Map(
+          "accountName" -> "ldap-user123",
+          "accountPwd" -> "password456"),
+          Instant.now())))
+    val awsSecretsLdapUserConfigTest = new AwsSecretsLdapUserConfig(
       "secret",
       "region",
       "accountName",
-      "accountPwd",
-      awsSecretsUtilsTestSuccess)
-
-    awsSecretsLdapUserConfigTestClass.username shouldBe "ldap-user123"
-    awsSecretsLdapUserConfigTestClass.password shouldBe "password456"
+      "accountPwd") {
+      override private[auth] def AwsUtils: AwsSecretsUtils = awsSecretsUtilsMock
+    }
+    awsSecretsLdapUserConfigTest.username shouldBe "ldap-user123"
+    awsSecretsLdapUserConfigTest.password shouldBe "password456"
   }
 
   "AwsSecretsLdapUserConfig" should "Throw and exception if no values are returned by AwsSecretsUtils" in {
-    val awsSecretsUtilsTestFail = new AwsSecretsUtilsTestFail
+    val awsSecretsUtilsMock = mock(classOf[AwsSecretsUtils])
+    when(awsSecretsUtilsMock.fetchSecret(
+      "secret",
+      "region",
+      Array("accountName", "accountPwd")))
+      .thenAnswer(_ => None)
     val exception = intercept[Exception]
     {
-      new AwsSecretsLdapUserConfigTestClass(
+      new AwsSecretsLdapUserConfig(
         "secret",
         "region",
         "accountName",
-        "accountPwd",
-        awsSecretsUtilsTestFail)
+        "accountPwd") {
+        override private[auth] def AwsUtils: AwsSecretsUtils = awsSecretsUtilsMock
+      }
     }
-
     exception.getMessage shouldBe "Error retrieving username and password from from AWS Secrets Manager"
   }
-
 }

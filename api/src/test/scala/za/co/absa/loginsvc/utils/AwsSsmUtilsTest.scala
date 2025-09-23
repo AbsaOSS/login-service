@@ -36,12 +36,10 @@ class AwsSsmUtilsTest extends AnyFlatSpec with Matchers {
   val definedSsmClient: SsmClient = mock(classOf[SsmClient])
   when(definedSsmClient.getParameter(any[GetParameterRequest])).thenAnswer(_ => response)
 
-  class AwsSsmUtilsTestClass extends AwsSsmUtils {
-    override private[utils] def getSsm = definedSsmClient
-  }
-
   "AwsSsmUtils" should "Return a valid Option[String] when the Ssm client returns a value" in {
-    val awsSsmUtilsTestClass = new AwsSsmUtilsTestClass
+    val awsSsmUtilsTestClass = new AwsSsmUtils {
+      override private[utils] def getSsm = definedSsmClient
+    }
     val data = awsSsmUtilsTestClass.getParameter(
       "parameter",
       false

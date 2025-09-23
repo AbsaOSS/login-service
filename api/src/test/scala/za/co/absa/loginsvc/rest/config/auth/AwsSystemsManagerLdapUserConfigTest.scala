@@ -16,65 +16,49 @@
 
 package za.co.absa.loginsvc.rest.config.auth
 
+import org.mockito.Mockito.{mock, when}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import za.co.absa.loginsvc.utils.AwsSsmUtils
 
 class AwsSystemsManagerLdapUserConfigTest extends AnyFlatSpec with Matchers {
 
-  class AwsSsmUtilsSuccess extends AwsSsmUtils {
-    override def getParameter(paramName: String, decryptIfSecure: Boolean): Option[String] = {
-      Some(
-        """{
-          | "accountName": "ldap-user123",
-          | "accountPwd": "password456"
-          |}""".stripMargin
-      )
-    }
-  }
-
-  class AwsSsmUtilsFail extends AwsSsmUtils {
-    override def getParameter(paramName: String, decryptIfSecure: Boolean): Option[String] = None
-  }
-
-  class AwsSystemsManagerLdapUserConfigTestClass(parameter: String,
-                                                 decryptIfSecure: Boolean,
-                                                 usernameFieldName: String,
-                                                 passwordFieldName: String,
-                                                 testClass: AwsSsmUtils)
-    extends AwsSystemsManagerLdapUserConfig(
-      parameter,
-      decryptIfSecure,
-      usernameFieldName,
-      passwordFieldName) {
-    override private[auth] def AwsUtils: AwsSsmUtils = testClass
-  }
-
   "AwsSystemsManagerLdapUserConfig" should "return a username and password when AwsSsmUtils returns a value" in {
-    val awsSsmUtilsTestSuccess = new AwsSsmUtilsSuccess
-    val AwsSystemsManagerLdapUserConfigTestClass = new AwsSystemsManagerLdapUserConfigTestClass(
+    val awsSsmUtilsMock = mock(classOf[AwsSsmUtils])
+    when(awsSsmUtilsMock.getParameter("parameter", false))
+      .thenAnswer(_ =>
+        Some(
+          """{
+            | "accountName": "ldap-user123",
+            | "accountPwd": "password456"
+            |}""".stripMargin
+        )
+      )
+    val AwsSystemsManagerLdapUserConfigTest = new AwsSystemsManagerLdapUserConfig(
       "parameter",
       false,
       "accountName",
-      "accountPwd",
-      awsSsmUtilsTestSuccess)
-
-    AwsSystemsManagerLdapUserConfigTestClass.username shouldBe "ldap-user123"
-    AwsSystemsManagerLdapUserConfigTestClass.password shouldBe "password456"
+      "accountPwd") {
+      override private[auth] def AwsUtils: AwsSsmUtils = awsSsmUtilsMock
+    }
+    AwsSystemsManagerLdapUserConfigTest.username shouldBe "ldap-user123"
+    AwsSystemsManagerLdapUserConfigTest.password shouldBe "password456"
   }
 
   "AwsSystemsManagerLdapUserConfig" should "Throw and exception if no values are returned by AwsSsmUtils" in {
-    val awsSsmUtilsTestFail = new AwsSsmUtilsFail
+    val awsSsmUtilsMock = mock(classOf[AwsSsmUtils])
+    when(awsSsmUtilsMock.getParameter("parameter", false))
+      .thenAnswer(_ => None)
     val exception = intercept[Exception]
       {
-        new AwsSystemsManagerLdapUserConfigTestClass(
+        new AwsSystemsManagerLdapUserConfig(
           "parameter",
           false,
           "accountName",
-          "accountPwd",
-          awsSsmUtilsTestFail)
+          "accountPwd") {
+          override private[auth] def AwsUtils: AwsSsmUtils = awsSsmUtilsMock
+        }
       }
-
     exception.getMessage shouldBe "Error retrieving username and password from from AWS Systems Manager"
   }
 }
