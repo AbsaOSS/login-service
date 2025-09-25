@@ -19,7 +19,6 @@ package za.co.absa.loginsvc.rest.service.search
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.funsuite.AnyFunSuiteLike
 import org.scalatest.matchers.should.Matchers
 import za.co.absa.loginsvc.rest.config.auth.{ActiveDirectoryLDAPConfig, LdapUserCredentialsConfig, ServiceAccountConfig, UserConfig, UsersConfig}
 import za.co.absa.loginsvc.rest.config.provider.{AuthConfigProvider, ConfigProvider}
@@ -28,7 +27,7 @@ import za.co.absa.loginsvc.rest.config.validation.ConfigValidationException
 class DefaultUserRepositoriesTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers with MockFactory {
 
   private val testConfig: ConfigProvider = new ConfigProvider("api/src/test/resources/application.yaml")
-  private val emptyServiceAccount = ServiceAccountConfig("", Option(LdapUserCredentialsConfig("", "")), None)
+  private val emptyServiceAccount = ServiceAccountConfig("", Option(LdapUserCredentialsConfig("", "")), None, None)
 
   private val enabledLdapTestConfig = Some(ActiveDirectoryLDAPConfig("", "", "", order = 2, emptyServiceAccount, None, None, None))
   private val enabledUsersConfig = testConfig.getUsersConfig // has order = 1

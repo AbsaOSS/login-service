@@ -113,7 +113,8 @@ or just exclude the properties from the config for that auth provider.
 Please ensure at least one auth method is enabled.
 
 For the service account used to search LDAP, the Service Account Name and password may be specified in the config file.
-For a more secure approach, the service account name and password may be specified in AWS Secrets Manager and the application will fetch them from there.
+For a more secure approach, the service account name and password may be specified in AWS Secrets Manager
+or in AWS Systems Manager Parameter Store and the application will fetch them from there.
 
 The config also allows the user to specify additional claims to be added to the JWT token. 
 These can be sourced from LDAP or specified directly in the config depending on the auth provider used.
@@ -139,6 +140,25 @@ Format of attributes list under LDAP in config is:
 ```
 
 `ldapFieldName` is the name of the field in the LDAP server and `claimName` is the name of the claim that will be added to the JWT token.
+
+In order to utilize AWS services in order to store your service account details, replace `in-config-account` with:
+```
+            aws-secrets-manager-account:
+              secret-name: "secret"
+              region: "region"
+              username-field-name: "username"
+              password-field-name: "password"
+```
+This will retrieve these details securely from AWS secrets manager.
+Alternatively:
+```
+            aws-systems-manager-account:
+              parameter: "/parameter/path"
+              decrypt-if-secure: true
+              username-field-name: "username"
+              password-field-name: "password"
+```
+This will retrieve these details securely from AWS systems manager parameter store.
 
 ### Enabling SPNEGO authentication with LDAP
 When LDAP authentication is used, there is the option of adding SPNEGO authentication via kerberos.

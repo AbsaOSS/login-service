@@ -27,6 +27,7 @@ class ActiveDirectoryLDAPConfigTest extends AnyFlatSpec with Matchers {
   private val serviceAccountCfg = ServiceAccountConfig(
     "CN=%s,OU=Users,OU=Accounts,DC=domain,DC=subdomain,DC=com",
     Option(integratedCfg),
+    None,
     None)
   private val ldapCfg = ActiveDirectoryLDAPConfig("some.domain.com", "ldaps://some.domain.com:636/","SomeAccount", 1, serviceAccountCfg,None, None, None)
 
