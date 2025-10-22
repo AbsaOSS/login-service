@@ -63,7 +63,7 @@ class TokenController @Autowired()(jwtService: JWTService, experimentalConfigPro
   )
   @Parameter(in = ParameterIn.QUERY, name = "group-prefixes", schema = new Schema(implementation = classOf[String]), example = "pam-,dehdl-",
     description = "Prefixes of groups only to be returned in JWT user object (,-separated)")
-  @Parameter(in = ParameterIn.QUERY, name = "case-sensitive", schema = new Schema(implementation = classOf[Boolean]), example = "true",
+  @Parameter(in = ParameterIn.QUERY, name = "case-sensitive", schema = new Schema(implementation = classOf[Boolean], defaultValue = "false"), example = "true",
     description = "case-sensitivity setting for group-prefixes lookup (default:false)")
   @PostMapping(
     path = Array("/generate"),
@@ -113,7 +113,7 @@ class TokenController @Autowired()(jwtService: JWTService, experimentalConfigPro
   )
   @Parameter(in = ParameterIn.QUERY, name = "group-prefixes", schema = new Schema(implementation = classOf[String]), example = "pam-,dehdl-",
     description = "Prefixes of groups only to be returned in JWT user object (,-separated)")
-  @Parameter(in = ParameterIn.QUERY, name = "case-sensitive", schema = new Schema(implementation = classOf[Boolean]), example = "true",
+  @Parameter(in = ParameterIn.QUERY, name = "case-sensitive", schema = new Schema(implementation = classOf[Boolean], defaultValue = "false"), example = "true",
     description = "case-sensitivity setting for group-prefixes lookup (default:false)")
   @GetMapping(
     path = Array("/experimental/get-generate"),
