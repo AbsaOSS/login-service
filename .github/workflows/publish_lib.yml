@@ -15,21 +15,35 @@
 #
 
 name: Release - publish client library
+
 on:
   release:
     types: [released]
 
 jobs:
-  publish:
+  publish-to-sonatype:
+    name: Publish client library to Sonatype
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
         with:
+          persist-credentials: false
           fetch-depth: 0
-      - uses: olafurpg/setup-scala@v14
+
+      - uses: coursier/cache-action@v6
+
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v14
         with:
-          java-version: "openjdk@1.11.0"
-      - name: Build and release to Sonatype and Maven Central
+          java-version: "adopt@1.11.0-11"
+
+      - name: Clean sbt caches
+        run: |
+          rm -rf ~/.ivy2 ~/.sbt ~/.coursier
+
+      - name: Run sbt ci-release
         run: sbt ci-release
         env:
           PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
