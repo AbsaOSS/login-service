@@ -31,12 +31,12 @@ class UserTest extends AnyFlatSpec with Matchers {
   ), Map.empty[String, Option[AnyRef]])
 
   "User" should "filterGroups by prefixes (case-sensitively)" in {
-    testUser.filterGroupsByPrefixes(Set("red", "black", "yellow"), `case-sensitive` = true) shouldBe
+    testUser.filterGroupsByPrefixes(Set("red", "black", "yellow"), caseSensitive = true) shouldBe
       testUser.copy(groups = Seq("red-ABC", "black","black-and-white"))
   }
 
   it should "filterGroups by prefixes (case-insensitively)" in {
-    testUser.filterGroupsByPrefixes(Set("red", "BLaCK", "yellow"), `case-sensitive` = false) shouldBe
+    testUser.filterGroupsByPrefixes(Set("red", "BLaCK", "yellow"), caseSensitive = false) shouldBe
       testUser.copy(groups = Seq("red-ABC", "REDdish-DEF", "black","black-and-white"))
   }
 

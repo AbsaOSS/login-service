@@ -17,9 +17,9 @@
 package za.co.absa.loginsvc.model
 
 case class User(name: String, groups: Seq[String], optionalAttributes: Map[String, Option[AnyRef]]) {
-  def filterGroupsByPrefixes(prefixes: Set[String], `case-sensitive`: Boolean): User = {
+  def filterGroupsByPrefixes(prefixes: Set[String], caseSensitive: Boolean): User = {
 
-    val filteredGroups = if (`case-sensitive`) {
+    val filteredGroups = if (caseSensitive) {
       groups.filter(group => prefixes.exists(group.startsWith))
     } else {
       groups.filter(group => prefixes.map(_.toLowerCase).exists(group.toLowerCase.startsWith))
