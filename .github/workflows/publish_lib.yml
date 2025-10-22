@@ -15,6 +15,7 @@
 #
 
 name: Release - publish client library
+
 on:
   release:
     types: [released]
@@ -22,13 +23,22 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: olafurpg/setup-scala@v14
+
+      - name: Set up Scala and Java 17
+        uses: olafurpg/setup-scala@v14
         with:
-          java-version: "openjdk@1.11"
+          java-version: "temurin@17"
+
+      - name: Clean sbt caches
+        run: |
+          rm -rf ~/.ivy2 ~/.sbt ~/.coursier
+
       - name: Build and release to Sonatype and Maven Central
         run: sbt ci-release
         env:
