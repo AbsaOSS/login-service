@@ -13,11 +13,11 @@ Where is the source of the risk - class name(s), approach or solution.
 
 ## Risk assessment
 
-### Possible impact
-What is/would be the impact of the technical debt, if not addressed.
-
 ### Condition of it manifesting
 What are the conditions under which this technical debt would manifest.
+
+### Possible impact <!-- optional -->
+What is/would be the impact of the technical debt, if not addressed.
 
 ## Possible solution <!-- optional -->
 Ideas and suggestions how to address the technical debt.
