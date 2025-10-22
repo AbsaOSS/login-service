@@ -28,7 +28,7 @@ jobs:
           fetch-depth: 0
       - uses: olafurpg/setup-scala@v14
         with:
-          java-version: "openjdk@1.11.0"
+          java-version: "openjdk@1.11"
       - name: Build and release to Sonatype and Maven Central
         run: sbt ci-release
         env:
