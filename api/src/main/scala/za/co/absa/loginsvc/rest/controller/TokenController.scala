@@ -63,6 +63,8 @@ class TokenController @Autowired()(jwtService: JWTService, experimentalConfigPro
   )
   @Parameter(in = ParameterIn.QUERY, name = "group-prefixes", schema = new Schema(implementation = classOf[String]), example = "pam-,dehdl-",
     description = "Prefixes of groups only to be returned in JWT user object (,-separated)")
+  @Parameter(in = ParameterIn.QUERY, name = "case-sensitive", schema = new Schema(implementation = classOf[Boolean], defaultValue = "false"), example = "true",
+    description = "case-sensitivity setting for group-prefixes lookup (default:false)")
   @PostMapping(
     path = Array("/generate"),
     produces = Array(MediaType.APPLICATION_JSON_VALUE)
@@ -70,7 +72,10 @@ class TokenController @Autowired()(jwtService: JWTService, experimentalConfigPro
   @ResponseStatus(HttpStatus.OK)
   @SecurityRequirement(name = "basicAuth")
   @SecurityRequirement(name = "negotiate")
-  def generateToken(authentication: Authentication, @RequestParam("group-prefixes") groupPrefixes: Optional[String]): TokensWrapper = {
+  def generateToken(authentication: Authentication,
+                    @RequestParam("group-prefixes") groupPrefixes: Optional[String],
+                    @RequestParam(name = "case-sensitive", defaultValue = "false") caseSensitive: Boolean
+                   ): TokensWrapper = {
 
     val user: User = authentication.getPrincipal match {
       case u: User => u
@@ -81,7 +86,7 @@ class TokenController @Autowired()(jwtService: JWTService, experimentalConfigPro
 
     val filteredGroupsUser = user.applyIfDefined(groupPrefixesStrScala) { (user: User, prefixesStr: String) =>
       val prefixes = prefixesStr.trim.split(',')
-      user.filterGroupsByPrefixes(prefixes.toSet)
+      user.filterGroupsByPrefixes(prefixes.toSet, caseSensitive)
     }
 
     val accessJwt = jwtService.generateAccessToken(filteredGroupsUser)
@@ -108,6 +113,8 @@ class TokenController @Autowired()(jwtService: JWTService, experimentalConfigPro
   )
   @Parameter(in = ParameterIn.QUERY, name = "group-prefixes", schema = new Schema(implementation = classOf[String]), example = "pam-,dehdl-",
     description = "Prefixes of groups only to be returned in JWT user object (,-separated)")
+  @Parameter(in = ParameterIn.QUERY, name = "case-sensitive", schema = new Schema(implementation = classOf[Boolean], defaultValue = "false"), example = "true",
+    description = "case-sensitivity setting for group-prefixes lookup (default:false)")
   @GetMapping(
     path = Array("/experimental/get-generate"),
     produces = Array(MediaType.APPLICATION_JSON_VALUE)
@@ -115,7 +122,10 @@ class TokenController @Autowired()(jwtService: JWTService, experimentalConfigPro
   @ResponseStatus(HttpStatus.OK)
   @SecurityRequirement(name = "basicAuth")
   @SecurityRequirement(name = "negotiate")
-  def generateTokenExperimentalGet(authentication: Authentication, @RequestParam("group-prefixes") groupPrefixes: Optional[String]): TokensWrapper = {
+  def caseSensitive(authentication: Authentication,
+                    @RequestParam("group-prefixes") groupPrefixes: Optional[String],
+                    @RequestParam(name = "case-sensitive", defaultValue = "false") caseSensitive: Boolean
+                                  ): TokensWrapper = {
     failIfExperimentalIsNotAllowed()
 
     val user: User = authentication.getPrincipal match {
@@ -127,7 +137,7 @@ class TokenController @Autowired()(jwtService: JWTService, experimentalConfigPro
 
     val filteredGroupsUser = user.applyIfDefined(groupPrefixesStrScala) { (user: User, prefixesStr: String) =>
       val prefixes = prefixesStr.trim.split(',')
-      user.filterGroupsByPrefixes(prefixes.toSet)
+      user.filterGroupsByPrefixes(prefixes.toSet, caseSensitive)
     }
 
     val accessJwt = jwtService.generateAccessToken(filteredGroupsUser)
