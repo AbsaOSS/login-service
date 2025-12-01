@@ -91,9 +91,9 @@ object Application {
       try {
         val (accessToken, refreshToken) = authMethod match {
           case "1" =>
-            tokenRetriever.fetchAccessAndRefreshToken(username, password, List.empty)
+            tokenRetriever.fetchAccessAndRefreshToken(username, password, List.empty, false)
           case "2" =>
-            tokenRetriever.fetchAccessAndRefreshToken(None, None, List.empty)
+            tokenRetriever.fetchAccessAndRefreshToken(None, None, List.empty, false)
         }
         val decodedAtJwt = accessVerificator.decodeAndVerifyAccessToken(accessToken) // throw Exception on verification fail
         loggedIn = true
