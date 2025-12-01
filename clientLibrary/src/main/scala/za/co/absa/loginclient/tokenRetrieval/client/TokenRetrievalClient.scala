@@ -51,8 +51,8 @@ case class TokenRetrievalClient(host: String) {
   def fetchAccessToken(
     username: String,
     password: String,
-    groups: List[String] = List.empty,
-    caseSensitiveGroups: Boolean = false): AccessToken = {
+    groups: List[String],
+    caseSensitiveGroups: Boolean): AccessToken = {
     fetchAccessAndRefreshToken(username, password, groups, caseSensitiveGroups)._1
   }
 
@@ -69,8 +69,8 @@ case class TokenRetrievalClient(host: String) {
   def fetchAccessToken(
     keytabLocation: Option[String],
     userPrincipal: Option[String],
-    groups: List[String] = List.empty,
-    caseSensitiveGroups: Boolean = false): AccessToken = {
+    groups: List[String],
+    caseSensitiveGroups: Boolean): AccessToken = {
     fetchAccessAndRefreshToken(keytabLocation, userPrincipal, groups, caseSensitiveGroups)._1
   }
 
@@ -83,7 +83,7 @@ case class TokenRetrievalClient(host: String) {
    * @return A RefreshToken object representing the retrieved refresh token from the login service.
    */
   def fetchRefreshToken(keytabLocation: Option[String], userPrincipal: Option[String]): RefreshToken = {
-    fetchAccessAndRefreshToken(keytabLocation, userPrincipal)._2
+    fetchAccessAndRefreshToken(keytabLocation, userPrincipal, List.empty, false)._2
   }
 
   /**
@@ -95,7 +95,7 @@ case class TokenRetrievalClient(host: String) {
    * @return A RefreshToken object representing the retrieved refresh token from the login service.
    */
   def fetchRefreshToken(username: String, password: String): RefreshToken = {
-    fetchAccessAndRefreshToken(username, password)._2
+    fetchAccessAndRefreshToken(username, password, List.empty, false)._2
   }
 
   /**
@@ -112,8 +112,8 @@ case class TokenRetrievalClient(host: String) {
   def fetchAccessAndRefreshToken(
     username: String,
     password: String,
-    groups: List[String] = List.empty,
-    caseSensitiveGroups: Boolean = false
+    groups: List[String],
+    caseSensitiveGroups: Boolean
   ): (AccessToken, RefreshToken) = {
     val issuerUri = if(groups.nonEmpty) {
         val commaSeparatedString = groups.mkString(",")
@@ -146,8 +146,8 @@ case class TokenRetrievalClient(host: String) {
   def fetchAccessAndRefreshToken(
     keytabLocation: Option[String],
     userPrincipal: Option[String],
-    groups: List[String] = List.empty,
-    caseSensitiveGroups: Boolean = false
+    groups: List[String],
+    caseSensitiveGroups: Boolean
   ): (AccessToken, RefreshToken) = {
     val issuerUri = if(groups.nonEmpty) {
       val commaSeparatedString = groups.mkString(",")

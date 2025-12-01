@@ -25,6 +25,8 @@ class TokenRetrievalClientTest extends AnyFlatSpec with Matchers{
   private val dummyUri = "https://example.com"
   private val dummyUser = "exampleUser"
   private val dummyPassword = "examplePassword"
+  private val dummyGroups = List()
+  private val dummyCaseSensitive = false
 
   class testTokenRetrievalClient extends TokenRetrievalClient(dummyUri) {
     override private[client] def fetchToken(issuerUri: String, username: String, password: String) =
@@ -38,7 +40,11 @@ class TokenRetrievalClientTest extends AnyFlatSpec with Matchers{
 
     val testClient = new testTokenRetrievalClient
 
-    val (accessResult, refreshResult) = testClient.fetchAccessAndRefreshToken(dummyUser, dummyPassword)
+    val (accessResult, refreshResult) = testClient.fetchAccessAndRefreshToken(
+      dummyUser,
+      dummyPassword,
+      dummyGroups,
+      dummyCaseSensitive)
     accessResult shouldBe AccessToken("mock-access-token")
     refreshResult shouldBe RefreshToken("mock-refresh-token")
   }
