@@ -45,10 +45,15 @@ case class TokenRetrievalClient(host: String) {
    * @param username The username used for authentication.
    * @param password The password associated with the provided username.
    * @param groups   An optional list of PAM groups. If provided, only JWTs associated with these groups are returned if the user belongs to them.
+   * @param caseSensitiveGroups A boolean indicating whether the group prefixes should be treated as case sensitive.
    * @return An AccessToken object representing the retrieved access token (JWT) from the login service.
    */
-  def fetchAccessToken(username: String, password: String, groups: List[String]): AccessToken = {
-    fetchAccessAndRefreshToken(username, password, groups)._1
+  def fetchAccessToken(
+    username: String,
+    password: String,
+    groups: List[String] = List.empty,
+    caseSensitiveGroups: Boolean = false): AccessToken = {
+    fetchAccessAndRefreshToken(username, password, groups, caseSensitiveGroups)._1
   }
 
   /**
@@ -58,10 +63,15 @@ case class TokenRetrievalClient(host: String) {
    * @param keytabLocation  Optional location of the keytab file.
    * @param userPrincipal   Optional userPrincipal name included in the above keytab file.
    * @param groups          An optional list of PAM groups. If provided, only JWTs associated with these groups are returned if the user belongs to them.
+   * @param caseSensitiveGroups A boolean indicating whether the group prefixes should be treated as case sensitive.
    * @return An AccessToken object representing the retrieved access token (JWT) from the login service.
    */
-  def fetchAccessToken(keytabLocation: Option[String], userPrincipal: Option[String], groups: List[String]): AccessToken = {
-    fetchAccessAndRefreshToken(keytabLocation, userPrincipal, groups)._1
+  def fetchAccessToken(
+    keytabLocation: Option[String],
+    userPrincipal: Option[String],
+    groups: List[String] = List.empty,
+    caseSensitiveGroups: Boolean = false): AccessToken = {
+    fetchAccessAndRefreshToken(keytabLocation, userPrincipal, groups, caseSensitiveGroups)._1
   }
 
   /**
@@ -73,7 +83,7 @@ case class TokenRetrievalClient(host: String) {
    * @return A RefreshToken object representing the retrieved refresh token from the login service.
    */
   def fetchRefreshToken(keytabLocation: Option[String], userPrincipal: Option[String]): RefreshToken = {
-    fetchAccessAndRefreshToken(keytabLocation, userPrincipal, List.empty)._2
+    fetchAccessAndRefreshToken(keytabLocation, userPrincipal)._2
   }
 
   /**
@@ -85,7 +95,7 @@ case class TokenRetrievalClient(host: String) {
    * @return A RefreshToken object representing the retrieved refresh token from the login service.
    */
   def fetchRefreshToken(username: String, password: String): RefreshToken = {
-    fetchAccessAndRefreshToken(username, password, List.empty)._2
+    fetchAccessAndRefreshToken(username, password)._2
   }
 
   /**
@@ -96,14 +106,23 @@ case class TokenRetrievalClient(host: String) {
    * @param username The username used for authentication.
    * @param password The password associated with the provided username.
    * @param groups   An optional list of PAM groups. If provided, only JWTs associated with these groups are returned if the user belongs to them.
+   * @param caseSensitiveGroups A boolean indicating whether the group prefixes should be treated as case sensitive.
    * @return A tuple containing the AccessToken and RefreshToken objects representing the retrieved access and refresh tokens (JWTs) from the login service.
    */
-  def fetchAccessAndRefreshToken(username: String, password: String, groups: List[String]): (AccessToken, RefreshToken) = {
-
+  def fetchAccessAndRefreshToken(
+    username: String,
+    password: String,
+    groups: List[String] = List.empty,
+    caseSensitiveGroups: Boolean = false
+  ): (AccessToken, RefreshToken) = {
     val issuerUri = if(groups.nonEmpty) {
         val commaSeparatedString = groups.mkString(",")
         val urlEncodedGroups = URLEncoder.encode(commaSeparatedString, "UTF-8")
-        s"$host/token/generate?group-prefixes=$urlEncodedGroups"
+        var uri = s"$host/token/generate?group-prefixes=$urlEncodedGroups"
+        if(caseSensitiveGroups) {
+          uri += "&case-sensitive=true"
+        }
+        uri
     } else s"$host/token/generate"
 
     val jsonString = fetchToken(issuerUri, username, password)
@@ -121,14 +140,23 @@ case class TokenRetrievalClient(host: String) {
    * @param keytabLocation  Optional location of the keytab file.
    * @param userPrincipal   Optional userPrincipal name included in the above keytab file.
    * @param groups          An optional list of PAM groups. If provided, only JWTs associated with these groups are returned if the user belongs to them.
+   * @param caseSensitiveGroups A boolean indicating whether the group prefixes should be treated as case sensitive.
    * @return A tuple containing the AccessToken and RefreshToken objects representing the retrieved access and refresh tokens (JWTs) from the login service.
    */
-  def fetchAccessAndRefreshToken(keytabLocation: Option[String], userPrincipal: Option[String], groups: List[String]): (AccessToken, RefreshToken) = {
-
+  def fetchAccessAndRefreshToken(
+    keytabLocation: Option[String],
+    userPrincipal: Option[String],
+    groups: List[String] = List.empty,
+    caseSensitiveGroups: Boolean = false
+  ): (AccessToken, RefreshToken) = {
     val issuerUri = if(groups.nonEmpty) {
       val commaSeparatedString = groups.mkString(",")
       val urlEncodedGroups = URLEncoder.encode(commaSeparatedString, "UTF-8")
-      s"$host/token/generate?group-prefixes=$urlEncodedGroups"
+      var uri = s"$host/token/generate?group-prefixes=$urlEncodedGroups"
+      if(caseSensitiveGroups) {
+        uri += "&case-sensitive=true"
+      }
+      uri
     } else s"$host/token/generate"
 
     val jsonString = fetchToken(issuerUri, keytabLocation, userPrincipal)
