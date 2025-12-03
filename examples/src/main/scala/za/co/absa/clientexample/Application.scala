@@ -20,6 +20,7 @@ import za.co.absa.clientexample.config.ConfigProvider
 import za.co.absa.loginclient.exceptions.LsJwtException
 import za.co.absa.loginclient.authorization.{AccessTokenClaimsParser, AccessTokenVerificator, JwtDecoderProvider}
 import za.co.absa.loginclient.tokenRetrieval.client.TokenRetrievalClient
+import za.co.absa.loginclient.tokenRetrieval.model.{BasicAuth, KerberosAuth}
 
 import java.nio.file.{Files, Paths}
 import java.util.Scanner
@@ -91,9 +92,11 @@ object Application {
       try {
         val (accessToken, refreshToken) = authMethod match {
           case "1" =>
-            tokenRetriever.fetchAccessAndRefreshToken(username, password, List.empty, false)
+            val basicAuth = BasicAuth(username, password)
+            tokenRetriever.fetchAccessAndRefreshToken(basicAuth)
           case "2" =>
-            tokenRetriever.fetchAccessAndRefreshToken(None, None, List.empty, false)
+            val kerberosAuth = KerberosAuth(None, None)
+            tokenRetriever.fetchAccessAndRefreshToken(kerberosAuth)
         }
         val decodedAtJwt = accessVerificator.decodeAndVerifyAccessToken(accessToken) // throw Exception on verification fail
         loggedIn = true
