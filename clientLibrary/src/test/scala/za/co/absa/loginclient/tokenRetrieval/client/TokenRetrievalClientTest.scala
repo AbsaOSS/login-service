@@ -18,7 +18,7 @@ package za.co.absa.loginclient.tokenRetrieval.client
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import za.co.absa.loginclient.tokenRetrieval.model.{AccessToken, RefreshToken}
+import za.co.absa.loginclient.tokenRetrieval.model.{AccessToken, BasicAuth, RefreshToken}
 
 class TokenRetrievalClientTest extends AnyFlatSpec with Matchers{
 
@@ -39,10 +39,10 @@ class TokenRetrievalClientTest extends AnyFlatSpec with Matchers{
   "fetchAccessAndRefreshToken" should "return expected tokens" in {
 
     val testClient = new testTokenRetrievalClient
+    val authMethod = BasicAuth(dummyUser, dummyPassword)
 
     val (accessResult, refreshResult) = testClient.fetchAccessAndRefreshToken(
-      dummyUser,
-      dummyPassword,
+      authMethod,
       dummyGroups,
       dummyCaseSensitive)
     accessResult shouldBe AccessToken("mock-access-token")
