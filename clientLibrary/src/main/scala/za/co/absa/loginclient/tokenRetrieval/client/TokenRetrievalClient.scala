@@ -39,12 +39,12 @@ case class TokenRetrievalClient(host: String) {
   private val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
   /**
-   * Fetches an access token from the login service.
-   *
-   * @param authMethod The authentication method to use.
+   * This method requests an access token (JWT) from the login service using the specified authentication method.
+   * This Token is used to access resources which utilize the login Service for authentication.
+   * @param authMethod The authentication method to use. Either Basic Auth or Kerberos Auth.
    * @param groups A list of group prefixes to include in the token.
    * @param caseSensitiveGroups Whether the group prefixes are case sensitive.
-   * @return The access token.
+   * @return An AccessToken object representing the retrieved access token (JWT) from the login service.
    */
 
   def fetchAccessToken(
@@ -56,10 +56,10 @@ case class TokenRetrievalClient(host: String) {
   }
 
   /**
-   * Fetches a refresh token from the login service.
-   *
-   * @param authMethod The authentication method to use.
-   * @return The refresh token.
+   * This method requests a refresh token from the login service using SPNEGO.
+   * This token may be used to acquire a new access token (JWT) when the current access token expires.
+   * @param authMethod The authentication method to use. Either Basic Auth or Kerberos Auth.
+   * @return A RefreshToken object representing the retrieved refresh token from the login service.
    */
 
   def fetchRefreshToken(authMethod: AuthMethod): RefreshToken = {
@@ -67,8 +67,10 @@ case class TokenRetrievalClient(host: String) {
   }
 
   /**
-   * Fetches both an access token and a refresh token from the login service.
-   *
+   * Fetches both an access token and a refresh token from the login service using the provided username, password, and optional groups.
+   * This method requests both an access token and a refresh token (JWTs) from the login service using the specified username and password.
+   * Additionally, it allows specifying optional groups (and their case sensitivity) that act as filters for the JWT,
+   * returning only the JWTs associated with the provided groups if the user belongs to them.
    * @param authMethod The authentication method to use.
    * @param groups A list of group prefixes to include in the token.
    * @param caseSensitiveGroups Whether the group prefixes are case sensitive.
