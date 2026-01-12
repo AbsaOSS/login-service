@@ -93,6 +93,8 @@ class SecurityConfig @Autowired()(authConfigsProvider: AuthConfigProvider, authM
 
         case _ =>
           response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+          response.setContentType("application/json");
+          response.getWriter.write(s"""{"error": "User login error"}""");
       }
     }
 
