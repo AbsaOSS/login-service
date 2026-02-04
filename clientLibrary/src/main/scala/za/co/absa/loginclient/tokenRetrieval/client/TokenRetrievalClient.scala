@@ -24,6 +24,7 @@ import org.springframework.web.client.RestTemplate
 import za.co.absa.loginclient.tokenRetrieval.model.{AccessToken, AuthMethod, BasicAuth, KerberosAuth, RefreshToken}
 
 import java.net.URLEncoder
+import java.nio.file.attribute.UserPrincipal
 import java.util.{Collections, Properties}
 import javax.security.auth.login.Configuration
 
@@ -37,6 +38,25 @@ import javax.security.auth.login.Configuration
 case class TokenRetrievalClient(host: String) {
 
   private val logger: Logger = LoggerFactory.getLogger(this.getClass)
+
+  private[client] def createKerberosRestTemplate(
+    keyTabLocation: Option[String] = None,
+    userPrincipal: Option[String] = None): KerberosRestTemplate = {
+    (keyTabLocation, userPrincipal) match {
+      case (Some(_), Some(_)) =>
+        logger.info(s"Fetching token with user $userPrincipal")
+        new KerberosRestTemplate(keyTabLocation.get, userPrincipal.get)
+      case (None, None) =>
+        logger.info(s"Fetching token with cached user ticket")
+        new KerberosRestTemplate()
+      case _ =>
+        throw new Error("Either both keyTabLocation and userPrincipal need to be available or omitted")
+    }
+  }
+
+  private[client] def createRestTemplate(): RestTemplate = {
+    new RestTemplate()
+  }
 
   /**
    * This method requests an access token (JWT) from the login service using the specified authentication method.
@@ -129,7 +149,7 @@ case class TokenRetrievalClient(host: String) {
 
     val requestEntity = new HttpEntity[String] (jsonPayload.toString, headers)
 
-    val restTemplate: RestTemplate = new RestTemplate()
+    val restTemplate: RestTemplate = createRestTemplate()
 
     try {
       val response: ResponseEntity[String] = restTemplate.exchange(
@@ -183,7 +203,7 @@ case class TokenRetrievalClient(host: String) {
 
     val requestEntity = new HttpEntity[String](null, headers)
 
-    val restTemplate = new RestTemplate()
+    val restTemplate = createRestTemplate()
 
     try {
       val response: ResponseEntity[String] = restTemplate.exchange(
@@ -202,18 +222,12 @@ case class TokenRetrievalClient(host: String) {
     }
   }
 
-  private[client] def fetchToken(issuerUri: String, keyTabLocation: Option[String], userPrincipal: Option[String]): String = {
+  private[client] def fetchToken(
+    issuerUri: String,
+    keyTabLocation: Option[String],
+    userPrincipal: Option[String]): String = {
 
-    val restTemplate: KerberosRestTemplate = (keyTabLocation, userPrincipal) match {
-      case (Some(_), Some(_)) =>
-        logger.info(s"Fetching token from $issuerUri using user $userPrincipal")
-        new KerberosRestTemplate(keyTabLocation.get, userPrincipal.get)
-      case (None, None) =>
-        logger.info(s"Fetching token from $issuerUri using cached user ticket")
-        new KerberosRestTemplate()
-      case _ =>
-        throw new Error("Either both keyTabLocation and userPrincipal need to be available or omitted")
-    }
+    val restTemplate: KerberosRestTemplate = createKerberosRestTemplate(keyTabLocation, userPrincipal)
 
     val headers = new HttpHeaders()
     val entity = new HttpEntity[String](null, headers)

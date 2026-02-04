@@ -4,13 +4,10 @@ import org.mockito.ArgumentMatchers.{any, anyString}
 import org.mockito.Mockito.{mock, when}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import org.springframework.http.{HttpEntity, HttpHeaders, HttpMethod, HttpStatus, MediaType, ResponseEntity}
+import org.springframework.http.{HttpEntity, HttpMethod, HttpStatus, ResponseEntity}
 import org.springframework.security.kerberos.client.KerberosRestTemplate
 import org.springframework.web.client.RestTemplate
 import za.co.absa.loginclient.tokenRetrieval.model.{AccessToken, BasicAuth, KerberosAuth, RefreshToken}
-import com.google.gson.{JsonObject, JsonParser}
-
-import java.util.Collections
 
 class TokenRetrievalClientTest extends AnyFlatSpec with Matchers {
 
@@ -25,53 +22,10 @@ class TokenRetrievalClientTest extends AnyFlatSpec with Matchers {
     restTemplate: RestTemplate,
     kerberosRestTemplate: KerberosRestTemplate) extends TokenRetrievalClient(host) {
 
-    override private[client] def fetchToken(issuerUri: String, username: String, password: String): String = {
-      val response: ResponseEntity[String] = restTemplate.exchange(
-        issuerUri,
-        HttpMethod.POST,
-        null,
-        classOf[String])
-      response.getBody
-    }
-
-    override private[client] def fetchToken(
-      issuerUri: String,
-      keyTabLocation: Option[String],
-      userPrincipal: Option[String]): String = {
-      val response: ResponseEntity[String] = kerberosRestTemplate.exchange(
-        issuerUri,
-        HttpMethod.POST,
-        null,
-        classOf[String])
-      response.getBody
-    }
-
-    override def refreshAccessToken(
-      accessToken: AccessToken,
-      refreshToken: RefreshToken): (AccessToken, RefreshToken) = {
-      val issuerUri = s"$host/token/refresh"
-      val jsonPayload: JsonObject = new JsonObject()
-      jsonPayload.addProperty("token", accessToken.token)
-      jsonPayload.addProperty("refresh", refreshToken.token)
-
-      val headers = new HttpHeaders()
-      headers.setContentType(MediaType.APPLICATION_JSON)
-      headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON))
-
-      val requestEntity = new HttpEntity[String](jsonPayload.toString, headers)
-
-      val response: ResponseEntity[String] = restTemplate.exchange(
-        issuerUri,
-        HttpMethod.POST,
-        requestEntity,
-        classOf[String]
-      )
-      val jsonObject = JsonParser.parseString(response.getBody).getAsJsonObject
-      (
-        AccessToken(jsonObject.get("token").getAsString),
-        RefreshToken(jsonObject.get("refresh").getAsString)
-      )
-    }
+    override def createRestTemplate(): RestTemplate = restTemplate
+    override def createKerberosRestTemplate(
+      keyTabLocation: Option[String] = None,
+      userPrincipal: Option[String] = None): KerberosRestTemplate = kerberosRestTemplate
   }
 
   "fetchAccessToken with BasicAuth" should "return access token" in {
