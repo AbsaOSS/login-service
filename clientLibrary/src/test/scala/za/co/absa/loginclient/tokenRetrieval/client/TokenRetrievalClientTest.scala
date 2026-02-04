@@ -4,7 +4,7 @@ import org.mockito.ArgumentMatchers.{any, anyString}
 import org.mockito.Mockito.{mock, when}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import org.springframework.http.{HttpEntity, HttpMethod, HttpStatus, ResponseEntity}
+import org.springframework.http.{HttpEntity, HttpHeaders, HttpMethod, HttpStatus, ResponseEntity}
 import org.springframework.security.kerberos.client.KerberosRestTemplate
 import org.springframework.web.client.RestTemplate
 import za.co.absa.loginclient.tokenRetrieval.model.{AccessToken, BasicAuth, KerberosAuth, RefreshToken}
@@ -34,10 +34,10 @@ class TokenRetrievalClientTest extends AnyFlatSpec with Matchers {
     val tokenResponse = """{"token": "mock-access-token", "refresh": "mock-refresh-token"}"""
 
     when(mockRestTemplate.exchange(
-      anyString(),
-      any[HttpMethod],
-      any[HttpEntity[String]],
-      any[Class[String]]
+      s"$dummyUri/token/generate",
+      HttpMethod.POST,
+      new HttpEntity[String](null, expectedBasicAuthHeader),
+      classOf[String]
     )).thenReturn(new ResponseEntity(tokenResponse, HttpStatus.OK))
 
     val testClient = new MockableTokenRetrievalClient(dummyUri, mockRestTemplate, mockKerberosTemplate)
@@ -54,10 +54,10 @@ class TokenRetrievalClientTest extends AnyFlatSpec with Matchers {
     val tokenResponse = """{"token": "mock-access-token", "refresh": "mock-refresh-token"}"""
 
     when(mockRestTemplate.exchange(
-      anyString(),
-      any[HttpMethod],
-      any[HttpEntity[String]],
-      any[Class[String]]
+      s"$dummyUri/token/generate",
+      HttpMethod.POST,
+      new HttpEntity[String](null, expectedBasicAuthHeader),
+      classOf[String]
     )).thenReturn(new ResponseEntity(tokenResponse, HttpStatus.OK))
 
     val testClient = new MockableTokenRetrievalClient(dummyUri, mockRestTemplate, mockKerberosTemplate)
@@ -74,10 +74,10 @@ class TokenRetrievalClientTest extends AnyFlatSpec with Matchers {
     val tokenResponse = """{"token": "mock-access-token", "refresh": "mock-refresh-token"}"""
 
     when(mockRestTemplate.exchange(
-      anyString(),
-      any[HttpMethod],
-      any[HttpEntity[String]],
-      any[Class[String]]
+      s"$dummyUri/token/generate?group-prefixes=group1%2Cgroup2&case-sensitive=true",
+      HttpMethod.POST,
+      new HttpEntity[String](null, expectedBasicAuthHeader),
+      classOf[String]
     )).thenReturn(new ResponseEntity(tokenResponse, HttpStatus.OK))
 
     val testClient = new MockableTokenRetrievalClient(dummyUri, mockRestTemplate, mockKerberosTemplate)
@@ -99,10 +99,10 @@ class TokenRetrievalClientTest extends AnyFlatSpec with Matchers {
     val tokenResponse = """{"token": "kerberos-access-token", "refresh": "kerberos-refresh-token"}"""
 
     when(mockKerberosTemplate.exchange(
-      anyString(),
-      any[HttpMethod],
-      any[HttpEntity[String]],
-      any[Class[String]]
+      s"$dummyUri/token/generate?group-prefixes=group1%2Cgroup2&case-sensitive=true",
+      HttpMethod.POST,
+      new HttpEntity[String](null, null),
+      classOf[String]
     )).thenReturn(new ResponseEntity(tokenResponse, HttpStatus.OK))
 
     val testClient = new MockableTokenRetrievalClient(dummyUri, mockRestTemplate, mockKerberosTemplate)
@@ -121,13 +121,14 @@ class TokenRetrievalClientTest extends AnyFlatSpec with Matchers {
   "refreshAccessToken" should "return new tokens" in {
     val mockRestTemplate = mock(classOf[RestTemplate])
     val mockKerberosTemplate = mock(classOf[KerberosRestTemplate])
+    val tokenBody = """{"token":"old-token","refresh":"old-refresh"}"""
     val tokenResponse = """{"token": "refreshed-token", "refresh": "old-refresh-token"}"""
 
     when(mockRestTemplate.exchange(
-      anyString(),
-      any[HttpMethod],
-      any[HttpEntity[String]],
-      any[Class[String]]
+      s"$dummyUri/token/refresh",
+      HttpMethod.POST,
+      new HttpEntity[String](tokenBody, expectedHeader),
+      classOf[String]
     )).thenReturn(new ResponseEntity(tokenResponse, HttpStatus.OK))
 
     val testClient = new MockableTokenRetrievalClient(dummyUri, mockRestTemplate, mockKerberosTemplate)
@@ -147,10 +148,10 @@ class TokenRetrievalClientTest extends AnyFlatSpec with Matchers {
     val tokenResponse = """{"token": "mock-access-token", "refresh": "mock-refresh-token"}"""
 
     when(mockRestTemplate.exchange(
-      anyString(),
-      any[HttpMethod],
-      any[HttpEntity[String]],
-      any[Class[String]]
+      s"$dummyUri/token/generate",
+      HttpMethod.POST,
+      new HttpEntity[String](null, expectedBasicAuthHeader),
+      classOf[String]
     )).thenReturn(new ResponseEntity(tokenResponse, HttpStatus.OK))
 
     val testClient = new MockableTokenRetrievalClient(dummyUri, mockRestTemplate, mockKerberosTemplate)
@@ -170,10 +171,10 @@ class TokenRetrievalClientTest extends AnyFlatSpec with Matchers {
     val tokenResponse = """{"token": "kerberos-access-token", "refresh": "kerberos-refresh-token"}"""
 
     when(mockKerberosTemplate.exchange(
-      anyString(),
-      any[HttpMethod],
-      any[HttpEntity[String]],
-      any[Class[String]]
+      s"$dummyUri/token/generate",
+      HttpMethod.POST,
+      new HttpEntity[String](null, null),
+      classOf[String]
     )).thenReturn(new ResponseEntity(tokenResponse, HttpStatus.OK))
 
     val testClient = new MockableTokenRetrievalClient(dummyUri, mockRestTemplate, mockKerberosTemplate)
@@ -186,4 +187,20 @@ class TokenRetrievalClientTest extends AnyFlatSpec with Matchers {
 
     result shouldBe tokenResponse
   }
+
+  private def expectedBasicAuthHeader: HttpHeaders = {
+    val headers = new HttpHeaders()
+    val base64Credentials = java.util.Base64.getEncoder.encodeToString(s"$dummyUser:$dummyPassword".getBytes)
+    headers.set("Authorization", s"Basic $base64Credentials")
+    headers
+  }
+
+  private def expectedHeader: HttpHeaders = {
+    val headers = new HttpHeaders()
+    headers.set("Content-Type", "application/json")
+    headers.set("Accept", "application/json")
+    headers
+  }
+
+
 }

@@ -43,9 +43,9 @@ case class TokenRetrievalClient(host: String) {
     keyTabLocation: Option[String] = None,
     userPrincipal: Option[String] = None): KerberosRestTemplate = {
     (keyTabLocation, userPrincipal) match {
-      case (Some(_), Some(_)) =>
+      case (Some(definedKeyTabLocation), Some(definedUserPrincipal)) =>
         logger.info(s"Fetching token with user $userPrincipal")
-        new KerberosRestTemplate(keyTabLocation.get, userPrincipal.get)
+        new KerberosRestTemplate(definedKeyTabLocation, definedUserPrincipal)
       case (None, None) =>
         logger.info(s"Fetching token with cached user ticket")
         new KerberosRestTemplate()
