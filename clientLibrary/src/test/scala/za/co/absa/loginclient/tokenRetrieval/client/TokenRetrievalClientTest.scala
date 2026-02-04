@@ -140,4 +140,50 @@ class TokenRetrievalClientTest extends AnyFlatSpec with Matchers {
     newAccess shouldBe AccessToken("refreshed-token")
     newRefresh shouldBe RefreshToken("old-refresh-token")
   }
+
+  "fetchToken with Basic Auth" should "return token JSON string" in {
+    val mockRestTemplate = mock(classOf[RestTemplate])
+    val mockKerberosTemplate = mock(classOf[KerberosRestTemplate])
+    val tokenResponse = """{"token": "mock-access-token", "refresh": "mock-refresh-token"}"""
+
+    when(mockRestTemplate.exchange(
+      anyString(),
+      any[HttpMethod],
+      any[HttpEntity[String]],
+      any[Class[String]]
+    )).thenReturn(new ResponseEntity(tokenResponse, HttpStatus.OK))
+
+    val testClient = new MockableTokenRetrievalClient(dummyUri, mockRestTemplate, mockKerberosTemplate)
+
+    val result = testClient.fetchToken(
+      s"$dummyUri/token/generate",
+      dummyUser,
+      dummyPassword
+    )
+
+    result shouldBe tokenResponse
+  }
+
+  "fetchToken with Kerberos Auth" should "return token JSON string" in {
+    val mockRestTemplate = mock(classOf[RestTemplate])
+    val mockKerberosTemplate = mock(classOf[KerberosRestTemplate])
+    val tokenResponse = """{"token": "kerberos-access-token", "refresh": "kerberos-refresh-token"}"""
+
+    when(mockKerberosTemplate.exchange(
+      anyString(),
+      any[HttpMethod],
+      any[HttpEntity[String]],
+      any[Class[String]]
+    )).thenReturn(new ResponseEntity(tokenResponse, HttpStatus.OK))
+
+    val testClient = new MockableTokenRetrievalClient(dummyUri, mockRestTemplate, mockKerberosTemplate)
+
+    val result = testClient.fetchToken(
+      s"$dummyUri/token/generate",
+      Some("/path/to/keytab"),
+      Some("user@REALM")
+    )
+
+    result shouldBe tokenResponse
+  }
 }
