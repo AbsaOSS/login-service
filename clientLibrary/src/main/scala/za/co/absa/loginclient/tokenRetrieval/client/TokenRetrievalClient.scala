@@ -21,9 +21,10 @@ import org.slf4j.{Logger, LoggerFactory}
 import org.springframework.http.{HttpEntity, HttpHeaders, HttpMethod, MediaType, ResponseEntity}
 import org.springframework.security.kerberos.client.KerberosRestTemplate
 import org.springframework.web.client.RestTemplate
-import za.co.absa.loginclient.tokenRetrieval.model.{AccessToken, RefreshToken}
+import za.co.absa.loginclient.tokenRetrieval.model.{AccessToken, AuthMethod, BasicAuth, KerberosAuth, RefreshToken}
 
 import java.net.URLEncoder
+import java.nio.file.attribute.UserPrincipal
 import java.util.{Collections, Properties}
 import javax.security.auth.login.Configuration
 
@@ -38,117 +39,70 @@ case class TokenRetrievalClient(host: String) {
 
   private val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
-  /**
-   * This method requests an access token (JWT) from the login service using the specified username and password.
-   * This Token is used to access resources which utilize the login Service for authentication.
-   *
-   * @param username The username used for authentication.
-   * @param password The password associated with the provided username.
-   * @param groups   An optional list of PAM groups. If provided, only JWTs associated with these groups are returned if the user belongs to them.
-   * @param caseSensitiveGroups A boolean indicating whether the group prefixes should be treated as case sensitive.
-   * @return An AccessToken object representing the retrieved access token (JWT) from the login service.
-   */
-  def fetchAccessToken(
-    username: String,
-    password: String,
-    groups: List[String],
-    caseSensitiveGroups: Boolean): AccessToken = {
-    fetchAccessAndRefreshToken(username, password, groups, caseSensitiveGroups)._1
+  private[client] def createKerberosRestTemplate(
+    keyTabLocation: Option[String] = None,
+    userPrincipal: Option[String] = None): KerberosRestTemplate = {
+    (keyTabLocation, userPrincipal) match {
+      case (Some(definedKeyTabLocation), Some(definedUserPrincipal)) =>
+        logger.info(s"Fetching token with user $userPrincipal")
+        new KerberosRestTemplate(definedKeyTabLocation, definedUserPrincipal)
+      case (None, None) =>
+        logger.info(s"Fetching token with cached user ticket")
+        new KerberosRestTemplate()
+      case _ =>
+        throw new Error("Either both keyTabLocation and userPrincipal need to be available or omitted")
+    }
+  }
+
+  private[client] def createRestTemplate(): RestTemplate = {
+    new RestTemplate()
   }
 
   /**
-   * This method requests an access token (JWT) from the login service using SPNEGO.
+   * This method requests an access token (JWT) from the login service using the specified authentication method.
    * This Token is used to access resources which utilize the login Service for authentication.
-   *
-   * @param keytabLocation  Optional location of the keytab file.
-   * @param userPrincipal   Optional userPrincipal name included in the above keytab file.
-   * @param groups          An optional list of PAM groups. If provided, only JWTs associated with these groups are returned if the user belongs to them.
-   * @param caseSensitiveGroups A boolean indicating whether the group prefixes should be treated as case sensitive.
+   * @param authMethod The authentication method to use. Either Basic Auth or Kerberos Auth.
+   * @param groups A list of group prefixes to include in the token.
+   * @param caseSensitiveGroups Whether the group prefixes are case sensitive.
    * @return An AccessToken object representing the retrieved access token (JWT) from the login service.
    */
+
   def fetchAccessToken(
-    keytabLocation: Option[String],
-    userPrincipal: Option[String],
-    groups: List[String],
-    caseSensitiveGroups: Boolean): AccessToken = {
-    fetchAccessAndRefreshToken(keytabLocation, userPrincipal, groups, caseSensitiveGroups)._1
+    authMethod: AuthMethod,
+    groups: List[String] = List.empty,
+    caseSensitiveGroups: Boolean = false
+  ): AccessToken = {
+    fetchAccessAndRefreshToken(authMethod, groups, caseSensitiveGroups)._1
   }
 
   /**
    * This method requests a refresh token from the login service using SPNEGO.
    * This token may be used to acquire a new access token (JWT) when the current access token expires.
-   *
-   * @param keytabLocation  Optional location of the keytab file.
-   * @param userPrincipal   Optional userPrincipal name included in the above keytab file.
+   * @param authMethod The authentication method to use. Either Basic Auth or Kerberos Auth.
    * @return A RefreshToken object representing the retrieved refresh token from the login service.
    */
-  def fetchRefreshToken(keytabLocation: Option[String], userPrincipal: Option[String]): RefreshToken = {
-    fetchAccessAndRefreshToken(keytabLocation, userPrincipal, List.empty, false)._2
-  }
 
-  /**
-   * This method requests a refresh token from the login service using the specified username and password.
-   * This token may be used to acquire a new access token (JWT) when the current access token expires.
-   *
-   * @param username The username used for authentication.
-   * @param password The password associated with the provided username.
-   * @return A RefreshToken object representing the retrieved refresh token from the login service.
-   */
-  def fetchRefreshToken(username: String, password: String): RefreshToken = {
-    fetchAccessAndRefreshToken(username, password, List.empty, false)._2
+  def fetchRefreshToken(authMethod: AuthMethod): RefreshToken = {
+    fetchAccessAndRefreshToken(authMethod)._2
   }
 
   /**
    * Fetches both an access token and a refresh token from the login service using the provided username, password, and optional groups.
    * This method requests both an access token and a refresh token (JWTs) from the login service using the specified username and password.
-   * Additionally, it allows specifying optional groups that act as filters for the JWT, returning only the JWTs associated with the provided groups if the user belongs to them.
-   *
-   * @param username The username used for authentication.
-   * @param password The password associated with the provided username.
-   * @param groups   An optional list of PAM groups. If provided, only JWTs associated with these groups are returned if the user belongs to them.
-   * @param caseSensitiveGroups A boolean indicating whether the group prefixes should be treated as case sensitive.
-   * @return A tuple containing the AccessToken and RefreshToken objects representing the retrieved access and refresh tokens (JWTs) from the login service.
+   * Additionally, it allows specifying optional groups (and their case sensitivity) that act as filters for the JWT,
+   * returning only the JWTs associated with the provided groups if the user belongs to them.
+   * @param authMethod The authentication method to use.
+   * @param groups A list of group prefixes to include in the token.
+   * @param caseSensitiveGroups Whether the group prefixes are case sensitive.
+   * @return A tuple containing the access token and the refresh token.
    */
-  def fetchAccessAndRefreshToken(
-    username: String,
-    password: String,
-    groups: List[String],
-    caseSensitiveGroups: Boolean
-  ): (AccessToken, RefreshToken) = {
-    val issuerUri = if(groups.nonEmpty) {
-        val commaSeparatedString = groups.mkString(",")
-        val urlEncodedGroups = URLEncoder.encode(commaSeparatedString, "UTF-8")
-        var uri = s"$host/token/generate?group-prefixes=$urlEncodedGroups"
-        if(caseSensitiveGroups) {
-          uri += "&case-sensitive=true"
-        }
-        uri
-    } else s"$host/token/generate"
 
-    val jsonString = fetchToken(issuerUri, username, password)
-    val jsonObject = JsonParser.parseString(jsonString).getAsJsonObject
-    val accessToken = jsonObject.get("token").getAsString
-    val refreshToken = jsonObject.get("refresh").getAsString
-    (AccessToken(accessToken), RefreshToken(refreshToken))
-  }
-
-  /**
-   * Fetches both an access token and a refresh token from the login service using SPNEGO.
-   * This method requests both an access token and a refresh token (JWTs) from the login service using kerberos, either with a keytab or the users cached ticket.
-   * Additionally, it allows specifying optional groups that act as filters for the JWT, returning only the JWTs associated with the provided groups if the user belongs to them.
-   *
-   * @param keytabLocation  Optional location of the keytab file.
-   * @param userPrincipal   Optional userPrincipal name included in the above keytab file.
-   * @param groups          An optional list of PAM groups. If provided, only JWTs associated with these groups are returned if the user belongs to them.
-   * @param caseSensitiveGroups A boolean indicating whether the group prefixes should be treated as case sensitive.
-   * @return A tuple containing the AccessToken and RefreshToken objects representing the retrieved access and refresh tokens (JWTs) from the login service.
-   */
   def fetchAccessAndRefreshToken(
-    keytabLocation: Option[String],
-    userPrincipal: Option[String],
-    groups: List[String],
-    caseSensitiveGroups: Boolean
+    authMethod: AuthMethod,
+    groups: List[String] = List.empty,
+    caseSensitiveGroups: Boolean = false
   ): (AccessToken, RefreshToken) = {
+
     val issuerUri = if(groups.nonEmpty) {
       val commaSeparatedString = groups.mkString(",")
       val urlEncodedGroups = URLEncoder.encode(commaSeparatedString, "UTF-8")
@@ -159,12 +113,26 @@ case class TokenRetrievalClient(host: String) {
       uri
     } else s"$host/token/generate"
 
-    val jsonString = fetchToken(issuerUri, keytabLocation, userPrincipal)
+    val jsonString = authMethod match {
+      case BasicAuth(username, password) =>
+        fetchToken(issuerUri, username, password)
+      case KerberosAuth(keytabLocation, userPrincipal) =>
+        fetchToken(issuerUri, keytabLocation, userPrincipal)
+    }
+
     val jsonObject = JsonParser.parseString(jsonString).getAsJsonObject
     val accessToken = jsonObject.get("token").getAsString
     val refreshToken = jsonObject.get("refresh").getAsString
     (AccessToken(accessToken), RefreshToken(refreshToken))
   }
+
+  /**
+   * Refreshes an access token using a refresh token.
+   *
+   * @param accessToken The access token to refresh.
+   * @param refreshToken The refresh token to use.
+   * @return A tuple containing the new access token and the existing refresh token.
+   */
 
   def refreshAccessToken(accessToken: AccessToken, refreshToken: RefreshToken): (AccessToken, RefreshToken) = {
     val issuerUri = s"$host/token/refresh"
@@ -181,7 +149,7 @@ case class TokenRetrievalClient(host: String) {
 
     val requestEntity = new HttpEntity[String] (jsonPayload.toString, headers)
 
-    val restTemplate: RestTemplate = new RestTemplate()
+    val restTemplate: RestTemplate = createRestTemplate()
 
     try {
       val response: ResponseEntity[String] = restTemplate.exchange(
@@ -203,6 +171,14 @@ case class TokenRetrievalClient(host: String) {
         throw e
     }
   }
+
+  /**
+   * Sets the Kerberos properties for the JVM.
+   *
+   * @param jaasFileLocation The location of the JAAS file.
+   * @param krb5FileLocation The location of the krb5 file.
+   * @param debug Whether to enable Kerberos debugging.
+   */
 
   def setKerberosProperties(jaasFileLocation: String, krb5FileLocation: Option[String], debug: Option[Boolean]): Unit = {
     val properties: Properties = new Properties()
@@ -227,7 +203,7 @@ case class TokenRetrievalClient(host: String) {
 
     val requestEntity = new HttpEntity[String](null, headers)
 
-    val restTemplate = new RestTemplate()
+    val restTemplate = createRestTemplate()
 
     try {
       val response: ResponseEntity[String] = restTemplate.exchange(
@@ -246,18 +222,12 @@ case class TokenRetrievalClient(host: String) {
     }
   }
 
-  private[client] def fetchToken(issuerUri: String, keyTabLocation: Option[String], userPrincipal: Option[String]): String = {
+  private[client] def fetchToken(
+    issuerUri: String,
+    keyTabLocation: Option[String],
+    userPrincipal: Option[String]): String = {
 
-    val restTemplate: KerberosRestTemplate = (keyTabLocation, userPrincipal) match {
-      case (Some(_), Some(_)) =>
-        logger.info(s"Fetching token from $issuerUri using user $userPrincipal")
-        new KerberosRestTemplate(keyTabLocation.get, userPrincipal.get)
-      case (None, None) =>
-        logger.info(s"Fetching token from $issuerUri using cached user ticket")
-        new KerberosRestTemplate()
-      case _ =>
-        throw new Error("Either both keyTabLocation and userPrincipal need to be available or omitted")
-    }
+    val restTemplate: KerberosRestTemplate = createKerberosRestTemplate(keyTabLocation, userPrincipal)
 
     val headers = new HttpHeaders()
     val entity = new HttpEntity[String](null, headers)
@@ -275,5 +245,128 @@ case class TokenRetrievalClient(host: String) {
         logger.error(s"Error occurred retrieving and decoding Token from $issuerUri", e)
         throw e
     }
+  }
+
+  //Deprecated methods
+
+  /**
+   * This method requests an access token (JWT) from the login service using the specified username and password.
+   * This Token is used to access resources which utilize the login Service for authentication.
+   * This Method is Deprecated. Use fetchAccessToken with AuthMethod instead.
+   *
+   * @param username The username used for authentication.
+   * @param password The password associated with the provided username.
+   * @param groups   An optional list of PAM groups. If provided, only JWTs associated with these groups are returned if the user belongs to them.
+   * @param caseSensitiveGroups A boolean indicating whether the group prefixes should be treated as case sensitive.
+   * @return An AccessToken object representing the retrieved access token (JWT) from the login service.
+   */
+
+  @deprecated("This method is deprecated. Use fetchAccessToken with AuthMethod instead")
+  def fetchAccessToken(
+    username: String,
+    password: String,
+    groups: List[String],
+    caseSensitiveGroups: Boolean): AccessToken = {
+    val authMethod = BasicAuth(username, password)
+    fetchAccessAndRefreshToken(authMethod, groups, caseSensitiveGroups)._1
+  }
+
+  /**
+   * This method requests an access token (JWT) from the login service using SPNEGO.
+   * This Token is used to access resources which utilize the login Service for authentication.
+   * This Method is Deprecated. Use fetchAccessToken with AuthMethod instead.
+   *
+   * @param keytabLocation  Optional location of the keytab file.
+   * @param userPrincipal   Optional userPrincipal name included in the above keytab file.
+   * @param groups          An optional list of PAM groups. If provided, only JWTs associated with these groups are returned if the user belongs to them.
+   * @param caseSensitiveGroups A boolean indicating whether the group prefixes should be treated as case sensitive.
+   * @return An AccessToken object representing the retrieved access token (JWT) from the login service.
+   */
+  @deprecated("This method is deprecated. Use fetchAccessToken with AuthMethod instead")
+  def fetchAccessToken(
+    keytabLocation: Option[String],
+    userPrincipal: Option[String],
+    groups: List[String],
+    caseSensitiveGroups: Boolean): AccessToken = {
+    val authMethod = KerberosAuth(keytabLocation, userPrincipal)
+    fetchAccessAndRefreshToken(authMethod, groups, caseSensitiveGroups)._1
+  }
+
+  /**
+   * This method requests a refresh token from the login service using the specified username and password.
+   * This token may be used to acquire a new access token (JWT) when the current access token expires.
+   * This Method is Deprecated. Use fetchRefreshToken with AuthMethod instead.
+   *
+   * @param username The username used for authentication.
+   * @param password The password associated with the provided username.
+   * @return A RefreshToken object representing the retrieved refresh token from the login service.
+   */
+  @deprecated("This method is deprecated. Use fetchRefreshToken with AuthMethod instead")
+  def fetchRefreshToken(username: String, password: String): RefreshToken = {
+    val authMethod = BasicAuth(username, password)
+    fetchAccessAndRefreshToken(authMethod)._2
+  }
+
+  /**
+   * This method requests a refresh token from the login service using SPNEGO.
+   * This token may be used to acquire a new access token (JWT) when the current access token expires.
+   * This Method is Deprecated. Use fetchRefreshToken with AuthMethod instead.
+   *
+   * @param keytabLocation  Optional location of the keytab file.
+   * @param userPrincipal   Optional userPrincipal name included in the above keytab file.
+   * @return A RefreshToken object representing the retrieved refresh token from the login service.
+   */
+
+  @deprecated("This method is deprecated. Use fetchRefreshToken with AuthMethod instead")
+  def fetchRefreshToken(
+    keytabLocation: Option[String],
+    userPrincipal: Option[String]): RefreshToken = {
+    val authMethod = KerberosAuth(keytabLocation, userPrincipal)
+    fetchAccessAndRefreshToken(authMethod)._2
+  }
+
+  /**
+   * This method requests both an access token and a refresh token from the login service using the specified username and password.
+   * Additionally, it allows specifying optional groups (and their case sensitivity) that act as filters for the JWT,
+   * returning only the JWTs associated with the provided groups if the user belongs to them.
+   * This Method is Deprecated. Use fetchAccessAndRefreshToken with AuthMethod instead.
+   *
+   * @param username The username used for authentication.
+   * @param password The password associated with the provided username.
+   * @param groups   An optional list of PAM groups. If provided, only JWTs associated with these groups are returned if the user belongs to them.
+   * @param caseSensitiveGroups A boolean indicating whether the group prefixes should be treated as case sensitive.
+   * @return A tuple containing the access token and the refresh token.
+   */
+
+  @deprecated("This method is deprecated. Use fetchAccessAndRefreshToken with AuthMethod instead")
+  def fetchAccessAndRefreshToken(
+    username: String,
+    password: String,
+    groups: List[String],
+    caseSensitiveGroups: Boolean): (AccessToken, RefreshToken) = {
+    val authMethod = BasicAuth(username, password)
+    fetchAccessAndRefreshToken(authMethod, groups, caseSensitiveGroups)
+  }
+
+  /**
+   * This method requests both an access token and a refresh token from the login service using SPNEGO.
+   * Additionally, it allows specifying optional groups (and their case sensitivity) that act as filters for the JWT,
+   * returning only the JWTs associated with the provided groups if the user belongs to them.
+   * This Method is Deprecated. Use fetchAccessAndRefreshToken with AuthMethod instead.
+   *
+   * @param keytabLocation  Optional location of the keytab file.
+   * @param userPrincipal   Optional userPrincipal name included in the above keytab file.
+   * @param groups          An optional list of PAM groups. If provided, only JWTs associated with these groups are returned if the user belongs to them.
+   * @param caseSensitiveGroups A boolean indicating whether the group prefixes should be treated as case sensitive.
+   * @return A tuple containing the access token and the refresh token.
+   */
+  @deprecated("This method is deprecated. Use fetchAccessAndRefreshToken with AuthMethod instead")
+  def fetchAccessAndRefreshToken(
+    keytabLocation: Option[String],
+    userPrincipal: Option[String],
+    groups: List[String],
+    caseSensitiveGroups: Boolean): (AccessToken, RefreshToken) = {
+    val authMethod = KerberosAuth(keytabLocation, userPrincipal)
+    fetchAccessAndRefreshToken(authMethod, groups, caseSensitiveGroups)
   }
 }
