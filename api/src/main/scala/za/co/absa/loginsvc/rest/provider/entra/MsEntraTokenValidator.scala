@@ -40,15 +40,21 @@ import scala.util.{Failure, Success, Try}
  * The discovery URL follows the Microsoft standard:
  *   https://login.microsoftonline.com/{tenantId}/v2.0/.well-known/openid-configuration
  *
- * @param config          Entra configuration
- * @param jwkSourceOverride Optional override for the JWK source (used in tests to avoid HTTP calls)
+ * @param config              Entra configuration
+ * @param jwkSourceOverride   Optional override for the JWK source (used in tests to avoid HTTP calls)
+ * @param graphClientOverride Optional override for the Graph username resolver (used in tests)
  */
 class MsEntraTokenValidator(
   config: MsEntraConfig,
-  private[entra] val jwkSourceOverride: Option[JWKSource[NimbusSecurityContext]] = None
+  private[entra] val jwkSourceOverride: Option[JWKSource[NimbusSecurityContext]] = None,
+  private[entra] val graphClientOverride: Option[GraphUsernameResolver] = None
 ) {
 
   private val logger = LoggerFactory.getLogger(classOf[MsEntraTokenValidator])
+
+  // Use the injected graph resolver (for tests) or create one from config if clientSecret is set
+  private val graphResolver: Option[GraphUsernameResolver] =
+    graphClientOverride.orElse(config.clientSecret.map(_ => new MsEntraGraphClient(config)))
 
   private val discoveryUrl =
     s"https://login.microsoftonline.com/${config.tenantId}/v2.0/.well-known/openid-configuration"
@@ -118,10 +124,13 @@ class MsEntraTokenValidator(
   }
 
   private def extractUser(claims: JWTClaimsSet): User = {
-    val username = Option(claims.getStringClaim("preferred_username"))
+    val rawUsername = Option(claims.getStringClaim("preferred_username"))
       .orElse(Option(claims.getStringClaim("upn")))
       .orElse(Option(claims.getSubject))
       .getOrElse(throw new IllegalArgumentException("Entra token has no usable username claim (preferred_username/upn/sub)"))
+
+    // Attempt to resolve to on-premises DOMAIN\samAccountName via Graph API; fall back to UPN
+    val username = graphResolver.flatMap(_.resolveUsername(rawUsername)).getOrElse(rawUsername)
 
     val groups: Seq[String] = Option(claims.getStringListClaim("groups"))
       .map(_.asScala.toSeq)

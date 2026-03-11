@@ -22,16 +22,25 @@ import za.co.absa.loginsvc.rest.config.validation.{ConfigValidatable, ConfigVali
 /**
  * Configuration for MS Entra (Azure AD) Bearer token authentication provider.
  *
- * @param tenantId   Azure AD tenant ID (directory ID)
- * @param clientId   Application (client) ID registered in Entra
- * @param audiences  Accepted JWT 'aud' claim values — tokens from any listed app are accepted
- * @param order      Provider ordering (0 = disabled, 1+ = active)
- * @param attributes Optional mapping from Entra JWT claim names to LS JWT claim names
+ * @param tenantId     Azure AD tenant ID (directory ID)
+ * @param clientId     Application (client) ID registered in Entra
+ * @param clientSecret Client secret used to acquire a Graph API token for username resolution.
+ *                     When set, the token's `preferred_username` (UPN) is exchanged for
+ *                     `onPremisesSamAccountName` via MS Graph, and the resulting username
+ *                     is formatted as `NETBIOS\samAccountName`.
+ * @param audiences    Accepted JWT 'aud' claim values — tokens from any listed app are accepted;
+ *                     empty list accepts any token from the tenant
+ * @param domains      Mapping from on-premises DNS domain names to their NetBIOS short names,
+ *                     e.g. `corp.example.com -> CORP`. Required when `clientSecret` is set.
+ * @param order        Provider ordering (0 = disabled, 1+ = active)
+ * @param attributes   Optional mapping from Entra JWT claim names to LS JWT claim names
  */
 case class MsEntraConfig(
   tenantId: String,
   clientId: String,
+  clientSecret: Option[String] = None,
   audiences: List[String],
+  domains: Option[Map[String, String]] = None,
   order: Int,
   attributes: Option[Map[String, String]]
 ) extends ConfigValidatable with ConfigOrdering {

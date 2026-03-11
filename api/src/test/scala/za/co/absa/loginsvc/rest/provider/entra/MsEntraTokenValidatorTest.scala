@@ -22,6 +22,8 @@ import com.nimbusds.jose.jwk.{JWKSet, RSAKey}
 import com.nimbusds.jose.proc.{SecurityContext => NimbusSecurityContext}
 import com.nimbusds.jose.{JWSAlgorithm, JWSHeader}
 import com.nimbusds.jwt.{JWTClaimsSet, SignedJWT}
+import org.mockito.ArgumentMatchers.anyString
+import org.mockito.Mockito.{mock, when}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import za.co.absa.loginsvc.rest.config.auth.MsEntraConfig
@@ -191,5 +193,25 @@ class MsEntraTokenValidatorTest extends AnyFlatSpec with Matchers {
 
     val user = validator.validate(jwt.serialize()).get
     user.groups shouldBe empty
+  }
+
+  it should "use DOMAIN\\samAccountName from Graph when graphClientOverride resolves the username" in {
+    val mockGraph = mock(classOf[GraphUsernameResolver])
+    when(mockGraph.resolveUsername("user@example.com")).thenReturn(Some("CORP\\jsmith"))
+
+    val validatorWithGraph = new MsEntraTokenValidator(config, Some(jwkSource), Some(mockGraph))
+    val token = buildToken()
+    val user = validatorWithGraph.validate(token).get
+    user.name shouldBe "CORP\\jsmith"
+  }
+
+  it should "fall back to UPN when the graph resolver returns None" in {
+    val mockGraph = mock(classOf[GraphUsernameResolver])
+    when(mockGraph.resolveUsername(anyString())).thenReturn(None)
+
+    val validatorWithGraph = new MsEntraTokenValidator(config, Some(jwkSource), Some(mockGraph))
+    val token = buildToken(preferredUsername = "fallback@example.com")
+    val user = validatorWithGraph.validate(token).get
+    user.name shouldBe "fallback@example.com"
   }
 }

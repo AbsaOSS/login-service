@@ -109,10 +109,21 @@ loginsvc:
           #tenant-id: "your-tenant-id"
           # Application (client) ID registered in Entra
           #client-id: "your-client-id"
-          # Accepted JWT 'aud' claim values — tokens from any listed application are accepted
+          # Client secret used to call MS Graph API for on-premises username resolution.
+          # When set, the authenticated user's UPN is exchanged for their DOMAIN\samAccountName
+          # via Graph API. Omit to use the UPN from the token directly.
+          #client-secret: "your-client-secret"
+          # Accepted JWT 'aud' claim values — tokens from any listed application are accepted;
+          # use an empty list to accept any token issued by the configured tenant
           #audiences:
             #- "api://your-client-id"
             #- "other-app-client-id"
+          # Mapping from on-premises DNS domain names to NetBIOS short names.
+          # Required when client-secret is set and users have on-premises AD accounts.
+          # Example: users in corp.example.com will be resolved as CORP\samAccountName
+          #domains:
+            #corp.example.com: "CORP"
+            #another.domain.com: "ANOTHER"
           # Optional mapping from Entra JWT claim names to LS JWT claim names
           #attributes:
             #preferred_username: "upn"
