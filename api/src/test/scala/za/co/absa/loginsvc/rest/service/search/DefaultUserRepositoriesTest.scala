@@ -20,7 +20,7 @@ import org.scalamock.scalatest.MockFactory
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import za.co.absa.loginsvc.rest.config.auth.{ActiveDirectoryLDAPConfig, LdapUserCredentialsConfig, ServiceAccountConfig, UserConfig, UsersConfig}
+import za.co.absa.loginsvc.rest.config.auth.{ActiveDirectoryLDAPConfig, LdapUserCredentialsConfig, MsEntraConfig, ServiceAccountConfig, UserConfig, UsersConfig}
 import za.co.absa.loginsvc.rest.config.provider.{AuthConfigProvider, ConfigProvider}
 import za.co.absa.loginsvc.rest.config.validation.ConfigValidationException
 
@@ -39,6 +39,7 @@ class DefaultUserRepositoriesTest extends AnyFlatSpec with BeforeAndAfterEach wi
     new AuthConfigProvider {
       override def getLdapConfig: Option[ActiveDirectoryLDAPConfig] = optLdapConfig
       override def getUsersConfig: Option[UsersConfig] = optUsersConfig
+      override def getMsEntraConfig: Option[MsEntraConfig] = None
     }
   }
 

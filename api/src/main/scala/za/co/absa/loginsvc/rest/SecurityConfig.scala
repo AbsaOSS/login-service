@@ -27,6 +27,7 @@ import org.springframework.security.web.authentication.www.BasicAuthenticationFi
 import org.springframework.security.web.{AuthenticationEntryPoint, SecurityFilterChain}
 import za.co.absa.loginsvc.rest.config.provider.AuthConfigProvider
 import za.co.absa.loginsvc.rest.provider.ad.ldap.LdapConnectionException
+import za.co.absa.loginsvc.rest.provider.entra.{MsEntraBearerTokenFilter, MsEntraTokenValidator}
 import za.co.absa.loginsvc.rest.provider.kerberos.KerberosSPNEGOAuthenticationProvider
 
 import javax.servlet.http.{HttpServletRequest, HttpServletResponse}
@@ -39,6 +40,8 @@ class SecurityConfig @Autowired()(authConfigsProvider: AuthConfigProvider, authM
 
   private val ldapConfig = authConfigsProvider.getLdapConfig.orNull
   private val isKerberosEnabled = authConfigsProvider.getLdapConfig.exists(_.enableKerberos.isDefined)
+  private val msEntraConfig = authConfigsProvider.getMsEntraConfig
+  private val isMsEntraEnabled = msEntraConfig.exists(_.order > 0)
 
 
   @Bean
@@ -74,6 +77,11 @@ class SecurityConfig @Autowired()(authConfigsProvider: AuthConfigProvider, authM
       http.addFilterBefore(
         kerberos.spnegoAuthenticationProcessingFilter,
         classOf[BasicAuthenticationFilter])
+    }
+
+    if (isMsEntraEnabled) {
+      val entraFilter = new MsEntraBearerTokenFilter(MsEntraTokenValidator(msEntraConfig.get))
+      http.addFilterBefore(entraFilter, classOf[BasicAuthenticationFilter])
     }
 
     http.build()

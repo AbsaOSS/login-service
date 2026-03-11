@@ -98,6 +98,23 @@ loginsvc:
             # ldapFieldName: claimFieldName
             mail: "email"
             displayname: "displayname"
+        # MS Entra (Azure AD) Bearer token authentication provider.
+        # Users with a valid Entra access token can exchange it for a login-service JWT.
+        #entra:
+          # Set the order of the protocol starting from 1
+          # Set to 0 to disable or simply exclude the entra tag from config
+          # NOTE: At least 1 auth protocol needs to be enabled
+          #order: 0
+          # Azure AD tenant ID (directory ID)
+          #tenant-id: "your-tenant-id"
+          # Application (client) ID registered in Entra
+          #client-id: "your-client-id"
+          # Expected value of the JWT 'aud' claim — typically "api://your-client-id"
+          #audience: "api://your-client-id"
+          # Optional mapping from Entra JWT claim names to LS JWT claim names
+          #attributes:
+            #preferred_username: "upn"
+            #email: "email"
 
     experimental:
       # ability to enable experimental endpoints (default=false)

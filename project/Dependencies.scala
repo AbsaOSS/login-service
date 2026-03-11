@@ -74,6 +74,9 @@ object Dependencies {
   // Enables /actuator/health endpoint
   lazy val springBootStarterActuator = "org.springframework.boot" % "spring-boot-starter-actuator" % Versions.springBoot
 
+  // guava Cache for JWKS caching in Entra token validation
+  lazy val cacheBuilderApi = "com.google.guava" % "guava" % "33.0.0-jre"
+
   lazy val scalaTest = "org.scalatest" %% "scalatest" % Versions.scalatest % Test
   lazy val springBootTest = "org.springframework.boot" % "spring-boot-starter-test" % Versions.springBoot % Test
   lazy val springBootSecurityTest = "org.springframework.security" % "spring-security-test" % Versions.spring % Test
@@ -110,6 +113,8 @@ object Dependencies {
     springDoc,
 
     springBootStarterActuator,
+
+    cacheBuilderApi,
 
     scalaTest,
     springBootTest,

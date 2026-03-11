@@ -20,7 +20,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import org.springframework.boot.actuate.health.Health
 import org.springframework.boot.test.context.SpringBootTest
-import za.co.absa.loginsvc.rest.config.auth.{ActiveDirectoryLDAPConfig, LdapUserCredentialsConfig, ServiceAccountConfig, UsersConfig}
+import za.co.absa.loginsvc.rest.config.auth.{ActiveDirectoryLDAPConfig, LdapUserCredentialsConfig, MsEntraConfig, ServiceAccountConfig, UsersConfig}
 import za.co.absa.loginsvc.rest.config.provider.AuthConfigProvider
 
 import javax.naming.CommunicationException
@@ -55,8 +55,8 @@ class LdapHealthServiceTest extends AnyFlatSpec with Matchers {
   "LdapHealthService" should "Return Up on Order 0" in {
     val configProvider = new AuthConfigProvider {
       override def getLdapConfig: Option[ActiveDirectoryLDAPConfig] = Some(ldapCfgZeroOrder)
-
       override def getUsersConfig: Option[UsersConfig] = None
+      override def getMsEntraConfig: Option[MsEntraConfig] = None
     }
     val ldapHealthService: LdapHealthService = new testLdapHealthService(configProvider)
     val health = ldapHealthService.health()
@@ -67,8 +67,8 @@ class LdapHealthServiceTest extends AnyFlatSpec with Matchers {
   "LdapHealthService" should "Return Up when ActiveDirectoryLDAPConfig is None" in {
     val configProvider = new AuthConfigProvider {
       override def getLdapConfig: Option[ActiveDirectoryLDAPConfig] = None
-
       override def getUsersConfig: Option[UsersConfig] = None
+      override def getMsEntraConfig: Option[MsEntraConfig] = None
     }
     val ldapHealthService: LdapHealthService = new testLdapHealthService(configProvider)
     val health = ldapHealthService.health()
@@ -79,8 +79,8 @@ class LdapHealthServiceTest extends AnyFlatSpec with Matchers {
   "LdapHealthService" should "Return Down when Ldap connection fails" in {
     val configProvider = new AuthConfigProvider {
       override def getLdapConfig: Option[ActiveDirectoryLDAPConfig] = Some(ldapCfgZeroOrder.copy(order = 2))
-
       override def getUsersConfig: Option[UsersConfig] = None
+      override def getMsEntraConfig: Option[MsEntraConfig] = None
     }
     val ldapHealthService: LdapHealthService = new testLdapHealthService(configProvider)
     val health = ldapHealthService.health()

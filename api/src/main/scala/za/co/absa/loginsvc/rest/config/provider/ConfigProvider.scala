@@ -87,6 +87,14 @@ class ConfigProvider(@Value("${spring.config.location}") yamlPath: String)
     userConfigOption
   }
 
+  def getMsEntraConfig: Option[MsEntraConfig] = {
+    val entraConfigOption = createConfigClass[MsEntraConfig]("loginsvc.rest.auth.provider.entra")
+    if (entraConfigOption.nonEmpty)
+      entraConfigOption.get.throwErrors()
+
+    entraConfigOption
+  }
+
   private def getGitConfig: GitConfig = {
     createConfigClass[GitConfig]("loginsvc.rest.config.git-info").
       getOrElse(GitConfig(generateGitProperties = false, generateGitPropertiesFile = false))

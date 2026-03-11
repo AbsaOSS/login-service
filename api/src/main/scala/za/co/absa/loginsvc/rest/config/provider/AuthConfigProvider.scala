@@ -21,4 +21,5 @@ import za.co.absa.loginsvc.rest.config.auth._
 trait AuthConfigProvider {
   def getLdapConfig : Option[ActiveDirectoryLDAPConfig]
   def getUsersConfig : Option[UsersConfig]
+  def getMsEntraConfig : Option[MsEntraConfig]
 }
