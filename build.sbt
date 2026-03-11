@@ -30,6 +30,8 @@ lazy val commonJacocoExcludes: Seq[String] = Seq(
 
 lazy val commonJavacOptions = Seq("-source", "1.8", "-target", "1.8", "-Xlint") // deliberately making backwards compatible with J8
 
+addCommandAlias("runLocal", "api/run --spring.config.location=api/src/main/resources/local.application.yaml")
+
 lazy val parent = (project in file("."))
   .aggregate(api, clientLibrary, examples)
   .enablePlugins(FilteredJacocoAgentPlugin)
@@ -50,7 +52,10 @@ lazy val api = project // no need to define file, because path is same as val na
     webappWebInfClasses := true,
     inheritJarManifest := true,
     javacOptions ++= commonJavacOptions,
-    publish / skip := true
+    publish / skip := true,
+    run / fork := true, // required: avoids URLStreamHandlerFactory conflict with xsbt-web-plugin
+    run / baseDirectory := (ThisBuild / baseDirectory).value, // forked process runs from repo root
+    run / javaOptions += "-Djavax.net.ssl.trustStoreType=KeychainStore" // use macOS Keychain CA certs (corporate proxy)
   ).enablePlugins(TomcatPlugin)
   .enablePlugins(AutomateHeaderPlugin)
   .enablePlugins(FilteredJacocoAgentPlugin)

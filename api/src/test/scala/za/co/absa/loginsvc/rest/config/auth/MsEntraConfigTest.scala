@@ -1,5 +1,5 @@
 /*
- * Copyright 2026 ABSA Group Limited
+ * Copyright 2023 ABSA Group Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ class MsEntraConfigTest extends AnyFlatSpec with Matchers {
   private val validConfig = MsEntraConfig(
     tenantId = "test-tenant-id",
     clientId = "test-client-id",
-    audience = "api://test-client-id",
+    audiences = List("api://test-client-id", "other-app-client-id"),
     order = 1,
     attributes = Some(Map("preferred_username" -> "upn", "email" -> "email"))
   )
@@ -53,9 +53,8 @@ class MsEntraConfigTest extends AnyFlatSpec with Matchers {
     result shouldBe ConfigValidationError(ConfigValidationException("clientId is empty"))
   }
 
-  it should "fail on null audience" in {
-    val result = validConfig.copy(audience = null).validate()
-    result shouldBe ConfigValidationError(ConfigValidationException("audience is empty"))
+  it should "pass validation with empty audiences (accept any token from the tenant)" in {
+    validConfig.copy(audiences = List.empty).validate() shouldBe ConfigValidationSuccess
   }
 
   it should "accumulate multiple validation errors" in {
@@ -65,8 +64,8 @@ class MsEntraConfigTest extends AnyFlatSpec with Matchers {
     result.errors.map(_.msg) should contain allOf ("tenantId is empty", "clientId is empty")
   }
 
-  it should "pass validation when disabled (order=0) even with null fields" in {
-    MsEntraConfig(tenantId = null, clientId = null, audience = null, order = 0, attributes = None)
+  it should "pass validation when disabled (order=0) even with empty fields" in {
+    MsEntraConfig(tenantId = null, clientId = null, audiences = List.empty, order = 0, attributes = None)
       .validate() shouldBe ConfigValidationSuccess
   }
 

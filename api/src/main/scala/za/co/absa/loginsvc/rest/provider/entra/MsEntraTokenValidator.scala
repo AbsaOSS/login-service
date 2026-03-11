@@ -1,5 +1,5 @@
 /*
- * Copyright 2026 ABSA Group Limited
+ * Copyright 2023 ABSA Group Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -87,17 +87,25 @@ class MsEntraTokenValidator(
       )
       jwtProcessor.setJWSKeySelector(keySelector)
 
-      // Verify standard claims: iss, aud, exp, nbf
+      // Verify signature, issuer, expiry and required claims
       val requiredClaims = new DefaultJWTClaimsVerifier[NimbusSecurityContext](
-        new JWTClaimsSet.Builder()
-          .issuer(expectedIssuer)
-          .audience(config.audience)
-          .build(),
+        new JWTClaimsSet.Builder().issuer(expectedIssuer).build(),
         Set("sub", "iat", "exp").asJava
       )
       jwtProcessor.setJWTClaimsSetVerifier(requiredClaims)
 
       val claims: JWTClaimsSet = jwtProcessor.process(rawToken, null)
+
+      // Audience check: if audiences are configured, token must contain at least one
+      if (config.audiences.nonEmpty) {
+        val tokenAudiences = Option(claims.getAudience).map(_.asScala.toSet).getOrElse(Set.empty)
+        val configAudiences = config.audiences.toSet
+        if (tokenAudiences.intersect(configAudiences).isEmpty)
+          throw new BadJWTException(
+            s"JWT aud claim has value $tokenAudiences, must include one of $configAudiences"
+          )
+      }
+
       extractUser(claims)
     } recoverWith {
       case e: BadJWTException =>

@@ -1,5 +1,5 @@
 /*
- * Copyright 2026 ABSA Group Limited
+ * Copyright 2023 ABSA Group Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,12 +36,13 @@ class MsEntraTokenValidatorTest extends AnyFlatSpec with Matchers {
   private val tenantId = "test-tenant-id"
   private val clientId = "test-client-id"
   private val audience = "api://test-client-id"
+  private val audience2 = "other-app-client-id"
   private val issuer = s"https://login.microsoftonline.com/$tenantId/v2.0"
 
   private val config = MsEntraConfig(
     tenantId = tenantId,
     clientId = clientId,
-    audience = audience,
+    audiences = List(audience, audience2),
     order = 1,
     attributes = Some(Map("email" -> "email"))
   )
@@ -156,6 +157,11 @@ class MsEntraTokenValidatorTest extends AnyFlatSpec with Matchers {
     val token = buildToken(issuerOverride = "https://evil.example.com")
     val result = validator.validate(token)
     result.isFailure shouldBe true
+  }
+
+  it should "accept a token with the second configured audience" in {
+    val token = buildToken(audienceOverride = audience2)
+    validator.validate(token) shouldBe a[Success[_]]
   }
 
   it should "return a Failure for a token with wrong audience" in {

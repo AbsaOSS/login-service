@@ -109,8 +109,10 @@ loginsvc:
           #tenant-id: "your-tenant-id"
           # Application (client) ID registered in Entra
           #client-id: "your-client-id"
-          # Expected value of the JWT 'aud' claim — typically "api://your-client-id"
-          #audience: "api://your-client-id"
+          # Accepted JWT 'aud' claim values — tokens from any listed application are accepted
+          #audiences:
+            #- "api://your-client-id"
+            #- "other-app-client-id"
           # Optional mapping from Entra JWT claim names to LS JWT claim names
           #attributes:
             #preferred_username: "upn"

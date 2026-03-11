@@ -1,5 +1,5 @@
 /*
- * Copyright 2026 ABSA Group Limited
+ * Copyright 2023 ABSA Group Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,14 +24,14 @@ import za.co.absa.loginsvc.rest.config.validation.{ConfigValidatable, ConfigVali
  *
  * @param tenantId   Azure AD tenant ID (directory ID)
  * @param clientId   Application (client) ID registered in Entra
- * @param audience   Expected value of the JWT 'aud' claim, e.g. "api://your-client-id"
+ * @param audiences  Accepted JWT 'aud' claim values — tokens from any listed app are accepted
  * @param order      Provider ordering (0 = disabled, 1+ = active)
  * @param attributes Optional mapping from Entra JWT claim names to LS JWT claim names
  */
 case class MsEntraConfig(
   tenantId: String,
   clientId: String,
-  audience: String,
+  audiences: List[String],
   order: Int,
   attributes: Option[Map[String, String]]
 ) extends ConfigValidatable with ConfigOrdering {
@@ -48,11 +48,7 @@ case class MsEntraConfig(
 
         Option(clientId)
           .map(_ => ConfigValidationSuccess)
-          .getOrElse(ConfigValidationError(ConfigValidationException("clientId is empty"))),
-
-        Option(audience)
-          .map(_ => ConfigValidationSuccess)
-          .getOrElse(ConfigValidationError(ConfigValidationException("audience is empty")))
+          .getOrElse(ConfigValidationError(ConfigValidationException("clientId is empty")))
       )
 
       results.foldLeft[ConfigValidationResult](ConfigValidationSuccess)(ConfigValidationResult.merge)
