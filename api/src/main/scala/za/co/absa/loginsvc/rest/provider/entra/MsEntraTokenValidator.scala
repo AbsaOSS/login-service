@@ -129,7 +129,7 @@ class MsEntraTokenValidator(
       .orElse(Option(claims.getSubject))
       .getOrElse(throw new IllegalArgumentException("Entra token has no usable username claim (preferred_username/upn/sub)"))
 
-    // Attempt to resolve to on-premises DOMAIN\samAccountName via Graph API; fall back to UPN
+    // Attempt to resolve to lower-case on-premises samAccountName via Graph API; fall back to UPN
     val username = graphResolver.flatMap(_.resolveUsername(rawUsername)).getOrElse(rawUsername)
 
     val groups: Seq[String] = Option(claims.getStringListClaim("groups"))

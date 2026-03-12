@@ -195,14 +195,14 @@ class MsEntraTokenValidatorTest extends AnyFlatSpec with Matchers {
     user.groups shouldBe empty
   }
 
-  it should "use DOMAIN\\samAccountName from Graph when graphClientOverride resolves the username" in {
+  it should "use the normalized samAccountName from Graph when graphClientOverride resolves the username" in {
     val mockGraph = mock(classOf[GraphUsernameResolver])
-    when(mockGraph.resolveUsername("user@example.com")).thenReturn(Some("CORP\\jsmith"))
+    when(mockGraph.resolveUsername("user@example.com")).thenReturn(Some("jsmith"))
 
     val validatorWithGraph = new MsEntraTokenValidator(config, Some(jwkSource), Some(mockGraph))
     val token = buildToken()
     val user = validatorWithGraph.validate(token).get
-    user.name shouldBe "CORP\\jsmith"
+    user.name shouldBe "jsmith"
   }
 
   it should "fall back to UPN when the graph resolver returns None" in {

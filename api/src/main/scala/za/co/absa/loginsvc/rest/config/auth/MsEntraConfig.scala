@@ -27,11 +27,12 @@ import za.co.absa.loginsvc.rest.config.validation.{ConfigValidatable, ConfigVali
  * @param clientSecret Client secret used to acquire a Graph API token for username resolution.
  *                     When set, the token's `preferred_username` (UPN) is exchanged for
  *                     `onPremisesSamAccountName` via MS Graph, and the resulting username
- *                     is formatted as `NETBIOS\samAccountName`.
+ *                     is formatted as lower-case `samAccountName`.
  * @param audiences    Accepted JWT 'aud' claim values — tokens from any listed app are accepted;
  *                     empty list accepts any token from the tenant
  * @param domains      Mapping from on-premises DNS domain names to their NetBIOS short names,
- *                     e.g. `corp.example.com -> CORP`. Required when `clientSecret` is set.
+ *                     e.g. `corp.example.com -> CORP`. Required when `clientSecret` is set
+ *                     so known domains can be allowed and their mapped AB values logged.
  * @param order        Provider ordering (0 = disabled, 1+ = active)
  * @param attributes   Optional mapping from Entra JWT claim names to LS JWT claim names
  */

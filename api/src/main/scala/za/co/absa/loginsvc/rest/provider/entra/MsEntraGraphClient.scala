@@ -22,6 +22,7 @@ import za.co.absa.loginsvc.rest.config.auth.MsEntraConfig
 
 import java.io.{DataOutputStream, InputStream}
 import java.net.{HttpURLConnection, URL, URLEncoder}
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 import scala.io.Source
 import scala.util.{Failure, Success, Try}
@@ -29,7 +30,7 @@ import scala.util.{Failure, Success, Try}
 /**
  * Resolves a username via the MS Graph API by looking up the user's on-premises SAM account name.
  *
- * Returns `Some("NETBIOS\\samAccountName")` when on-premises AD attributes are present,
+ * Returns `Some("samaccountname")` when on-premises AD attributes are present,
  * or `None` to signal the caller to fall back to the UPN from the token.
  */
 trait GraphUsernameResolver {
@@ -41,8 +42,8 @@ trait GraphUsernameResolver {
  *
  * Acquires an access token for the Graph API via client credentials (clientId + clientSecret),
  * then queries `GET /v1.0/users/{upn}?$select=onPremisesSamAccountName,onPremisesDomainName`.
- * The DNS domain name is mapped to a NetBIOS name via the `domains` config map and the result
- * is returned as `NETBIOS\samAccountName`.
+ * The DNS domain name must exist in the `domains` config map; its mapped AB/NetBIOS value is
+ * logged, and the result is returned as lower-case `samAccountName`.
  *
  * Falls back to `None` (i.e., use UPN) when:
  *  - the user has no on-premises AD attributes (e.g. cloud-only or external-tenant users)
@@ -51,7 +52,8 @@ trait GraphUsernameResolver {
  *
  * The Graph access token is cached for 50 minutes.
  *
- * @param config Entra config — must have `clientSecret` set; `domains` maps DNS domain → NetBIOS name.
+ * @param config Entra config — must have `clientSecret` set; `domains` maps DNS domain →
+ *               AB/NetBIOS short name for allow-listing and logging.
  */
 class MsEntraGraphClient(config: MsEntraConfig) extends GraphUsernameResolver {
 
@@ -79,17 +81,7 @@ class MsEntraGraphClient(config: MsEntraConfig) extends GraphUsernameResolver {
 
       (samOpt.filter(_.nonEmpty), domainOpt.filter(_.nonEmpty)) match {
         case (Some(sam), Some(dnsDomain)) =>
-          domainMap.get(dnsDomain) match {
-            case Some(netbios) =>
-              logger.debug(s"Resolved user '$upn' to '$netbios\\$sam' via Graph API")
-              Some(s"$netbios\\$sam")
-            case None =>
-              logger.error(
-                s"Unknown onPremisesDomainName '$dnsDomain' for user '$upn'. " +
-                  "Add it to the 'domains' mapping in the Entra config. Falling back to UPN."
-              )
-              None
-          }
+          resolveMappedUsername(sam, dnsDomain, upn)
 
         case _ =>
           logger.debug(s"User '$upn' has no on-premises AD attributes; using UPN as username")
@@ -99,6 +91,24 @@ class MsEntraGraphClient(config: MsEntraConfig) extends GraphUsernameResolver {
       case Success(result) => result
       case Failure(e) =>
         logger.warn(s"Graph API lookup failed for '$upn': ${e.getMessage}")
+        None
+    }
+  }
+
+  private[entra] def resolveMappedUsername(sam: String, dnsDomain: String, upn: String): Option[String] = {
+    domainMap.get(dnsDomain) match {
+      case Some(netbios) =>
+        val normalizedSam = sam.toLowerCase(Locale.ROOT)
+        logger.debug(
+          s"Resolved user '$upn' to '$normalizedSam' via Graph API " +
+            s"(mapped AB value '$netbios' from domain '$dnsDomain')"
+        )
+        Some(normalizedSam)
+      case None =>
+        logger.error(
+          s"Unknown onPremisesDomainName '$dnsDomain' for user '$upn'. " +
+            "Add it to the 'domains' mapping in the Entra config. Falling back to UPN."
+        )
         None
     }
   }
