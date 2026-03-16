@@ -30,7 +30,7 @@ class MsEntraGraphClientTest extends AnyFlatSpec with Matchers with BeforeAndAft
   @volatile private var tokenStatus = 200
   @volatile private var tokenResponseBody = """{"access_token":"graph-token"}"""
   @volatile private var graphStatus = 200
-  @volatile private var graphResponseBody = """{"onPremisesSamAccountName":"AB006HM","onPremisesDomainName":"corp.dsarena.com"}"""
+  @volatile private var graphResponseBody = """{"onPremisesSamAccountName":"UN123XY","onPremisesDomainName":"corp.dsarena.com"}"""
   @volatile private var lastTokenRequestBody = ""
   @volatile private var lastGraphAuthorization = ""
   @volatile private var lastGraphPath = ""
@@ -71,7 +71,7 @@ class MsEntraGraphClientTest extends AnyFlatSpec with Matchers with BeforeAndAft
     tokenStatus = 200
     tokenResponseBody = """{"access_token":"graph-token"}"""
     graphStatus = 200
-    graphResponseBody = """{"onPremisesSamAccountName":"AB006HM","onPremisesDomainName":"corp.dsarena.com"}"""
+    graphResponseBody = """{"onPremisesSamAccountName":"UN123XY","onPremisesDomainName":"corp.dsarena.com"}"""
     lastTokenRequestBody = ""
     lastGraphAuthorization = ""
     lastGraphPath = ""
@@ -106,46 +106,46 @@ class MsEntraGraphClientTest extends AnyFlatSpec with Matchers with BeforeAndAft
     )
 
   "MsEntraGraphClient" should "return a lowercase samAccountName without the domain prefix" in {
-    client().resolveUsername("oto.macenauer@absa.africa") shouldBe Some("ab006hm")
+    client().resolveUsername("john.smith@example.com") shouldBe Some("un123xy")
     lastTokenRequestBody should include("grant_type=client_credentials")
     lastTokenRequestBody should include("client_id=client-id")
     lastTokenRequestBody should include("client_secret=test-secret")
     lastGraphAuthorization shouldBe "Bearer graph-token"
-    lastGraphPath shouldBe "/v1.0/users/oto.macenauer@absa.africa"
-    lastGraphRawPath shouldBe "/v1.0/users/oto.macenauer%40absa.africa"
+    lastGraphPath shouldBe "/v1.0/users/john.smith@example.com"
+    lastGraphRawPath shouldBe "/v1.0/users/john.smith%40example.com"
     lastGraphQuery shouldBe "$select=onPremisesSamAccountName,onPremisesDomainName"
   }
 
   it should "return None when the user's domain is not in the configured allow-list" in {
-    graphResponseBody = """{"onPremisesSamAccountName":"AB006HM","onPremisesDomainName":"unknown.domain"}"""
+    graphResponseBody = """{"onPremisesSamAccountName":"UN123XY","onPremisesDomainName":"unknown.domain"}"""
 
-    client().resolveUsername("oto.macenauer@absa.africa") shouldBe None
+    client().resolveUsername("john.smith@example.com") shouldBe None
   }
 
   it should "return None when Graph does not provide on-premises attributes" in {
-    graphResponseBody = """{"displayName":"Oto Macenauer"}"""
+    graphResponseBody = """{"displayName":"John Smith"}"""
 
-    client().resolveUsername("oto.macenauer@absa.africa") shouldBe None
+    client().resolveUsername("john.smith@example.com") shouldBe None
   }
 
   it should "return None when the token endpoint response has no access token" in {
     tokenResponseBody = """{"token_type":"Bearer"}"""
 
-    client().resolveUsername("oto.macenauer@absa.africa") shouldBe None
+    client().resolveUsername("john.smith@example.com") shouldBe None
   }
 
   it should "return None when the Graph API responds with an error" in {
     graphStatus = 500
     graphResponseBody = """{"error":"server exploded"}"""
 
-    client().resolveUsername("oto.macenauer@absa.africa") shouldBe None
+    client().resolveUsername("john.smith@example.com") shouldBe None
   }
 
   it should "return None when the client secret is missing" in {
-    client(secret = None).resolveUsername("oto.macenauer@absa.africa") shouldBe None
+    client(secret = None).resolveUsername("john.smith@example.com") shouldBe None
   }
 
   it should "allow direct testing of the mapped username helper" in {
-    client().resolveMappedUsername("AB006HM", "corp.dsarena.com", "oto.macenauer@absa.africa") shouldBe Some("ab006hm")
+    client().resolveMappedUsername("UN123XY", "corp.dsarena.com", "john.smith@example.com") shouldBe Some("un123xy")
   }
 }
