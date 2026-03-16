@@ -54,15 +54,21 @@ trait GraphUsernameResolver {
  *
  * @param config Entra config — must have `clientSecret` set; `domains` maps DNS domain →
  *               AB/NetBIOS short name for allow-listing and logging.
+ * @param tokenEndpointOverride Optional override for the token endpoint, primarily for tests.
+ * @param graphUsersBaseUrlOverride Optional override for the Graph users base URL, primarily for tests.
  */
-class MsEntraGraphClient(config: MsEntraConfig) extends GraphUsernameResolver {
+class MsEntraGraphClient(
+  config: MsEntraConfig,
+  tokenEndpointOverride: Option[String] = None,
+  graphUsersBaseUrlOverride: Option[String] = None
+) extends GraphUsernameResolver {
 
   private val logger = LoggerFactory.getLogger(classOf[MsEntraGraphClient])
 
   private val tokenEndpoint =
-    s"https://login.microsoftonline.com/${config.tenantId}/oauth2/v2.0/token"
+    tokenEndpointOverride.getOrElse(s"https://login.microsoftonline.com/${config.tenantId}/oauth2/v2.0/token")
 
-  private val graphUsersBaseUrl = "https://graph.microsoft.com/v1.0/users"
+  private val graphUsersBaseUrl = graphUsersBaseUrlOverride.getOrElse("https://graph.microsoft.com/v1.0/users")
 
   private val domainMap: Map[String, String] = config.domains.getOrElse(Map.empty)
 
