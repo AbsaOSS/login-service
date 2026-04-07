@@ -57,10 +57,10 @@ class MsEntraTokenValidator(
     graphClientOverride.orElse(config.clientSecret.map(_ => new MsEntraGraphClient(config)))
 
   private val discoveryUrl =
-    s"https://login.microsoftonline.com/${config.tenantId}/v2.0/.well-known/openid-configuration"
+    s"${config.loginBaseUrl}/${config.tenantId}/v2.0/.well-known/openid-configuration"
 
   private val expectedIssuer =
-    s"https://login.microsoftonline.com/${config.tenantId}/v2.0"
+    s"${config.loginBaseUrl}/${config.tenantId}/v2.0"
 
   // Cache the JWKSource keyed by jwks_uri string; refreshes after 1 hour
   private val jwkSourceCache: LoadingCache[String, JWKSource[NimbusSecurityContext]] =

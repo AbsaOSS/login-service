@@ -125,6 +125,12 @@ loginsvc:
           #domains:
             #corp.example.com: "CORP"
             #another.domain.com: "ANOTHER"
+          # Base URL for Microsoft login/token endpoints.
+          # Defaults to the public Azure cloud. Override for sovereign clouds.
+          #login-base-url: "https://login.microsoftonline.com"
+          # Base URL for the Microsoft Graph API.
+          # Defaults to the public Azure cloud. Override for sovereign clouds.
+          #graph-base-url: "https://graph.microsoft.com"
           # Optional mapping from Entra JWT claim names to LS JWT claim names
           #attributes:
             #preferred_username: "upn"

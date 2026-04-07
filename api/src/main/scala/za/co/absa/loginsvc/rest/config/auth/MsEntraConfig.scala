@@ -22,19 +22,25 @@ import za.co.absa.loginsvc.rest.config.validation.{ConfigValidatable, ConfigVali
 /**
  * Configuration for MS Entra (Azure AD) Bearer token authentication provider.
  *
- * @param tenantId     Azure AD tenant ID (directory ID)
- * @param clientId     Application (client) ID registered in Entra
- * @param clientSecret Client secret used to acquire a Graph API token for username resolution.
- *                     When set, the token's `preferred_username` (UPN) is exchanged for
- *                     `onPremisesSamAccountName` via MS Graph, and the resulting username
- *                     is formatted as lower-case `samAccountName`.
- * @param audiences    Accepted JWT 'aud' claim values — tokens from any listed app are accepted;
- *                     empty list accepts any token from the tenant
- * @param domains      Mapping from on-premises DNS domain names to their NetBIOS short names,
- *                     e.g. `corp.example.com -> CORP`. Required when `clientSecret` is set
- *                     so known domains can be allowed and their mapped AB values logged.
- * @param order        Provider ordering (0 = disabled, 1+ = active)
- * @param attributes   Optional mapping from Entra JWT claim names to LS JWT claim names
+ * @param tenantId      Azure AD tenant ID (directory ID)
+ * @param clientId      Application (client) ID registered in Entra
+ * @param clientSecret  Client secret used to acquire a Graph API token for username resolution.
+ *                      When set, the token's `preferred_username` (UPN) is exchanged for
+ *                      `onPremisesSamAccountName` via MS Graph, and the resulting username
+ *                      is formatted as lower-case `samAccountName`.
+ * @param audiences     Accepted JWT 'aud' claim values — tokens from any listed app are accepted;
+ *                      empty list accepts any token from the tenant
+ * @param domains       Mapping from on-premises DNS domain names to their NetBIOS short names,
+ *                      e.g. `corp.example.com -> CORP`. Required when `clientSecret` is set
+ *                      so known domains can be allowed and their mapped AB values logged.
+ * @param order         Provider ordering (0 = disabled, 1+ = active)
+ * @param attributes    Optional mapping from Entra JWT claim names to LS JWT claim names
+ * @param loginBaseUrl  Base URL for Microsoft login/token endpoints.
+ *                      Defaults to the public Azure cloud (`https://login.microsoftonline.com`).
+ *                      Override for sovereign clouds (e.g. Azure Government).
+ * @param graphBaseUrl  Base URL for the Microsoft Graph API.
+ *                      Defaults to the public Azure cloud (`https://graph.microsoft.com`).
+ *                      Override for sovereign clouds (e.g. Azure Government).
  */
 case class MsEntraConfig(
   tenantId: String,
@@ -43,7 +49,9 @@ case class MsEntraConfig(
   audiences: List[String],
   domains: Option[Map[String, String]] = None,
   order: Int,
-  attributes: Option[Map[String, String]]
+  attributes: Option[Map[String, String]],
+  loginBaseUrl: String = "https://login.microsoftonline.com",
+  graphBaseUrl: String = "https://graph.microsoft.com"
 ) extends ConfigValidatable with ConfigOrdering {
 
   def throwErrors(): Unit =

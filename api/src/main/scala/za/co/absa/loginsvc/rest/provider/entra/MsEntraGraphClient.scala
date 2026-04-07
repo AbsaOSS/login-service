@@ -54,21 +54,17 @@ trait GraphUsernameResolver {
  *
  * @param config Entra config — must have `clientSecret` set; `domains` maps DNS domain →
  *               AB/NetBIOS short name for allow-listing and logging.
- * @param tokenEndpointOverride Optional override for the token endpoint, primarily for tests.
- * @param graphUsersBaseUrlOverride Optional override for the Graph users base URL, primarily for tests.
  */
 class MsEntraGraphClient(
-  config: MsEntraConfig,
-  tokenEndpointOverride: Option[String] = None,
-  graphUsersBaseUrlOverride: Option[String] = None
+  config: MsEntraConfig
 ) extends GraphUsernameResolver {
 
   private val logger = LoggerFactory.getLogger(classOf[MsEntraGraphClient])
 
   private val tokenEndpoint =
-    tokenEndpointOverride.getOrElse(s"https://login.microsoftonline.com/${config.tenantId}/oauth2/v2.0/token")
+    s"${config.loginBaseUrl}/${config.tenantId}/oauth2/v2.0/token"
 
-  private val graphUsersBaseUrl = graphUsersBaseUrlOverride.getOrElse("https://graph.microsoft.com/v1.0/users")
+  private val graphUsersBaseUrl = s"${config.graphBaseUrl}/v1.0/users"
 
   private val domainMap: Map[String, String] = config.domains.getOrElse(Map.empty)
 
@@ -127,7 +123,7 @@ class MsEntraGraphClient(
       "grant_type"    -> "client_credentials",
       "client_id"     -> config.clientId,
       "client_secret" -> secret,
-      "scope"         -> "https://graph.microsoft.com/.default"
+      "scope"         -> s"${config.graphBaseUrl}/.default"
     ).map { case (k, v) => URLEncoder.encode(k, "UTF-8") + "=" + URLEncoder.encode(v, "UTF-8") }
       .mkString("&")
 

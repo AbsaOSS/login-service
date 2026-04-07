@@ -43,7 +43,7 @@ class MsEntraGraphClientTest extends AnyFlatSpec with Matchers with BeforeAndAft
   override protected def beforeAll(): Unit = {
     super.beforeAll()
     server = HttpServer.create(new InetSocketAddress(0), 0)
-    server.createContext("/token", new HttpHandler {
+    server.createContext("/tenant-id/oauth2/v2.0/token", new HttpHandler {
       override def handle(exchange: HttpExchange): Unit = {
         lastTokenRequestBody = new String(exchange.getRequestBody.readAllBytes(), StandardCharsets.UTF_8)
         respond(exchange, tokenStatus, tokenResponseBody)
@@ -99,10 +99,10 @@ class MsEntraGraphClientTest extends AnyFlatSpec with Matchers with BeforeAndAft
         audiences = Nil,
         domains = domains,
         order = 1,
-        attributes = None
-      ),
-      tokenEndpointOverride = Some(s"$baseUrl/token"),
-      graphUsersBaseUrlOverride = Some(s"$baseUrl/v1.0/users")
+        attributes = None,
+        loginBaseUrl = baseUrl,
+        graphBaseUrl = baseUrl
+      )
     )
 
   "MsEntraGraphClient" should "return a lowercase samAccountName without the domain prefix" in {
