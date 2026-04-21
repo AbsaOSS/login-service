@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<!--
+  Copyright 2023 ABSA Group Limited
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login Service – MS Entra Example</title>
+
+  <!-- Configuration – edit config.js to match your environment -->
+  <script src="config.js"></script>
+  <!-- Application bundle (compiled from src/ by `npm run build`) -->
+  <script src="dist/bundle.js" defer></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #f0f4f8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      color: #1a202c;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 24px rgba(0,0,0,.08);
+      padding: 40px 48px;
+      width: 100%;
+      max-width: 520px;
+    }
+
+    h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 8px; }
+    .subtitle { color: #718096; font-size: .9rem; margin-bottom: 32px; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity .15s;
+      width: 100%;
+      justify-content: center;
+    }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+    .btn:hover:not(:disabled) { opacity: .88; }
+
+    .btn-entra {
+      background: #0078d4;
+      color: #fff;
+    }
+
+    .btn-logout {
+      background: #e53e3e;
+      color: #fff;
+      margin-top: 12px;
+    }
+
+    /* Microsoft logo SVG icon */
+    .ms-logo { width: 20px; height: 20px; flex-shrink: 0; }
+
+    .status {
+      margin-top: 20px;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: .875rem;
+      display: none;
+    }
+    .status.info    { background: #ebf8ff; color: #2b6cb0; display: block; }
+    .status.success { background: #f0fff4; color: #276749; display: block; }
+    .status.error   { background: #fff5f5; color: #c53030; display: block; }
+
+    .token-section { margin-top: 24px; display: none; }
+    .token-section.visible { display: block; }
+
+    .token-label {
+      font-size: .8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      color: #718096;
+      margin-bottom: 6px;
+    }
+
+    .token-box {
+      background: #1a202c;
+      color: #68d391;
+      font-family: 'Menlo', 'Consolas', monospace;
+      font-size: .75rem;
+      padding: 12px 14px;
+      border-radius: 8px;
+      word-break: break-all;
+      max-height: 120px;
+      overflow-y: auto;
+      margin-bottom: 16px;
+      white-space: pre-wrap;
+    }
+
+    .copy-btn {
+      background: #edf2f7;
+      border: none;
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: .75rem;
+      cursor: pointer;
+      float: right;
+      margin-top: -4px;
+      color: #4a5568;
+    }
+    .copy-btn:hover { background: #e2e8f0; }
+
+    .divider {
+      border: none;
+      border-top: 1px solid #e2e8f0;
+      margin: 28px 0;
+    }
+  </style>
+</head>
+<body>
+<div class="card">
+  <h1>Login Service</h1>
+  <p class="subtitle">Authenticate via Microsoft Entra ID and exchange the token for a Login Service JWT.</p>
+
+  <button id="loginBtn" class="btn btn-entra">
+    <!-- Microsoft logo -->
+    <svg class="ms-logo" viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <rect x="1"  y="1"  width="9" height="9" fill="#f25022"/>
+      <rect x="11" y="1"  width="9" height="9" fill="#7fba00"/>
+      <rect x="1"  y="11" width="9" height="9" fill="#00a4ef"/>
+      <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
+    </svg>
+    Login using Microsoft Entra
+  </button>
+
+  <button id="logoutBtn" class="btn btn-logout" style="display:none">
+    Sign out
+  </button>
+
+  <div id="status" class="status"></div>
+
+  <div id="tokenSection" class="token-section">
+    <hr class="divider" />
+
+    <div class="token-label">
+      Login Service Access Token
+      <button class="copy-btn" data-copy="lsAccessToken">Copy</button>
+    </div>
+    <div id="lsAccessToken" class="token-box"></div>
+
+    <div class="token-label">
+      Login Service Refresh Token
+      <button class="copy-btn" data-copy="lsRefreshToken">Copy</button>
+    </div>
+    <div id="lsRefreshToken" class="token-box"></div>
+  </div>
+</div>
+</body>
+</html>
