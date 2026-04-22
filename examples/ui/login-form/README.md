@@ -15,7 +15,8 @@ sequenceDiagram
     Browser->>Entra: click "Login using Entra"<br/>(MSAL popup / redirect)
     Entra-->>Browser: Entra access token
 
-    Browser->>LS: POST /token/generate<br/>Authorization: Bearer &lt;entra-token&gt;
+    Browser->>LS: POST /token/generate
+    Note over Browser,LS: Authorization: Bearer entra-token
     LS-->>Browser: { token: "...", refresh: "..." }
 
     Note over Browser: display LS tokens
