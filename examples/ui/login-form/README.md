@@ -6,18 +6,19 @@ exchanges the resulting Entra access token for a **Login Service JWT**.
 
 ## Authentication flow
 
-```
-Browser                     MS Entra (Azure AD)            Login Service
-   │                               │                              │
-   │── click "Login using Entra" ──►│                              │
-   │   MSAL popup/redirect login   │                              │
-   │◄──── Entra access token ───────│                              │
-   │                               │                              │
-   │── POST /token/generate ────────────────────────────────────►│
-   │   Authorization: Bearer <entra-token>                        │
-   │◄── { token: "...", refresh: "..." } ─────────────────────────│
-   │                               │                              │
-   │  display LS tokens            │                              │
+```mermaid
+sequenceDiagram
+    actor Browser
+    participant Entra as MS Entra (Azure AD)
+    participant LS as Login Service
+
+    Browser->>Entra: click "Login using Entra"<br/>(MSAL popup / redirect)
+    Entra-->>Browser: Entra access token
+
+    Browser->>LS: POST /token/generate<br/>Authorization: Bearer &lt;entra-token&gt;
+    LS-->>Browser: { token: "...", refresh: "..." }
+
+    Note over Browser: display LS tokens
 ```
 
 ## Project structure
