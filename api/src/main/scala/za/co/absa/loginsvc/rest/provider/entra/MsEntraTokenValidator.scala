@@ -69,10 +69,10 @@ class MsEntraTokenValidator(
       .expireAfterWrite(1, TimeUnit.HOURS)
       .build(new CacheLoader[String, JWKSource[NimbusSecurityContext]] {
         override def load(jwksUri: String): JWKSource[NimbusSecurityContext] = {
-          logger.info(s"Loading JWKS from $jwksUri")
+          logger.info(s"Loading JWKS from $jwksUri (connectTimeoutMs=${config.jwksConnectTimeoutMs}, readTimeoutMs=${config.jwksReadTimeoutMs})")
           new RemoteJWKSet[NimbusSecurityContext](
             new URL(jwksUri),
-            new DefaultResourceRetriever(10000, 10000) // 10s connect and read timeouts // TODO nicefy, this is just to evalute
+            new DefaultResourceRetriever(config.jwksConnectTimeoutMs, config.jwksReadTimeoutMs)
           )
         }
       })
