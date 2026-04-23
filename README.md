@@ -230,14 +230,14 @@ Example config:
 ```
 
 Available options:
-- `order` — provider ordering; `0` disables, `1+` enables.
+- `order` — provider ordering; `0` disables, `1`+ enables.
 - `tenant-id` — Azure AD tenant (directory) ID.
 - `client-id` — App registration (client) ID.
 - `client-secret` — Client secret used to call MS Graph API.
 - `audiences` — List of accepted JWT `aud` values. Empty list accepts any token from the tenant.
 - `domains` — Map of on-premises DNS domains to short names (e.g. `corp.example.com: "CORP"`).
-- `login-base-url` — Microsoft login/token endpoint base URL. Optional, defaults to `https://login.microsoftonline.com`; override for sovereign clouds.
-- `graph-base-url` — Microsoft Graph API base URL. Optional, defaults to `https://graph.microsoft.com`; override for sovereign clouds.
+- `login-base-url` — Microsoft login/token endpoint base URL. Optional, defaults to `https://login.microsoftonline.com`.
+- `graph-base-url` — Microsoft Graph API base URL. Optional, defaults to `https://graph.microsoft.com`.
 - `attributes` — Map of Entra JWT claim names to LS JWT claim names.
 - `jwks-connect-timeout-ms` — TCP connect timeout (ms) when fetching Microsoft's JWKS. Optional, defaults to `10000`.
 - `jwks-read-timeout-ms` — Socket read timeout (ms) when downloading the JWKS payload. Optional, defaults to `10000`.
