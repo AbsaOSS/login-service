@@ -135,6 +135,12 @@ loginsvc:
           #attributes:
             #preferred_username: "upn"
             #email: "email"
+          # JWKS fetching timeouts (milliseconds) used when downloading Microsoft's
+          # JSON Web Key Set from the OIDC discovery endpoint. Defaults to 10000 each
+          # (10 seconds) if omitted. Tune for slow networks or when Microsoft's
+          # endpoint is under load.
+          #jwks-connect-timeout-ms: 10000
+          #jwks-read-timeout-ms: 10000
 
     experimental:
       # ability to enable experimental endpoints (default=false)

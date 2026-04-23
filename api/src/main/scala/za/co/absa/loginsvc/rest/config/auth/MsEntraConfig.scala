@@ -41,6 +41,8 @@ import za.co.absa.loginsvc.rest.config.validation.{ConfigValidatable, ConfigVali
  * @param graphBaseUrl  Base URL for the Microsoft Graph API.
  *                      Defaults to the public Azure cloud (`https://graph.microsoft.com`).
  *                      Override for sovereign clouds (e.g. Azure Government).
+ * @param jwksConnectTimeoutMs Connect timeout (in ms) for fetching the JWKS from Microsoft. Defaults to 10000.
+ * @param jwksReadTimeoutMs    Read timeout (in ms) for fetching the JWKS from Microsoft. Defaults to 10000.
  */
 case class MsEntraConfig(
   tenantId: String,
@@ -51,7 +53,9 @@ case class MsEntraConfig(
   order: Int,
   attributes: Option[Map[String, String]],
   loginBaseUrl: String = "https://login.microsoftonline.com",
-  graphBaseUrl: String = "https://graph.microsoft.com"
+  graphBaseUrl: String = "https://graph.microsoft.com",
+  jwksConnectTimeoutMs: Int = 10000,
+  jwksReadTimeoutMs: Int = 10000
 ) extends ConfigValidatable with ConfigOrdering {
 
   def throwErrors(): Unit =

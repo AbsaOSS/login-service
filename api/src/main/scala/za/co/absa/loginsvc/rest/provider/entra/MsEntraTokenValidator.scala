@@ -20,6 +20,7 @@ import com.google.common.cache.{CacheBuilder, CacheLoader, LoadingCache}
 import com.nimbusds.jose.JWSAlgorithm
 import com.nimbusds.jose.jwk.source.{JWKSource, RemoteJWKSet}
 import com.nimbusds.jose.proc.{JWSVerificationKeySelector, SecurityContext => NimbusSecurityContext}
+import com.nimbusds.jose.util.DefaultResourceRetriever
 import com.nimbusds.jwt.proc.{BadJWTException, DefaultJWTClaimsVerifier, DefaultJWTProcessor}
 import com.nimbusds.jwt.{JWTClaimsSet, SignedJWT}
 import org.slf4j.LoggerFactory
@@ -68,8 +69,11 @@ class MsEntraTokenValidator(
       .expireAfterWrite(1, TimeUnit.HOURS)
       .build(new CacheLoader[String, JWKSource[NimbusSecurityContext]] {
         override def load(jwksUri: String): JWKSource[NimbusSecurityContext] = {
-          logger.info(s"Loading JWKS from $jwksUri")
-          new RemoteJWKSet[NimbusSecurityContext](new URL(jwksUri))
+          logger.info(s"Loading JWKS from $jwksUri (connectTimeoutMs=${config.jwksConnectTimeoutMs}, readTimeoutMs=${config.jwksReadTimeoutMs})")
+          new RemoteJWKSet[NimbusSecurityContext](
+            new URL(jwksUri),
+            new DefaultResourceRetriever(config.jwksConnectTimeoutMs, config.jwksReadTimeoutMs)
+          )
         }
       })
 

@@ -203,6 +203,45 @@ In the above example configuration, the process for failure will work as follows
 7. 3rd retry attempt occurs and fails
 8. Authentication fails and exception is communicated to user.
 
+### MS Entra (Azure AD) Authentication Provider
+Validates incoming Microsoft Entra (Azure AD) Bearer JWTs against Microsoft's JWKS
+(fetched from the OIDC discovery endpoint and cached in memory), then issues a
+login-service JWT.
+
+Example config:
+```
+        entra:
+          order: 1
+          tenant-id: "your-tenant-id"
+          client-id: "your-client-id"
+          client-secret: "your-client-secret"
+          audiences:
+            - "api://your-client-id"
+            - "other-app-client-id"
+          domains:
+            corp.example.com: "CORP"
+          login-base-url: "https://login.microsoftonline.com"
+          graph-base-url: "https://graph.microsoft.com"
+          attributes:
+            preferred_username: "upn"
+            email: "email"
+          jwks-connect-timeout-ms: 10000
+          jwks-read-timeout-ms: 10000
+```
+
+Available options:
+- `order` — provider ordering; `0` disables, `1`+ enables.
+- `tenant-id` — Azure AD tenant (directory) ID.
+- `client-id` — App registration (client) ID.
+- `client-secret` — Client secret used to call MS Graph API.
+- `audiences` — List of accepted JWT `aud` values. Empty list accepts any token from the tenant.
+- `domains` — Map of on-premises DNS domains to short names (e.g. `corp.example.com: "CORP"`).
+- `login-base-url` — Microsoft login/token endpoint base URL. Optional, defaults to `https://login.microsoftonline.com`.
+- `graph-base-url` — Microsoft Graph API base URL. Optional, defaults to `https://graph.microsoft.com`.
+- `attributes` — Map of Entra JWT claim names to LS JWT claim names.
+- `jwks-connect-timeout-ms` — TCP connect timeout (ms) when fetching Microsoft's JWKS. Optional, defaults to `10000`.
+- `jwks-read-timeout-ms` — Socket read timeout (ms) when downloading the JWKS payload. Optional, defaults to `10000`.
+
 ### ActiveDirectoryLDAPAuthenticationProvider
 Uses LDAP(s) to authenticate user in Active Directory and to fetch groups that this user belongs to.
 
