@@ -5,7 +5,7 @@
   "type": "module",
   "description": "Login Service MS Entra login form example",
   "scripts": {
-    "build": "esbuild src/app.js --bundle --format=iife --minify --outfile=dist/bundle.js",
+    "build": "esbuild src/app.js --bundle --format=iife --minify --outfile=dist/bundle.js && esbuild src/redirect.js --bundle --format=iife --minify --outfile=dist/redirect.js",
     "prepare": "npm run build",
     "start": "node server.js"
   },
