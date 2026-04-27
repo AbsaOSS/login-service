@@ -40,16 +40,19 @@ import * as msal from '@azure/msal-browser';
  * @returns {msal.PublicClientApplication}
  */
 export function createMsalInstance(clientId, tenantId) {
+  const redirectUri = window.location.origin + '/redirect.html';
   return new msal.PublicClientApplication({
     auth: {
       clientId,
       authority: `https://login.microsoftonline.com/${tenantId}`,
-      // Strip query params so Entra's redirect URI validation passes.
-      redirectUri: window.location.href.split('?')[0],
+      // Dedicated redirect bridge page required by MSAL Browser v5+.
+      // The bridge script broadcasts the auth response back to the main
+      // window via BroadcastChannel so loginPopup() can resolve.
+      redirectUri,
+      postLogoutRedirectUri: redirectUri,
     },
     cache: {
-      cacheLocation: 'sessionStorage',
-      storeAuthStateInCookie: false,
+      cacheLocation: 'localStorage',
     },
   });
 }
@@ -116,5 +119,5 @@ export async function acquireToken(msalInstance, account, scopes) {
  * @param {msal.PublicClientApplication} msalInstance
  */
 export function logout(msalInstance) {
-  msalInstance.logoutPopup({ postLogoutRedirectUri: window.location.href });
+  msalInstance.logoutPopup();
 }

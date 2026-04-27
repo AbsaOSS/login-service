@@ -1,0 +1,39 @@
+<!--
+  Copyright 2023 ABSA Group Limited
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<!--
+  MSAL redirect bridge page (MSAL Browser v5+).
+
+  Azure AD redirects the popup (or hidden iframe) here after authentication.
+  The bridge script reads the auth response from the URL and broadcasts it
+  back to the main application window via BroadcastChannel, where the MSAL
+  instance resolves the loginPopup() / acquireTokenPopup() promise.
+
+  Rules per MSAL docs:
+    - Only the bridge script may run here (no app logic, no routing).
+    - Must NOT be served with Cross-Origin-Opener-Policy headers.
+    - Must NOT be cached (serve with Cache-Control: no-store).
+    - Must be registered as a redirect URI in the Entra app registration.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Authenticating…</title>
+</head>
+<body>
+  <script src="dist/redirect.js" defer></script>
+</body>
+</html>

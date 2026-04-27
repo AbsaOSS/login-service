@@ -43,11 +43,6 @@ const { loginServiceHost, entra } = LOGIN_FORM_CONFIG;
 
 const msalInstance = auth.createMsalInstance(entra.clientId, entra.tenantId);
 
-// Process any pending redirect response immediately on page load.
-auth.handleRedirectPromise(msalInstance)
-  .then(result => { if (result) onAuthenticated(result); })
-  .catch(err   => ui.showStatus('error', `MSAL redirect error: ${err.message}`));
-
 // ---------------------------------------------------------------------------
 // Orchestration
 // ---------------------------------------------------------------------------
@@ -92,30 +87,39 @@ async function onAuthenticated(authResult) {
 }
 
 // ---------------------------------------------------------------------------
-// Event listeners
+// Initialisation & event listeners
 // ---------------------------------------------------------------------------
 
-document.getElementById('loginBtn').addEventListener('click', async () => {
-  ui.setLoading(true);
-  ui.showStatus('info', 'Opening Microsoft login…');
+(async () => {
+  await msalInstance.initialize();
 
-  try {
-    const result = await auth.login(msalInstance, entra.scopes);
-    // result is null when a redirect was initiated; onAuthenticated will be
-    // called after the page reloads via handleRedirectPromise above.
-    if (result) await onAuthenticated(result);
-  } catch (err) {
-    ui.showStatus('error', `Authentication failed: ${err.message}`);
-    ui.setLoading(false);
-  }
-});
+  // Process any pending redirect response immediately on page load.
+  auth.handleRedirectPromise(msalInstance)
+    .then(result => { if (result) onAuthenticated(result); })
+    .catch(err   => ui.showStatus('error', `MSAL redirect error: ${err.message}`));
 
-document.getElementById('logoutBtn').addEventListener('click', () => {
-  auth.logout(msalInstance);
-  ui.hideTokens();
-  ui.showStatus('info', 'Signed out.');
-});
+  document.getElementById('loginBtn').addEventListener('click', async () => {
+    ui.setLoading(true);
+    ui.showStatus('info', 'Opening Microsoft login…');
 
-document.querySelectorAll('.copy-btn[data-copy]').forEach(btn => {
-  btn.addEventListener('click', () => ui.copyToken(btn.dataset.copy));
-});
+    try {
+      const result = await auth.login(msalInstance, entra.scopes);
+      // result is null when a redirect was initiated; onAuthenticated will be
+      // called after the page reloads via handleRedirectPromise above.
+      if (result) await onAuthenticated(result);
+    } catch (err) {
+      ui.showStatus('error', `Authentication failed: ${err.message}`);
+      ui.setLoading(false);
+    }
+  });
+
+  document.getElementById('logoutBtn').addEventListener('click', () => {
+    auth.logout(msalInstance);
+    ui.hideTokens();
+    ui.showStatus('info', 'Signed out.');
+  });
+
+  document.querySelectorAll('.copy-btn[data-copy]').forEach(btn => {
+    btn.addEventListener('click', () => ui.copyToken(btn.dataset.copy));
+  });
+})();
