@@ -242,6 +242,28 @@ Available options:
 - `jwks-connect-timeout-ms` — TCP connect timeout (ms) when fetching Microsoft's JWKS. Optional, defaults to `10000`.
 - `jwks-read-timeout-ms` — Socket read timeout (ms) when downloading the JWKS payload. Optional, defaults to `10000`.
 
+## Using MS Entra (Azure AD) Authentication with /token/refresh
+When combining the MS Entra (Azure AD) authentication provider with the `/token/refresh` endpoint,
+it is essential to ensure that the `sub` claim in the JWT (issued after Entra login) contains a username or identifier that can be resolved by the refresh mechanism—typically via LDAP.
+This enables seamless token refresh for users authenticated through Entra. This is achieved by the settings in the configured Entra app.
+
+### Typical Flow
+1. **User authenticates via MS Entra (Azure AD):**
+   - The user logs in using their Azure AD SSO.
+   - The login-service validates the Entra JWT, then issues its own access and refresh tokens.
+   - The `sub` claim in these tokens is set to the user's unique identifier (e.g., UPN or sAMAccountName).
+
+2. **After some time, the user requests to refresh the token:**
+   - The user presents the refresh token to `/token/refresh`.
+   - The service uses the `sub` claim from the refresh token to look up the user (typically in LDAP).
+   - If the user is found and valid, a new access token is issued.
+
+### Troubleshooting
+- If `/token/refresh` fails, verify that the `sub` claim in the refresh token matches an LDAP user identification.
+- Adjust the Entra app claims settings on entra.microsoft.com for your application.
+
+This setup ensures that users authenticated via MS Entra can seamlessly refresh their tokens, provided the `sub` claim is always resolvable via the configured LDAP provider.
+
 ### ActiveDirectoryLDAPAuthenticationProvider
 Uses LDAP(s) to authenticate user in Active Directory and to fetch groups that this user belongs to.
 
