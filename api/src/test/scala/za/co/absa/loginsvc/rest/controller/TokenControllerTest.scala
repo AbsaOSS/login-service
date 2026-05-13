@@ -156,7 +156,7 @@ class TokenControllerTest extends AnyFlatSpec
       val expectedJsonBody = s"""{"token": "${fakeAccessJwt.token}", "refresh": "${fakeRefreshJwt.token}"}"""
 
       mockMvc.perform(
-          post(url) // fOurth gets matched
+          post(url)
             .`with`(authentication(auth))
             .contentType(MediaType.APPLICATION_JSON)
         )

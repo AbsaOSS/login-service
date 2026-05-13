@@ -22,7 +22,7 @@ import io.jsonwebtoken._
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import za.co.absa.loginsvc.model.User
+import za.co.absa.loginsvc.model.{PrefixesConfig, User}
 import za.co.absa.loginsvc.rest.config.jwt.{InMemoryKeyConfig, KeyConfig}
 import za.co.absa.loginsvc.rest.config.provider.{ConfigProvider, JwtConfigProvider}
 import za.co.absa.loginsvc.rest.model.{AccessToken, RefreshToken, Token}
@@ -332,5 +332,65 @@ class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
     assert(initPublicKey._1 == jwtService.publicKeys._2.orNull)
   }
 
-  // TODO add tests for groups filtering based on prefixes
+  // --- prefix filtering tests ---
+
+  private val userWithManyGroups: User = userWithoutGroups.copy(
+    groups = Seq("blue-123", "blue-456", "red-ABC", "REDdish-DEF", "black", "black-and-white")
+  )
+
+  behavior of "generateToken with prefix filtering"
+
+  it should "contain only prefix-filtered groups (case-sensitive) in the access JWT" in {
+    val prefixConfig = Some(PrefixesConfig(Set("red", "black"), caseSensitive = true))
+    val jwt = jwtService.generateAccessToken(userWithManyGroups, prefixConfig)
+    val parsedJWT = parseJWT(jwt)
+
+    assert(parsedJWT.isSuccess)
+    val actualGroups = parsedJWT.get.getBody.get("groups", classOf[util.ArrayList[String]]).asScala
+
+    actualGroups shouldBe Seq("red-ABC", "black", "black-and-white")
+  }
+
+  it should "contain only prefix-filtered groups (case-insensitive) in the access JWT" in {
+    val prefixConfig = Some(PrefixesConfig(Set("RED", "BLACK"), caseSensitive = false))
+    val jwt = jwtService.generateAccessToken(userWithManyGroups, prefixConfig)
+    val parsedJWT = parseJWT(jwt)
+
+    assert(parsedJWT.isSuccess)
+    val actualGroups = parsedJWT.get.getBody.get("groups", classOf[util.ArrayList[String]]).asScala
+
+    actualGroups shouldBe Seq("red-ABC", "REDdish-DEF", "black", "black-and-white")
+  }
+
+  it should "contain all groups when no prefix config is provided (None)" in {
+    val jwt = jwtService.generateAccessToken(userWithManyGroups, None)
+    val parsedJWT = parseJWT(jwt)
+
+    assert(parsedJWT.isSuccess)
+    val actualGroups = parsedJWT.get.getBody.get("groups", classOf[util.ArrayList[String]]).asScala
+
+    actualGroups shouldBe userWithManyGroups.groups
+  }
+
+  it should "contain empty groups when prefix filter matches nothing" in {
+    val prefixConfig = Some(PrefixesConfig(Set("yellow", "green"), caseSensitive = true))
+    val jwt = jwtService.generateAccessToken(userWithManyGroups, prefixConfig)
+    val parsedJWT = parseJWT(jwt)
+
+    assert(parsedJWT.isSuccess)
+    val actualGroups = parsedJWT.get.getBody.get("groups", classOf[util.ArrayList[String]]).asScala
+
+    actualGroups shouldBe empty
+  }
+
+  it should "contain all groups when prefix config has empty prefixes set" in {
+    val prefixConfig = Some(PrefixesConfig(Set.empty[String], caseSensitive = true))
+    val jwt = jwtService.generateAccessToken(userWithManyGroups, prefixConfig)
+    val parsedJWT = parseJWT(jwt)
+
+    assert(parsedJWT.isSuccess)
+    val actualGroups = parsedJWT.get.getBody.get("groups", classOf[util.ArrayList[String]]).asScala
+
+    actualGroups shouldBe userWithManyGroups.groups
+  }
 }
