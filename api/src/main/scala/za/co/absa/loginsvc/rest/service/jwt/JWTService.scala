@@ -21,14 +21,16 @@ import com.nimbusds.jose.jwk.{JWK, JWKSet, KeyUse, RSAKey}
 import io.jsonwebtoken._
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.HttpHeaders
 import org.springframework.stereotype.Service
-import za.co.absa.loginsvc.model.User
+import za.co.absa.loginsvc.model.{PrefixesConfig, User}
 import za.co.absa.loginsvc.rest.config.jwt.InMemoryKeyConfig
 import za.co.absa.loginsvc.rest.config.provider.JwtConfigProvider
 import za.co.absa.loginsvc.rest.model.{AccessToken, RefreshToken, Token}
 import za.co.absa.loginsvc.rest.provider.ad.ldap.LdapConnectionException
 import za.co.absa.loginsvc.rest.service.jwt.JWTService.{extractUserFrom, parseWithKeys}
 import za.co.absa.loginsvc.rest.service.search.UserSearchService
+import za.co.absa.loginsvc.utils.OptionUtils.ImplicitBuilderExt
 
 import java.security.interfaces.RSAPublicKey
 import java.security.{KeyPair, PublicKey}
@@ -56,9 +58,9 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider, authSearchSe
 
   jwtConfig.keyRotationTime.foreach(scheduleSecretsRefresh)
 
-  def generateAccessToken(user: User, isRefresh: Boolean = false): AccessToken = {
+  def generateAccessToken(inputUser: User, optPrefixConfig: Option[PrefixesConfig], isRefresh: Boolean = false): AccessToken = {
     val msgIntro = if (isRefresh) "Refreshing" else "Generating new"
-    logger.info(s"$msgIntro token for user: ${user.name}")
+    logger.info(s"$msgIntro token for user: ${inputUser.name}")
 
     import scala.collection.JavaConverters._
 
@@ -66,18 +68,33 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider, authSearchSe
       Instant.now().plus(jwtConfig.accessExpTime.toJava)
     )
     val issuedAt = Date.from(Instant.now())
-    // needs to be Java List/Array, otherwise incorrect claim is generated
-    val groupsClaim = user.groups.asJava
+
+    // only load if needed, and do it once for both groups and optional attributes
+    lazy val updatedUser = loadUserDetailsFromLdap(inputUser.name)
+      .applyIfDefined(optPrefixConfig){(user: User, prefixesConfig: PrefixesConfig) => user.filterGroupsByPrefixConfig(prefixesConfig)}
+
+    val groupsClaim = {
+      // refresh of existing
+      if (isRefresh) {
+        // intersecting existing groups with newly updated. New groups are never added, but removed if they are not in LDAP anymore.
+        inputUser.groups.intersect(updatedUser.groups)
+      } else if (inputUser.groups.isEmpty && jwtConfig.allowProvidersToRefreshGroupsOnGenerate) {
+        updatedUser.groups
+      } else {
+        // simple generate
+        inputUser.groups
+      }
+    }
 
     val tokenContent = Jwts
       .builder()
-      .setSubject(user.name)
+      .setSubject(inputUser.name)
       .setExpiration(expiration)
       .setIssuedAt(issuedAt)
       .claim("kid", publicKeyThumbprint)
-      .claim("groups", groupsClaim)
+      .claim("groups", groupsClaim.asJava)  // needs to be Java List/Array, otherwise incorrect claim is generated
       .addClaims(
-        user.optionalAttributes.collect {
+        inputUser.optionalAttributes.collect {
           case (key, Some(value)) => key -> value
         }.asJava
       )
@@ -132,21 +149,25 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider, authSearchSe
     if(refreshClaims.isEmpty)
       throw new JwtException("Tokens are incompatible with current keys. Please request new Tokens!")
 
-    val userUpdatedDetails = {
-      try {
-        val searchedUser = authSearchService.searchUser(userFromOldAccessToken.name)
-        val prefixedGroups = searchedUser.groups.intersect(userFromOldAccessToken.groups) // only keep groups that were in old token
-        User(searchedUser.name, prefixedGroups, searchedUser.optionalAttributes)
-      } catch {
-        case lc: LdapConnectionException => throw lc
-        case _ => throw new UnsupportedJwtException(s"User ${userFromOldAccessToken.name} not found")
-      }
-    } // check if user still exists
-
-    val refreshedAccessToken = generateAccessToken(userUpdatedDetails, isRefresh = true) // same process as with normal generation, but different msg
+    val refreshedAccessToken = generateAccessToken(userFromOldAccessToken, None, isRefresh = true) // almost the same process as with normal generation, but different msg
 
     // we are giving the original still-valid refreshToken back - potentially making room here to revoke or regenerate refreshTokens later
     (refreshedAccessToken, refreshToken)
+  }
+
+  private def loadUserDetailsFromLdap(userName: String): User = {
+    val userUpdatedDetails = {
+      try {
+        val searchedUser = authSearchService.searchUser(userName)
+        val prefixedGroups = searchedUser.groups //.intersect(userFromOldAccessToken.groups) // only keep groups that were in old token
+        User(searchedUser.name, prefixedGroups, searchedUser.optionalAttributes)
+      } catch {
+        case lc: LdapConnectionException => throw lc
+        case _ => throw new UnsupportedJwtException(s"User ${userName} not found in LDAP")
+      }
+    } // check if user still exists
+
+    userUpdatedDetails
   }
 
   def publicKeys: (PublicKey, Option[PublicKey]) = {

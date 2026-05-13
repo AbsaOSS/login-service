@@ -42,7 +42,8 @@ class AwsSecretsManagerKeyConfigTest extends AnyFlatSpec with Matchers {
     9.minutes,
     Option(30.minutes),
     Option(15.minutes),
-    Option(5.minutes))
+    Option(5.minutes),
+    allowProvidersToRefreshGroupsOnGenerate = false)
 
   private val mockSecretsUtil = mock(classOf[SecretUtils])
   private val currentKeyPair = Keys.keyPairFor(SignatureAlgorithm.RS256)

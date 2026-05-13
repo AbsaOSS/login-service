@@ -33,6 +33,7 @@ trait KeyConfig extends ConfigValidatable {
   def keyLayOverTime: Option[FiniteDuration]
   def keyPhaseOutTime: Option[FiniteDuration]
   def keyPair(): (KeyPair, Option[KeyPair])
+  def allowProvidersToRefreshGroupsOnGenerate: Boolean
   def throwErrors(): Unit
 
   final def jwtAlgorithmToCryptoAlgorithm : String = {
