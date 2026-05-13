@@ -9,6 +9,7 @@ loginsvc:
         key-lay-over-time: 3sec
         key-phase-out-time: 3sec
         alg-name: "RS256"
+        allow-providers-to-refresh-groups-on-generate: false
 
     # Rest Auth Config (AD)
     auth:

@@ -30,7 +30,9 @@ class InMemoryKeyConfigTest extends AnyFlatSpec with Matchers {
     2.hours,
     Option(30.minutes),
     Option(15.minutes),
-    Option(5.minutes))
+    Option(5.minutes),
+    allowProvidersToRefreshGroupsOnGenerate = false
+  )
 
   "inMemoryKeyConfig" should "validate expected content" in {
     inMemoryKeyConfig.validate() shouldBe ConfigValidationSuccess

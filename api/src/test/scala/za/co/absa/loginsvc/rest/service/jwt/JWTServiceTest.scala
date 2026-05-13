@@ -36,7 +36,7 @@ import scala.util.{Failure, Success, Try}
 
 class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
 
-  private val testConfig : ConfigProvider = new ConfigProvider("api/src/test/resources/application.yaml")
+  private val testConfig: ConfigProvider = new ConfigProvider("api/src/test/resources/application.yaml")
   private var jwtService: JWTService = _
   private var authSearchService: UserSearchService = _
 
@@ -205,7 +205,7 @@ class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
   def customTimedJwtService(accessExpTime: FiniteDuration, refreshExpTime: FiniteDuration): JWTService = {
     val configP = new JwtConfigProvider {
       override def getJwtKeyConfig: KeyConfig = InMemoryKeyConfig(
-        "RS256", accessExpTime, refreshExpTime, None, None, None
+        "RS256", accessExpTime, refreshExpTime, None, None, None, allowProvidersToRefreshGroupsOnGenerate = false
       )
     }
 
@@ -392,5 +392,92 @@ class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
     val actualGroups = parsedJWT.get.getBody.get("groups", classOf[util.ArrayList[String]]).asScala
 
     actualGroups shouldBe userWithManyGroups.groups
+  }
+
+  behavior of "generateToken with allowProvidersToRefreshGroupsOnGenerate=true"
+
+  // custom JWTService with a different config is needed
+  private def jwtServiceWithRefreshGroupsAllowed: JWTService = {
+    val configP = new JwtConfigProvider {
+      override def getJwtKeyConfig: KeyConfig = testConfig.getJwtKeyConfig match {
+        case inMemoryConfig: InMemoryKeyConfig =>
+          inMemoryConfig.copy(allowProvidersToRefreshGroupsOnGenerate = true)
+        case other => fail(s"Unexpected KeyConfig type: ${other.getClass.getName}")
+      }
+    }
+    new JWTService(configP, authSearchService)
+  }
+
+  it should "fetch groups from UserSearchService when inputUser has empty groups and flag is true" in {
+    val service = jwtServiceWithRefreshGroupsAllowed
+    try {
+      // user2 exists in test config with groups = ["group2"]
+      val userWithEmptyGroups = User("user2", Seq.empty, Map("mail" -> Some("user@two.org")))
+      val jwt = service.generateAccessToken(userWithEmptyGroups, None)
+      val parsedJWT = parseJWT(jwt, service.publicKeys._1)
+
+      assert(parsedJWT.isSuccess)
+      val actualGroups = parsedJWT.get.getBody.get("groups", classOf[util.ArrayList[String]]).asScala
+
+      actualGroups shouldBe Seq("group2")
+    } finally {
+      service.close()
+    }
+  }
+
+  Seq(
+    Some(PrefixesConfig(Set("gr"), caseSensitive = true)), // group2 should match
+    Some(PrefixesConfig(Set("GR"), caseSensitive = false)), // group2 should match case-insensitively
+  ).foreach { prefixConfig =>
+
+    it should s"fetch and filter groups from UserSearchService with prefix config when inputUser has empty groups (case $prefixConfig)" in {
+      val service = jwtServiceWithRefreshGroupsAllowed
+      try {
+        val userWithEmptyGroups = User("user2", Seq.empty, Map("mail" -> Some("user@two.org")))
+        val jwt = service.generateAccessToken(userWithEmptyGroups, prefixConfig)
+        val parsedJWT = parseJWT(jwt, service.publicKeys._1)
+
+        assert(parsedJWT.isSuccess)
+        val actualGroups = parsedJWT.get.getBody.get("groups", classOf[util.ArrayList[String]]).asScala
+
+        actualGroups shouldBe Seq("group2")
+      } finally {
+        service.close()
+      }
+    }
+  }
+
+  it should "fetch and filter groups from UserSearchService resulting in empty when prefix doesn't match" in {
+    val service = jwtServiceWithRefreshGroupsAllowed
+    try {
+      val userWithEmptyGroups = User("user2", Seq.empty, Map("mail" -> Some("user@two.org")))
+      val prefixConfig = Some(PrefixesConfig(Set("nonexistent", "GR"), caseSensitive = true))
+      val jwt = service.generateAccessToken(userWithEmptyGroups, prefixConfig)
+      val parsedJWT = parseJWT(jwt, service.publicKeys._1)
+
+      assert(parsedJWT.isSuccess)
+      val actualGroups = parsedJWT.get.getBody.get("groups", classOf[util.ArrayList[String]]).asScala
+
+      actualGroups shouldBe empty
+    } finally {
+      service.close()
+    }
+  }
+
+  it should "NOT fetch groups from UserSearchService when inputUser already has groups (flag is true but groups non-empty)" in {
+    val service = jwtServiceWithRefreshGroupsAllowed
+    try {
+      // user has groups already populated - should use them directly, not fetch from UserSearchService
+      val userWithExistingGroups = User("user2", Seq("custom-group"), Map("mail" -> Some("user@two.org")))
+      val jwt = service.generateAccessToken(userWithExistingGroups, None)
+      val parsedJWT = parseJWT(jwt, service.publicKeys._1)
+
+      assert(parsedJWT.isSuccess)
+      val actualGroups = parsedJWT.get.getBody.get("groups", classOf[util.ArrayList[String]]).asScala
+
+      actualGroups shouldBe Seq("custom-group")
+    } finally {
+      service.close()
+    }
   }
 }

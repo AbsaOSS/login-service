@@ -295,6 +295,7 @@ loginsvc:
          key-lay-over-time: 15min
          key-phase-out-time: 30min
          alg-name: "RS256"
+         allow-providers-to-refresh-groups-on-generate: false
 ```
 There are a few important configuration values to be provided:
 - `access-exp-time` which indicates how long an access token is valid for,
@@ -303,6 +304,7 @@ There are a few important configuration values to be provided:
 - Optional property: `key-lay-over-time` which indicates a delay after rotation before using the newly created key for signing. Lay-over will be disabled if missing.
 - Optional property: `key-phase-out-time` which indicates the time to phase out the older key. Timer is scheduled after `key-lay-over-time` if enabled. Phase-out will be disabled if missing.
 - `alg-name` which indicates which algorithm is used to encode your keys.
+- `allow-providers-to-refresh-groups-on-generate` indicates if users groups can be filled from other sources (e.g. LDAP) if empty when generating tokens. Useful for MS Entra-based generation without groups
 
 Using the above values, the optional properties will give the following effect after the 1st rotation at 9 hours:
 ```
@@ -330,6 +332,7 @@ loginsvc:
         key-lay-over-time: 15min
         key-phase-out-time: 30min
         alg-name: "RS256"
+        allow-providers-to-refresh-groups-on-generate: false
 ```
 Your AWS Secret must have at least 2 fields which correspond to the above properties:
 ```
@@ -346,6 +349,7 @@ There are a few important configuration values to be provided:
 - Optional property: `key-lay-over-time` which indicates a delay after rotation before using the newly created key for signing. Lay-over will be disabled if missing.
 - Optional property: `key-phase-out-time` which indicates the time to phase out the older key. Timer is scheduled after `key-lay-over-time` if enabled. Phase-out will be disabled if missing.
 - `alg-name` which indicates which algorithm is used to encode your keys.
+- `allow-providers-to-refresh-groups-on-generate` indicates if users groups can be filled from other sources (e.g. LDAP) if empty when generating tokens. Useful for MS Entra-based generation without groups
   Using the above values, the optional properties will give the following effect after the 1st rotation at 9 hours:
 ```
 t=0: keys rotation happens

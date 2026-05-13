@@ -69,20 +69,22 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider, authSearchSe
     )
     val issuedAt = Date.from(Instant.now())
 
+    val inputUserWithGroupsFiltering =  inputUser
+      .applyIfDefined(optPrefixConfig){(user: User, prefixesConfig: PrefixesConfig) => user.filterGroupsByPrefixConfig(prefixesConfig)}
+
     // only load if needed, and do it once for both groups and optional attributes
-    lazy val updatedUser = loadUserDetailsFromLdap(inputUser.name)
+    lazy val userUpdatedFromLdapWithGroupsFiltering = loadUserDetailsFromLdap(inputUser.name)
       .applyIfDefined(optPrefixConfig){(user: User, prefixesConfig: PrefixesConfig) => user.filterGroupsByPrefixConfig(prefixesConfig)}
 
     val groupsClaim = {
-      // refresh of existing
       if (isRefresh) {
+        // refresh of existing:
         // intersecting existing groups with newly updated. New groups are never added, but removed if they are not in LDAP anymore.
-        inputUser.groups.intersect(updatedUser.groups)
+        inputUserWithGroupsFiltering.groups.intersect(userUpdatedFromLdapWithGroupsFiltering.groups)
       } else if (inputUser.groups.isEmpty && jwtConfig.allowProvidersToRefreshGroupsOnGenerate) {
-        updatedUser.groups
+        userUpdatedFromLdapWithGroupsFiltering.groups // replaces empty groups with loaded, but filtered
       } else {
-        // simple generate
-        inputUser.groups
+        inputUserWithGroupsFiltering.groups // what user came with, but groups filtered
       }
     }
 

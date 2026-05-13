@@ -10,6 +10,7 @@ loginsvc:
         key-lay-over-time: 15min
         key-phase-out-time: 15min
         alg-name: "RS256"
+        allow-providers-to-refresh-groups-on-generate: false
       #Instead of generating the key in memory
       #The Below Config allows for the application to fetch keys from AWS Secrets Manager.
       #aws-secrets-manager:
@@ -23,6 +24,7 @@ loginsvc:
         #key-lay-over-time: 15min
         #key-phase-out-time: 15min
         #alg-name: "RS256"
+        #allow-providers-to-refresh-groups-on-generate: false
     config:
       # Generates git.properties file for use on info endpoint.
       git-info:

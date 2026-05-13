@@ -32,7 +32,7 @@ case class InMemoryKeyConfig(
   keyRotationTime: Option[FiniteDuration],
   keyLayOverTime: Option[FiniteDuration],
   keyPhaseOutTime: Option[FiniteDuration],
-  allowProvidersToRefreshGroupsOnGenerate: Boolean = false
+  allowProvidersToRefreshGroupsOnGenerate: Boolean
 ) extends KeyConfig {
 
   private var oldKeyPair: Option[KeyPair] = None
