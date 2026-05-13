@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 ABSA Group Limited
+ * Copyright 2026 ABSA Group Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ package za.co.absa.loginsvc.model
 object PrefixesConfig {
   def fromCommaSeparatedString(prefixesStr: String, caseSensitive: Boolean): PrefixesConfig = {
     val prefixes = prefixesStr.split(",").map(_.trim).filter(_.nonEmpty).toSet
-    // TODO add test for empty prefixes given like "prefix1, ,prefix2" or ",prefix1,prefix2," or ",,," etc.
     PrefixesConfig(prefixes, caseSensitive)
   }
 
