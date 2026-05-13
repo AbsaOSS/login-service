@@ -86,8 +86,7 @@ class TokenController @Autowired()(jwtService: JWTService, experimentalConfigPro
 
     // groups filtering is pushed down to JWTService as it may be needed for entra-users without groups to have groups added and filtered in the same way
     val optPrefixesConfig: Option[PrefixesConfig] = groupPrefixesStrScala
-      .map(_.trim.split(',').toSet)
-      .map(PrefixesConfig(_, caseSensitive))
+      .map(PrefixesConfig.fromCommaSeparatedString(_, caseSensitive))
 
     val accessJwt = jwtService.generateAccessToken(user, optPrefixesConfig)
     val refreshJwt = jwtService.generateRefreshToken(user)
@@ -137,8 +136,7 @@ class TokenController @Autowired()(jwtService: JWTService, experimentalConfigPro
 
     // groups filtering is pushed down to JWTService as it may be needed for entra-users without groups to have groups added and filtered in the same way
     val optPrefixesConfig: Option[PrefixesConfig] = groupPrefixesStrScala
-      .map(_.trim.split(',').toSet)
-      .map(PrefixesConfig(_, caseSensitive))
+      .map(PrefixesConfig.fromCommaSeparatedString(_, caseSensitive))
 
     val accessJwt = jwtService.generateAccessToken(user, optPrefixesConfig)
     val refreshJwt = jwtService.generateRefreshToken(user)

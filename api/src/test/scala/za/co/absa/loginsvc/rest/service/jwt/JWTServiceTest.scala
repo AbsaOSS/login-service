@@ -70,14 +70,14 @@ class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
   behavior of "generateToken"
 
   it should "return an access JWT that is verifiable by `publicKey`" in {
-    val jwt = jwtService.generateAccessToken(userWithoutGroups)
+    val jwt = jwtService.generateAccessToken(userWithoutGroups, None)
     val parsedJWT = parseJWT(jwt)
 
     assert(parsedJWT.isSuccess)
   }
 
   it should "return an access JWT with subject equal to User.name and has type access" in {
-    val jwt = jwtService.generateAccessToken(userWithoutGroups)
+    val jwt = jwtService.generateAccessToken(userWithoutGroups, None)
     val parsedJWT = parseJWT(jwt)
     assert(parsedJWT.isSuccess)
 
@@ -92,7 +92,7 @@ class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
   }
 
   it should "return an access JWT with email claim equal to User.email if it is not None" in {
-    val jwt = jwtService.generateAccessToken(userWithoutGroups)
+    val jwt = jwtService.generateAccessToken(userWithoutGroups, None)
     val parsedJWT = parseJWT(jwt)
 
     val actualEmail = parsedJWT
@@ -103,7 +103,7 @@ class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
   }
 
   it should "return an access JWT without email claim if User.email is None" in {
-    val jwt = jwtService.generateAccessToken(userWithoutEmailAndGroups)
+    val jwt = jwtService.generateAccessToken(userWithoutEmailAndGroups, None)
     val parsedJWT = parseJWT(jwt)
 
     assert(parsedJWT.isSuccess)
@@ -114,7 +114,7 @@ class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
   }
 
   it should "return an access JWT kid" in {
-    val jwt = jwtService.generateAccessToken(userWithoutEmailAndGroups)
+    val jwt = jwtService.generateAccessToken(userWithoutEmailAndGroups, None)
     val parsedJWT = parseJWT(jwt)
 
     assert(parsedJWT.isSuccess)
@@ -127,7 +127,7 @@ class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
   it should "turn groups into empty `groups` claim for user without groups" in {
     import scala.collection.JavaConverters._
 
-    val jwt = jwtService.generateAccessToken(userWithoutGroups)
+    val jwt = jwtService.generateAccessToken(userWithoutGroups, None)
     val parsedJWT = parseJWT(jwt)
     val actualGroups = parsedJWT
       .map(_.getBody.get("groups", classOf[util.ArrayList[String]]))
@@ -140,7 +140,7 @@ class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
   it should "turn groups into non-empty `groups` claim for user with groups" in {
     import scala.collection.JavaConverters._
 
-    val jwt = jwtService.generateAccessToken(userWithGroups)
+    val jwt = jwtService.generateAccessToken(userWithGroups, None)
     val parsedJWT = parseJWT(jwt)
     val actualGroups = parsedJWT
       .map(_.getBody.get("groups", classOf[util.ArrayList[String]]))
@@ -176,7 +176,7 @@ class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
   behavior of "refreshToken"
 
   it should "refresh a still-valid access JWT token using a valid refresh one - happy scenario" in {
-    val accessJwt = jwtService.generateAccessToken(userWithGroups)
+    val accessJwt = jwtService.generateAccessToken(userWithGroups, None)
     val refreshJwt = jwtService.generateRefreshToken(userWithGroups)
 
     val (refreshedAccessJwt, _) = jwtService.refreshTokens(accessJwt, refreshJwt)
@@ -217,7 +217,7 @@ class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
   it should "refresh an expired access JWT token using a valid refresh one - common scenario" in {
     val customJwtService = customTimedJwtService(3.seconds, 20.minutes)
 
-    val accessJwt = customJwtService.generateAccessToken(userWithGroups)
+    val accessJwt = customJwtService.generateAccessToken(userWithGroups, None)
     val refreshJwt = customJwtService.generateRefreshToken(userWithGroups)
 
     Thread.sleep(3 * 1000) // make sure that access is past due - as set above
@@ -243,7 +243,7 @@ class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
   it should "refuse to refresh an access JWT token using an expired refresh token - day-after scenario" in {
     val customJwtService = customTimedJwtService(1.seconds, 2.seconds)
 
-    val accessJwt = customJwtService.generateAccessToken(userWithGroups)
+    val accessJwt = customJwtService.generateAccessToken(userWithGroups, None)
     val refreshJwt = customJwtService.generateRefreshToken(userWithGroups)
 
     Thread.sleep(2 * 1000) // make sure that refresh is past due - as set above
@@ -281,11 +281,11 @@ class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
   behavior of "keyRotation"
 
   it should "rotate public and private keys after 14 seconds" in {
-    val initToken = jwtService.generateAccessToken(userWithoutGroups)
+    val initToken = jwtService.generateAccessToken(userWithoutGroups, None)
     val initPublicKey = jwtService.publicKeys
 
     Thread.sleep(14000)
-    val refreshedToken = jwtService.generateAccessToken(userWithoutGroups)
+    val refreshedToken = jwtService.generateAccessToken(userWithoutGroups, None)
 
     assert(parseJWT(initToken).isFailure)
     assert(parseJWT(refreshedToken).isSuccess)
@@ -295,11 +295,11 @@ class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
   }
 
   it should "phase out older keys after 17 seconds" in {
-    val initToken = jwtService.generateAccessToken(userWithoutGroups)
+    val initToken = jwtService.generateAccessToken(userWithoutGroups, None)
     val initPublicKey = jwtService.publicKeys
 
     Thread.sleep(14000)
-    val refreshedToken = jwtService.generateAccessToken(userWithoutGroups)
+    val refreshedToken = jwtService.generateAccessToken(userWithoutGroups, None)
 
     assert(parseJWT(initToken).isFailure)
     assert(parseJWT(refreshedToken).isSuccess)
@@ -312,7 +312,7 @@ class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
   }
 
   it should "lay over keys after 15 seconds" in {
-    val initToken = jwtService.generateAccessToken(userWithoutGroups)
+    val initToken = jwtService.generateAccessToken(userWithoutGroups, None)
     val initPublicKey = jwtService.publicKeys
 
     Thread.sleep(11000)
@@ -323,7 +323,7 @@ class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
     assert(initPublicKey._1 != jwtService.publicKeys._2.orNull)
 
     Thread.sleep(4000)
-    val refreshedToken = jwtService.generateAccessToken(userWithoutGroups)
+    val refreshedToken = jwtService.generateAccessToken(userWithoutGroups, None)
 
     assert(parseJWT(initToken).isFailure)
     assert(parseJWT(refreshedToken).isSuccess)
@@ -331,4 +331,6 @@ class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
     assert(initPublicKey._1 != jwtService.publicKeys._1)
     assert(initPublicKey._1 == jwtService.publicKeys._2.orNull)
   }
+
+  // TODO add tests for groups filtering based on prefixes
 }
