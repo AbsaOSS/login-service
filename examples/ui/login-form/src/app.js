@@ -72,9 +72,11 @@ async function onAuthenticated(authResult) {
 
   ui.showStatus('info', `Exchanging Entra token with Login Service at ${loginServiceHost}…`);
 
+  const groupPrefixes = document.getElementById('groupPrefixes').value.trim() || undefined;
+
   let tokens;
   try {
-    tokens = await exchangeToken(loginServiceHost, tokenResponse.accessToken);
+    tokens = await exchangeToken(loginServiceHost, tokenResponse.accessToken, groupPrefixes);
   } catch (err) {
     ui.showStatus('error', err.message);
     ui.setLoading(false);
