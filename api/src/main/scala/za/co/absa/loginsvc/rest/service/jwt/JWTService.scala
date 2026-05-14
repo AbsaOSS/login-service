@@ -72,14 +72,13 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider, authSearchSe
     val inputUserWithGroupsFiltering =  inputUser
       .applyIfDefined(optPrefixConfig){(user: User, prefixesConfig: PrefixesConfig) => user.filterGroupsByPrefixConfig(prefixesConfig)}
 
-    // only load if needed, and do it once for both groups and optional attributes
+    // only load if needed, and do it once for both refresh and normal generation with groups-update
     lazy val userUpdatedFromLdapWithGroupsFiltering = loadUserDetailsFromLdap(inputUser.name)
       .applyIfDefined(optPrefixConfig){(user: User, prefixesConfig: PrefixesConfig) => user.filterGroupsByPrefixConfig(prefixesConfig)}
 
     val groupsClaim = {
       if (isRefresh) {
-        // refresh of existing:
-        // intersecting existing groups with newly updated. New groups are never added, but removed if they are not in LDAP anymore.
+        // refresh: intersecting existing groups with newly updated. New groups are never added, but removed if they are not in LDAP anymore.
         inputUserWithGroupsFiltering.groups.intersect(userUpdatedFromLdapWithGroupsFiltering.groups)
       } else if (inputUser.groups.isEmpty && jwtConfig.allowProvidersToRefreshGroupsOnGenerate) {
         userUpdatedFromLdapWithGroupsFiltering.groups // replaces empty groups with loaded, but filtered
@@ -151,7 +150,8 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider, authSearchSe
     if(refreshClaims.isEmpty)
       throw new JwtException("Tokens are incompatible with current keys. Please request new Tokens!")
 
-    val refreshedAccessToken = generateAccessToken(userFromOldAccessToken, None, isRefresh = true) // almost the same process as with normal generation, but different msg
+    // almost the same process as with normal generation and groups removal from LDAP
+    val refreshedAccessToken = generateAccessToken(userFromOldAccessToken, None, isRefresh = true)
 
     // we are giving the original still-valid refreshToken back - potentially making room here to revoke or regenerate refreshTokens later
     (refreshedAccessToken, refreshToken)

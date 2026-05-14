@@ -21,8 +21,6 @@ import org.scalatest.matchers.should.Matchers
 
 class PrefixesConfigTest extends AnyFlatSpec with Matchers {
 
-  // --- fromCommaSeparatedString tests ---
-
   "PrefixesConfig.fromCommaSeparatedString" should "parse a normal comma-separated string" in {
     val config = PrefixesConfig.fromCommaSeparatedString("prefix1,prefix2,prefix3", caseSensitive = true)
     config.prefixes shouldBe Set("prefix1", "prefix2", "prefix3")
@@ -59,8 +57,6 @@ class PrefixesConfigTest extends AnyFlatSpec with Matchers {
     config.prefixes shouldBe Set("onlyOne")
   }
 
-  // --- applyPrefixFiltering(Seq) tests ---
-
   private val groups = Seq("blue-123", "blue-456", "red-ABC", "REDdish-DEF", "black", "black-and-white")
 
   "PrefixesConfig.applyPrefixFiltering" should "filter case-sensitively" in {
@@ -87,8 +83,6 @@ class PrefixesConfigTest extends AnyFlatSpec with Matchers {
     val config = PrefixesConfig(Set("red"), caseSensitive = true)
     config.applyPrefixFiltering(Seq.empty[String]) shouldBe empty
   }
-
-  // --- applyPrefixFiltering(Set) tests -> same as above, just sets ---
 
   private val groupsSet = Set("blue-123", "blue-456", "red-ABC", "REDdish-DEF", "black", "black-and-white")
 

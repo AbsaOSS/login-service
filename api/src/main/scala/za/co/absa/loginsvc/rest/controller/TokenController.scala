@@ -31,7 +31,6 @@ import za.co.absa.loginsvc.model.{User, PrefixesConfig}
 import za.co.absa.loginsvc.rest.config.provider.ExperimentalRestConfigProvider
 import za.co.absa.loginsvc.rest.model.{KerberosUserDetails, PublicKey, PublicKeySet, TokensWrapper}
 import za.co.absa.loginsvc.rest.service.jwt.JWTService
-import za.co.absa.loginsvc.utils.OptionUtils.ImplicitBuilderExt
 
 import java.util.{Base64, Optional}
 

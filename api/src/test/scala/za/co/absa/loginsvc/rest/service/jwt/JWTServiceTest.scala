@@ -332,8 +332,6 @@ class JWTServiceTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
     assert(initPublicKey._1 == jwtService.publicKeys._2.orNull)
   }
 
-  // --- prefix filtering tests ---
-
   private val userWithManyGroups: User = userWithoutGroups.copy(
     groups = Seq("blue-123", "blue-456", "red-ABC", "REDdish-DEF", "black", "black-and-white")
   )
