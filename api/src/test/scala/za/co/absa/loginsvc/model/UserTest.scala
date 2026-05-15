@@ -40,5 +40,25 @@ class UserTest extends AnyFlatSpec with Matchers {
       testUser.copy(groups = Seq("red-ABC", "REDdish-DEF", "black","black-and-white"))
   }
 
+  it should "filterGroups with empty prefixes returning all groups" in {
+    testUser.filterGroupsByPrefixes(Set.empty, caseSensitive = false) shouldBe testUser
+  }
+
+  it should "filterGroupsByPrefixConfig (case-sensitively)" in {
+    val config = PrefixesConfig(Set("red", "black"), caseSensitive = true)
+    testUser.filterGroupsByPrefixConfig(config) shouldBe
+      testUser.copy(groups = Seq("red-ABC", "black", "black-and-white"))
+  }
+
+  it should "filterGroupsByPrefixConfig (case-insensitively)" in {
+    val config = PrefixesConfig(Set("RED", "BLACK"), caseSensitive = false)
+    testUser.filterGroupsByPrefixConfig(config) shouldBe
+      testUser.copy(groups = Seq("red-ABC", "REDdish-DEF", "black", "black-and-white"))
+  }
+
+  it should "filterGroupsByPrefixConfig with empty prefixes returning all groups" in {
+    val config = PrefixesConfig(Set.empty, caseSensitive = true)
+    testUser.filterGroupsByPrefixConfig(config) shouldBe testUser
+  }
 
 }

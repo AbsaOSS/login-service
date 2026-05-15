@@ -39,11 +39,16 @@
  *
  * @param {string} loginServiceHost - Base URL of the Login Service (e.g. `http://localhost:9090`).
  * @param {string} entraToken       - Entra access token obtained from MSAL.
+ * @param {string} [groupPrefixes]  - Optional comma-separated group prefixes to filter JWT groups.
  * @returns {Promise<LoginServiceTokens>}
  * @throws {Error} On network failure or a non-2xx HTTP response.
  */
-export async function exchangeToken(loginServiceHost, entraToken) {
-  const url = `${loginServiceHost}/token/generate`;
+export async function exchangeToken(loginServiceHost, entraToken, groupPrefixes) {
+  let url = `${loginServiceHost}/token/generate`;
+  if (groupPrefixes) {
+    const params = new URLSearchParams({ 'group-prefixes': groupPrefixes });
+    url += `?${params.toString()}`;
+  }
 
   let response;
   try {

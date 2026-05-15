@@ -27,11 +27,10 @@ import org.springframework.http.{HttpStatus, MediaType}
 import org.springframework.security.core.Authentication
 import org.springframework.web.bind.annotation._
 import org.springframework.web.server.ResponseStatusException
-import za.co.absa.loginsvc.model.User
+import za.co.absa.loginsvc.model.{User, PrefixesConfig}
 import za.co.absa.loginsvc.rest.config.provider.ExperimentalRestConfigProvider
 import za.co.absa.loginsvc.rest.model.{KerberosUserDetails, PublicKey, PublicKeySet, TokensWrapper}
 import za.co.absa.loginsvc.rest.service.jwt.JWTService
-import za.co.absa.loginsvc.utils.OptionUtils.ImplicitBuilderExt
 
 import java.util.{Base64, Optional}
 
@@ -84,13 +83,12 @@ class TokenController @Autowired()(jwtService: JWTService, experimentalConfigPro
     }
     val groupPrefixesStrScala = groupPrefixes.toScalaOption
 
-    val filteredGroupsUser = user.applyIfDefined(groupPrefixesStrScala) { (user: User, prefixesStr: String) =>
-      val prefixes = prefixesStr.trim.split(',')
-      user.filterGroupsByPrefixes(prefixes.toSet, caseSensitive)
-    }
+    // groups filtering is pushed down to JWTService as it may be needed for entra-users without groups to have groups added and filtered in the same way
+    val optPrefixesConfig: Option[PrefixesConfig] = groupPrefixesStrScala
+      .map(PrefixesConfig.fromCommaSeparatedString(_, caseSensitive))
 
-    val accessJwt = jwtService.generateAccessToken(filteredGroupsUser)
-    val refreshJwt = jwtService.generateRefreshToken(filteredGroupsUser)
+    val accessJwt = jwtService.generateAccessToken(user, optPrefixesConfig)
+    val refreshJwt = jwtService.generateRefreshToken(user)
     TokensWrapper.fromTokens(accessJwt, refreshJwt)
   }
 
@@ -135,13 +133,12 @@ class TokenController @Autowired()(jwtService: JWTService, experimentalConfigPro
     }
     val groupPrefixesStrScala = groupPrefixes.toScalaOption
 
-    val filteredGroupsUser = user.applyIfDefined(groupPrefixesStrScala) { (user: User, prefixesStr: String) =>
-      val prefixes = prefixesStr.trim.split(',')
-      user.filterGroupsByPrefixes(prefixes.toSet, caseSensitive)
-    }
+    // groups filtering is pushed down to JWTService as it may be needed for entra-users without groups to have groups added and filtered in the same way
+    val optPrefixesConfig: Option[PrefixesConfig] = groupPrefixesStrScala
+      .map(PrefixesConfig.fromCommaSeparatedString(_, caseSensitive))
 
-    val accessJwt = jwtService.generateAccessToken(filteredGroupsUser)
-    val refreshJwt = jwtService.generateRefreshToken(filteredGroupsUser)
+    val accessJwt = jwtService.generateAccessToken(user, optPrefixesConfig)
+    val refreshJwt = jwtService.generateRefreshToken(user)
     TokensWrapper.fromTokens(accessJwt, refreshJwt)
   }
 
