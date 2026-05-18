@@ -80,13 +80,5 @@ management:
     health:
       show-details: "never"
 
-  # not needed for tests, causes problems under Java 17
-  metrics:
-    binders:
-      processor:
-        enabled: false
-      system:
-        enabled: false
-
 info:
   test: "This is a test value"
