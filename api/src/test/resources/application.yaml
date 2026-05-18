@@ -57,7 +57,11 @@ spring:
   #  Spring Boot 2.7 + Java 17 have some compatibility issues around JMX and Micrometer
   autoconfigure:
     exclude:
+      - org.springframework.boot.actuate.autoconfigure.metrics.MetricsAutoConfiguration
+      - org.springframework.boot.actuate.autoconfigure.metrics.export.simple.SimpleMetricsExportAutoConfiguration
       - org.springframework.boot.actuate.autoconfigure.metrics.SystemMetricsAutoConfiguration
+      - org.springframework.boot.actuate.autoconfigure.metrics.web.tomcat.TomcatMetricsAutoConfiguration
+      - org.springframework.boot.actuate.autoconfigure.metrics.web.servlet.WebMvcMetricsAutoC
 server:
   port: 9090
 
