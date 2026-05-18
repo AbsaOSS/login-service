@@ -23,10 +23,7 @@ import org.springframework.boot.actuate.health.{HealthEndpoint, Status}
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.{TestContextManager, TestPropertySource}
 
-@SpringBootTest(properties = Array(
-  "management.metrics.binders.processor.enabled=false",
-  "management.metrics.binders.system.enabled=false"
-))
+@SpringBootTest
 @TestPropertySource(properties = Array("spring.config.location=api/src/test/resources/application.yaml"))
 class ActuatorHealthTest extends AnyFlatSpec with Matchers with ActuatorTestBase {
 
