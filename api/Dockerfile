@@ -17,7 +17,7 @@
 # change to OFF to disable SSL
 ARG SSL=true
 # Tomcat OS base image, feel free to use another (e.g. your hardened one)
-ARG BASE_IMAGE=tomcat:9-jdk11-corretto
+ARG BASE_IMAGE=tomcat:9-jdk17-corretto
 
 # --- Base image part (common for SSL true|false) ---
 FROM $BASE_IMAGE as base
@@ -50,7 +50,7 @@ RUN mkdir -p /opt/certs
 # just PEMs are supported
 COPY $LDAP_SSL_CERTS_PATH/*.pem /opt/certs/
 
-# Java 11 paths used
+# Java 11+ paths used
 RUN for file in `ls /opt/certs/*.pem`; \
 do \
     echo yes | keytool -import -file $file -alias ldaps$RANDOM -keystore $JAVA_HOME/lib/security/cacerts -storepass changeit; \
