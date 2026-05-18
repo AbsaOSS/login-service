@@ -54,6 +54,10 @@ spring:
     name: "login-service"
   jmx:
     enabled: true
+  #  Spring Boot 2.7 + Java 17 have some compatibility issues around JMX and Micrometer
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.actuate.autoconfigure.metrics.SystemMetricsAutoConfiguration
 server:
   port: 9090
 
