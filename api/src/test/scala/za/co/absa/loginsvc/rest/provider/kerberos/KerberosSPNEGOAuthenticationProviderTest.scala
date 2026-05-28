@@ -59,53 +59,51 @@ class KerberosSPNEGOAuthenticationProviderTest extends AnyFlatSpec with Matchers
   }
 
   // initialization tests
-  "KerberosSPNEGOAuthenticationProvider" should "set debug system properties to false when debug is None" in {
-    val kerberosConfig = KerberosConfig("krb5.conf", "test.keytab", "HTTP/host@REALM", debug = None)
+  "KerberosSPNEGOAuthenticationProvider" should
+    "set debug system properties to false when debug is None" +
+      " and set java.security.krb5.conf when krbFileLocation is non-empty" +
+      " and always set sun.security.krb5.rcache to none" in {
+    val kerberosConfig = KerberosConfig("/etc/krb5.conf", "test.keytab", "HTTP/host@REALM", debug = None)
     val ldapConfig = createLdapConfig(kerberosConfig)
 
     new KerberosSPNEGOAuthenticationProvider(ldapConfig)
 
     System.getProperty("javax.net.debug") shouldBe "false"
     System.getProperty("sun.security.krb5.debug") shouldBe "false"
+    System.getProperty("java.security.krb5.conf") shouldBe "/etc/krb5.conf"
+    System.getProperty("sun.security.krb5.rcache") shouldBe "none"
   }
 
-  it should "set debug system properties to false when debug is explicitly false" in {
-    val kerberosConfig = KerberosConfig("krb5.conf", "test.keytab", "HTTP/host@REALM", debug = Some(false))
+  it should "set debug system properties to false when debug is explicitly false" +
+    " and set java.security.krb5.conf when krbFileLocation is non-empty" +
+    " and always set sun.security.krb5.rcache to none" in {
+    val kerberosConfig = KerberosConfig("/etc/krb5.conf", "test.keytab", "HTTP/host@REALM", debug = Some(false))
     val ldapConfig = createLdapConfig(kerberosConfig)
 
     new KerberosSPNEGOAuthenticationProvider(ldapConfig)
 
     System.getProperty("javax.net.debug") shouldBe "false"
     System.getProperty("sun.security.krb5.debug") shouldBe "false"
+
+    System.getProperty("java.security.krb5.conf") shouldBe "/etc/krb5.conf"
+    System.getProperty("sun.security.krb5.rcache") shouldBe "none"
   }
 
-  it should "set debug system properties to true when debug is explicitly true" in {
-    val kerberosConfig = KerberosConfig("krb5.conf", "test.keytab", "HTTP/host@REALM", debug = Some(true))
+  it should "set debug system properties to true when debug is explicitly true" +
+    " and set java.security.krb5.conf when krbFileLocation is non-empty" +
+    " and always set sun.security.krb5.rcache to none" in {
+    val kerberosConfig = KerberosConfig("/etc/krb5.conf", "test.keytab", "HTTP/host@REALM", debug = Some(true))
     val ldapConfig = createLdapConfig(kerberosConfig)
 
     new KerberosSPNEGOAuthenticationProvider(ldapConfig)
 
     System.getProperty("javax.net.debug") shouldBe "true"
     System.getProperty("sun.security.krb5.debug") shouldBe "true"
-  }
 
-  it should "always set sun.security.krb5.rcache to none" in {
-    val kerberosConfig = KerberosConfig("krb5.conf", "test.keytab", "HTTP/host@REALM", debug = Some(true))
-    val ldapConfig = createLdapConfig(kerberosConfig)
-
-    new KerberosSPNEGOAuthenticationProvider(ldapConfig)
-
+    System.getProperty("java.security.krb5.conf") shouldBe "/etc/krb5.conf"
     System.getProperty("sun.security.krb5.rcache") shouldBe "none"
   }
 
-  it should "set java.security.krb5.conf when krbFileLocation is non-empty" in {
-    val kerberosConfig = KerberosConfig("/etc/krb5.conf", "test.keytab", "HTTP/host@REALM", debug = None)
-    val ldapConfig = createLdapConfig(kerberosConfig)
-
-    new KerberosSPNEGOAuthenticationProvider(ldapConfig)
-
-    System.getProperty("java.security.krb5.conf") shouldBe "/etc/krb5.conf"
-  }
 
   it should "not set java.security.krb5.conf when krbFileLocation is empty" in {
     val kerberosConfig = KerberosConfig("", "test.keytab", "HTTP/host@REALM", debug = None)
