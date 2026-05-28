@@ -19,7 +19,9 @@ package za.co.absa.loginsvc.rest.provider.kerberos
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.BeforeAndAfterEach
+import org.springframework.security.kerberos.authentication.sun.SunJaasKerberosTicketValidator
 import za.co.absa.loginsvc.rest.config.auth.{ActiveDirectoryLDAPConfig, KerberosConfig, LdapUserCredentialsConfig, ServiceAccountConfig}
+
 
 class KerberosSPNEGOAuthenticationProviderTest extends AnyFlatSpec with Matchers with BeforeAndAfterEach {
 
@@ -112,6 +114,40 @@ class KerberosSPNEGOAuthenticationProviderTest extends AnyFlatSpec with Matchers
     new KerberosSPNEGOAuthenticationProvider(ldapConfig)
 
     System.getProperty("java.security.krb5.conf") shouldBe null
+  }
+
+  // ticketValidator debug tests - currently hardcoded to true, insensitive to kerberosDebug
+  private def getTicketValidatorDebug(validator: SunJaasKerberosTicketValidator): Boolean = {
+    val debugField = classOf[SunJaasKerberosTicketValidator].getDeclaredField("debug")
+    debugField.setAccessible(true)
+    debugField.getBoolean(validator)
+  }
+
+  it should "have ticketValidator debug set to true even when kerberosDebug is None (hardcoded)" in {
+    val kerberosConfig = KerberosConfig("krb5.conf", "test.keytab", "HTTP/host@REALM", None)
+    val ldapConfig = createLdapConfig(kerberosConfig)
+    val provider = new KerberosSPNEGOAuthenticationProvider(ldapConfig)
+
+    val validator = provider.sunJaasKerberosTicketValidator
+    getTicketValidatorDebug(validator) shouldBe true
+  }
+
+  it should "have ticketValidator debug set to true even when kerberosDebug is explicitly false (hardcoded)" in {
+    val kerberosConfig = KerberosConfig("krb5.conf", "test.keytab", "HTTP/host@REALM", Some(false))
+    val ldapConfig = createLdapConfig(kerberosConfig)
+    val provider = new KerberosSPNEGOAuthenticationProvider(ldapConfig)
+
+    val validator = provider.sunJaasKerberosTicketValidator
+    getTicketValidatorDebug(validator) shouldBe true
+  }
+
+  it should "have ticketValidator debug set to true when kerberosDebug is explicitly true (hardcoded)" in {
+    val kerberosConfig = KerberosConfig("krb5.conf", "test.keytab", "HTTP/host@REALM", Some(true))
+    val ldapConfig = createLdapConfig(kerberosConfig)
+    val provider = new KerberosSPNEGOAuthenticationProvider(ldapConfig)
+
+    val validator = provider.sunJaasKerberosTicketValidator
+    getTicketValidatorDebug(validator) shouldBe true
   }
 }
 
