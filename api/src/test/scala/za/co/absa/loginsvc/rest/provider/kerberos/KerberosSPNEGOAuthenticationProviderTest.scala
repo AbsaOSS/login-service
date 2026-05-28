@@ -125,8 +125,8 @@ class KerberosSPNEGOAuthenticationProviderTest extends AnyFlatSpec with Matchers
     debugField.getBoolean(validator)
   }
 
-  it should "have ticketValidator debug set to false even when kerberosDebug is None (default)" in {
-    val kerberosConfig = KerberosConfig("krb5.conf", "test.keytab", "HTTP/host@REALM", None)
+  it should "have ticketValidator debug set to false even when ldapConfig.kerberos.debug is None (default)" in {
+    val kerberosConfig = KerberosConfig("krb5.conf", "test.keytab", "HTTP/host@REALM", debug = None)
     val ldapConfig = createLdapConfig(kerberosConfig)
     val provider = new KerberosSPNEGOAuthenticationProvider(ldapConfig)
 
@@ -134,8 +134,8 @@ class KerberosSPNEGOAuthenticationProviderTest extends AnyFlatSpec with Matchers
     getTicketValidatorDebug(validator) shouldBe false
   }
 
-  it should "have ticketValidator debug set to false even when kerberosDebug is explicitly false" in {
-    val kerberosConfig = KerberosConfig("krb5.conf", "test.keytab", "HTTP/host@REALM", Some(false))
+  it should "have ticketValidator debug set to false even when ldapConfig.kerberos.debug is explicitly false" in {
+    val kerberosConfig = KerberosConfig("krb5.conf", "test.keytab", "HTTP/host@REALM", debug = Some(false))
     val ldapConfig = createLdapConfig(kerberosConfig)
     val provider = new KerberosSPNEGOAuthenticationProvider(ldapConfig)
 
@@ -143,8 +143,8 @@ class KerberosSPNEGOAuthenticationProviderTest extends AnyFlatSpec with Matchers
     getTicketValidatorDebug(validator) shouldBe false
   }
 
-  it should "have ticketValidator debug set to true when kerberosDebug is explicitly true" in {
-    val kerberosConfig = KerberosConfig("krb5.conf", "test.keytab", "HTTP/host@REALM", Some(true))
+  it should "have ticketValidator debug set to true when ldapConfig.kerberos.debug is explicitly true" in {
+    val kerberosConfig = KerberosConfig("krb5.conf", "test.keytab", "HTTP/host@REALM", debug = Some(true))
     val ldapConfig = createLdapConfig(kerberosConfig)
     val provider = new KerberosSPNEGOAuthenticationProvider(ldapConfig)
 
