@@ -116,32 +116,34 @@ class KerberosSPNEGOAuthenticationProviderTest extends AnyFlatSpec with Matchers
     System.getProperty("java.security.krb5.conf") shouldBe null
   }
 
-  // ticketValidator debug tests - currently hardcoded to true, insensitive to kerberosDebug
+  /**
+   * Uses reflection to access the private `debug` field of the SunJaasKerberosTicketValidator instance
+   */
   private def getTicketValidatorDebug(validator: SunJaasKerberosTicketValidator): Boolean = {
     val debugField = classOf[SunJaasKerberosTicketValidator].getDeclaredField("debug")
     debugField.setAccessible(true)
     debugField.getBoolean(validator)
   }
 
-  it should "have ticketValidator debug set to true even when kerberosDebug is None (hardcoded)" in {
+  it should "have ticketValidator debug set to false even when kerberosDebug is None (default)" in {
     val kerberosConfig = KerberosConfig("krb5.conf", "test.keytab", "HTTP/host@REALM", None)
     val ldapConfig = createLdapConfig(kerberosConfig)
     val provider = new KerberosSPNEGOAuthenticationProvider(ldapConfig)
 
     val validator = provider.sunJaasKerberosTicketValidator
-    getTicketValidatorDebug(validator) shouldBe true
+    getTicketValidatorDebug(validator) shouldBe false
   }
 
-  it should "have ticketValidator debug set to true even when kerberosDebug is explicitly false (hardcoded)" in {
+  it should "have ticketValidator debug set to false even when kerberosDebug is explicitly false" in {
     val kerberosConfig = KerberosConfig("krb5.conf", "test.keytab", "HTTP/host@REALM", Some(false))
     val ldapConfig = createLdapConfig(kerberosConfig)
     val provider = new KerberosSPNEGOAuthenticationProvider(ldapConfig)
 
     val validator = provider.sunJaasKerberosTicketValidator
-    getTicketValidatorDebug(validator) shouldBe true
+    getTicketValidatorDebug(validator) shouldBe false
   }
 
-  it should "have ticketValidator debug set to true when kerberosDebug is explicitly true (hardcoded)" in {
+  it should "have ticketValidator debug set to true when kerberosDebug is explicitly true" in {
     val kerberosConfig = KerberosConfig("krb5.conf", "test.keytab", "HTTP/host@REALM", Some(true))
     val ldapConfig = createLdapConfig(kerberosConfig)
     val provider = new KerberosSPNEGOAuthenticationProvider(ldapConfig)
