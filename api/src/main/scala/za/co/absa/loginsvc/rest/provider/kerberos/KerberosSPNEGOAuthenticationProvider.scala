@@ -59,12 +59,12 @@ class KerberosSPNEGOAuthenticationProvider(activeDirectoryLDAPConfig: ActiveDire
       provider
     }
 
-  private def sunJaasKerberosTicketValidator: SunJaasKerberosTicketValidator =
+  private[kerberos] def sunJaasKerberosTicketValidator: SunJaasKerberosTicketValidator =
     {
       val ticketValidator: SunJaasKerberosTicketValidator = new SunJaasKerberosTicketValidator()
       ticketValidator.setServicePrincipal(kerberos.spn)
       ticketValidator.setKeyTabLocation(new FileSystemResource(kerberos.keytabFileLocation))
-      ticketValidator.setDebug(true)
+      ticketValidator.setDebug(kerberosDebug)
       ticketValidator.afterPropertiesSet()
       ticketValidator
     }
