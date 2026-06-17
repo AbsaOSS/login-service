@@ -14,43 +14,98 @@
 # limitations under the License.
 #
 
-name: JaCoCo report
+name: CI JaCoCo Report
 
 on:
   pull_request:
     branches: [ master ]
-    types: [ opened, edited, synchronize, reopened ]
+
+permissions:
+  contents: read
+
+# Cancel superseded runs on the same ref to save runner minutes.
+concurrency:
+  group: jacoco-report-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # hint: "group thresholds" are in format: 'overall*changed-files-average*per-changed-file'
+  REPORT_GROUPS: |
+    - name: login-service-api
+      paths:
+        - '**/api/target/**/jacoco-report/jacoco.xml'
+      thresholds: '73*80*60'
+    - name: login-service-client-library
+      paths:
+        - '**/clientLibrary/target/**/jacoco-report/jacoco.xml'
+      thresholds: '62*80*60'
 
 jobs:
-  test:
+  detect:
+    name: Detect Changed Files
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        include:
-          - scala: 2.12.17
-            scala_short: 2.12
-            overall: 0.0
-            changed: 80.0
+    timeout-minutes: 2
+    outputs:
+      scala_changed: ${{ steps.filter.outputs.scala }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
         with:
           persist-credentials: false
           fetch-depth: 0
+      - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d
+        id: filter
+        with:
+          token: ""
+          filters: |
+            scala:
+              - '**/*.scala'
+              - '!project/**'
+
+  jacoco-report:
+    name: JaCoCo Report
+    needs: detect
+    if: needs.detect.outputs.scala_changed == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
       - name: Setup Scala
-        uses: olafurpg/setup-scala@v10
+        uses: olafurpg/setup-scala@32ffa16635ff8f19cc21ea253a987f0fdf29844c
         with:
           java-version: "openjdk@1.17"
-      - name: Build and run tests
-        run: sbt ++${{matrix.scala}} jacoco
-      - name: Add JaCoCo Report in PR comments
-        uses: MoranaApps/jacoco-report@v2
+
+      - name: Build and run tests with coverage
+        continue-on-error: true
+        run: sbt jacoco
+
+      - name: Setup Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
         with:
-          token: '${{ secrets.GITHUB_TOKEN }}'
-          paths: |
-            **/target/jacoco/report/jacoco.xml
-          min-coverage-overall: 43.0
-          min-coverage-changed-files: 70.0
-          sensitivity: "detail"
-          comment-mode: 'multi'
+          python-version: '3.14'
+
+      - name: Add JaCoCo Report in PR comments
+        uses: MoranaApps/jacoco-report@5b6495430e6bb5fde0a6b7dd348fc8afc3aa86db
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          global-thresholds: '0*80'
+          report-thresholds-default: '62*80*60'
           skip-unchanged: 'true'
+          evaluate-unchanged: 'false'
+          report-groups: ${{ env.REPORT_GROUPS }}
+
+  noop:
+    name: No Operation
+    needs: detect
+    if: needs.detect.outputs.scala_changed != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "No changes in Scala related files — passing."

@@ -23,26 +23,16 @@ lazy val scala213 = "2.13.13"
 ThisBuild / scalaVersion := scala212
 ThisBuild / versionScheme := Some("early-semver")
 
-lazy val commonJacocoExcludes: Seq[String] = Seq(
-  "za.co.absa.loginsvc.rest.Application*"
-//      "za.co.absa.loginsvc.rest.config.BaseConfig" // class only
-)
-
 lazy val commonJavacOptions = Seq("-source", "1.8", "-target", "1.8", "-Xlint") // deliberately making backwards compatible with J8
 
 addCommandAlias("runLocal", "api/run --spring.config.location=api/src/main/resources/local.application.yaml")
 
 lazy val parent = (project in file("."))
   .aggregate(api, clientLibrary, examples)
-  .enablePlugins(FilteredJacocoAgentPlugin)
   .settings(
     name := "login-service",
     javacOptions ++= commonJavacOptions,
     publish / skip := true,
-    // Global defaults (override per-module below if you wish)
-    FilteredJacocoAgentPlugin.autoImport.jacocoIncludes := Seq("za.co.absa.*"),
-    FilteredJacocoAgentPlugin.autoImport.jacocoExcludes ++= commonJacocoExcludes,
-    FilteredJacocoAgentPlugin.autoImport.jacocoFailOnMissingExec := false
   )
 
 lazy val api = project // no need to define file, because path is same as val name
@@ -58,7 +48,7 @@ lazy val api = project // no need to define file, because path is same as val na
     run / javaOptions += "-Djavax.net.ssl.trustStoreType=KeychainStore" // use macOS Keychain CA certs (corporate proxy)
   ).enablePlugins(TomcatPlugin)
   .enablePlugins(AutomateHeaderPlugin)
-  .enablePlugins(FilteredJacocoAgentPlugin)
+  .enablePlugins(JacocoFilterPlugin)
 
 lazy val clientLibrary = project // no need to define file, because path is same as val name
   .settings(
@@ -67,7 +57,7 @@ lazy val clientLibrary = project // no need to define file, because path is same
     javacOptions ++= commonJavacOptions,
     crossScalaVersions := Seq(scala212, scala213)
   ).enablePlugins(AutomateHeaderPlugin)
-  .enablePlugins(FilteredJacocoAgentPlugin)
+  .enablePlugins(JacocoFilterPlugin)
 
 lazy val examples = project // no need to define file, because path is same as val name
   .settings(
@@ -77,8 +67,3 @@ lazy val examples = project // no need to define file, because path is same as v
     publish / skip := true
   ).enablePlugins(AutomateHeaderPlugin)
   .dependsOn(clientLibrary)
-
-// Run activate jacoco + clean + test + per-module reports across the whole build + deactivate jacoco
-addCommandAlias("jacoco", "; jacocoOn; clean; test; jacocoReportAll; jacocoOff")
-addCommandAlias("jacocoOff",  "; set every jacocoPluginEnabled := false")
-addCommandAlias("jacocoOn",   "; set every jacocoPluginEnabled := true")

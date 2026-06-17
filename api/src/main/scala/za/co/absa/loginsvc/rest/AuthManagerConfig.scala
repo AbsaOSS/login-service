@@ -28,8 +28,6 @@ import za.co.absa.loginsvc.rest.config.validation.ConfigValidationException
 import za.co.absa.loginsvc.rest.provider.ConfigUsersAuthenticationProvider
 import za.co.absa.loginsvc.rest.provider.ad.ldap.ActiveDirectoryLDAPAuthenticationProvider
 
-import scala.collection.immutable.SortedMap
-
 /**
  * This class registers the authManager bean that is responsible for users to be able to "login" using their credentials
  *  based on the config
