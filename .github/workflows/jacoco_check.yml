@@ -96,7 +96,7 @@ jobs:
         uses: MoranaApps/jacoco-report@5b6495430e6bb5fde0a6b7dd348fc8afc3aa86db
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          global-thresholds: '0*80'
+          global-thresholds: '73*80'
           report-thresholds-default: '62*80*60'
           skip-unchanged: 'true'
           evaluate-unchanged: 'false'
