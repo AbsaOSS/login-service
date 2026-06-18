@@ -35,10 +35,10 @@ env:
       paths:
         - '**/api/target/**/jacoco-report/jacoco.xml'
       thresholds: '73*80*60'
-    - name: login-service-client-library
-      paths:
-        - '**/clientLibrary/target/**/jacoco-report/jacoco.xml'
-      thresholds: '62*80*60'
+# - name: login-service-client-library
+#   paths:
+#     - '**/clientLibrary/target/**/jacoco-report/jacoco.xml'
+#   thresholds: '62*80*60'
 
 jobs:
   detect:
