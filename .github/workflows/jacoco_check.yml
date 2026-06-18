@@ -98,8 +98,8 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           global-thresholds: '71*73'
           report-thresholds-default: '62*80*60'
-          # skip-unchanged: 'true'
-          # evaluate-unchanged: 'false'
+          skip-unchanged: 'true'
+          evaluate-unchanged: 'false'
           report-groups: ${{ env.REPORT_GROUPS }}
 
   noop:
