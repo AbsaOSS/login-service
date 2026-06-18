@@ -26,7 +26,7 @@ import scala.collection.JavaConverters._
 trait ClaimsParser {
 
   /**
-   * Returns a list of all the claim keys in the JWT.
+   * Returns a list of all the claim keys in the JWT
    *
    * @param jwt The JWT to parse.
    * @return A list of all the claim keys in the JWT.
