@@ -4,6 +4,7 @@
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
@@ -13,31 +14,33 @@
 # limitations under the License.
 #
 
-name: Check PR Release Notes in Description
+name: Check PR Release Notes
 
 on:
   pull_request:
     types: [opened, synchronize, reopened, edited, labeled, unlabeled]
     branches: [ master ]
 
-env:
-  SKIP_LABEL: 'no RN'
-  RLS_NOTES_TAG_REGEX: 'Release Notes:'
+concurrency:
+  group: release-notes-check-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   check-release-notes:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/setup-python@v5.1.1
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
         with:
-          python-version: '3.11'
+          python-version: '3.14'
 
       - name: Check presence of release notes in PR description
-        uses: AbsaOSS/release-notes-presence-check@v0.2.1
+        uses: AbsaOSS/release-notes-presence-check@8e586b26a5e27f899ee8590a5d988fd4780a3dbf
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           github-repository: ${{ github.repository }}
           pr-number: ${{ github.event.number }}
-          skip-labels: "no RN"
+          title: "## [Rr]elease [Nn]otes"
+          skip-labels: 'no RN'
+          skip-placeholders: 'TBD'
