@@ -1,0 +1,7 @@
+# Jacoco Aliases
+alias jacoco=; jacocoOn; jacocoApi; jacocoClientLibrary; jacocoOff
+alias jacocoOn=; set every jacocoPluginEnabled := true
+alias jacocoOff=; set every jacocoPluginEnabled := false
+
+alias jacocoApi=; project api; clean; test; jacocoReportAll
+alias jacocoClientLibrary=; project clientLibrary; clean; test; jacocoReportAll
