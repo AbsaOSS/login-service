@@ -31,7 +31,7 @@ case class PrefixesConfig(
                          ) {
   /**
    * Filters the given groups based on the defined prefixes and case sensitivity.
-   * If there are no prefixes defined, it returns the original groups without filtering.
+   * If there are no prefixes defined, it returns the original groups without filtering
    *
    * @param groups to potentially filter based on the defined prefixes and case sensitivity
    * @return
