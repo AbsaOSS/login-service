@@ -29,7 +29,7 @@ import java.util.{Collections, Properties}
 import javax.security.auth.login.Configuration
 
 /**
- * This class is used to retrieve tokens from the login service
+ * This class is used to retrieve tokens from the login service.
  * Refresh and Access Keys require authorization. Basic Auth is used for the initial retrieval.
  * Refresh token from initial retrieval is used to refresh the access token.
  * @param host The host of the login service.
