@@ -156,6 +156,7 @@ class LdapUserRepositoryTest extends AnyFlatSpec with Matchers with MockFactory 
 
     user.name shouldBe "testuser"
     user.groups shouldBe Seq.empty
+    user.optionalAttributes shouldBe Map.empty
   }
 
   "resultToUserEntry" should "populate optional attributes when config specifies them" in {
