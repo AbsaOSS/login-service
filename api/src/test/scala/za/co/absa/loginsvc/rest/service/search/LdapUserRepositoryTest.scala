@@ -16,12 +16,16 @@
 
 package za.co.absa.loginsvc.rest.service.search
 
+import org.scalamock.scalatest.MockFactory
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import za.co.absa.loginsvc.model.User
 import za.co.absa.loginsvc.rest.config.auth.{ActiveDirectoryLDAPConfig, LdapRetryConfig, LdapUserCredentialsConfig, ServiceAccountConfig}
 
-class LdapUserRepositoryTest extends AnyFlatSpec with Matchers {
+import javax.naming.NamingEnumeration
+import javax.naming.directory.{Attribute, Attributes, SearchResult}
+
+class LdapUserRepositoryTest extends AnyFlatSpec with Matchers with MockFactory {
 
   private val integratedCfg = LdapUserCredentialsConfig("svc-ldap", "password")
   private val serviceAccountCfg = ServiceAccountConfig(
@@ -87,5 +91,95 @@ class LdapUserRepositoryTest extends AnyFlatSpec with Matchers {
       testLdapUserRepository.searchForUser(testUser.name)
     }
     assert(testLdapUserRepository.counter == 3)
+  }
+
+  // Helper to build a mock SearchResult with the given attributes
+  private def mockSearchResult(username: String, memberOfDNs: Option[Seq[String]], extraFields: Map[String, String] = Map.empty): SearchResult = {
+    val attrs = mock[Attributes]
+    val samAttr = mock[Attribute]
+    (samAttr.get _).expects().returns(username)
+    (attrs.get _).expects("sAMAccountName").returns(samAttr)
+
+    memberOfDNs match {
+      case None =>
+        (attrs.get _).expects("memberOf").returns(null)
+      case Some(dns) =>
+        val memberOfAttr = mock[Attribute]
+        val namingEnum = mock[NamingEnumeration[Object]]
+        val iterator = dns.iterator
+        (namingEnum.hasMoreElements _).expects().onCall(() => iterator.hasNext).anyNumberOfTimes()
+        (namingEnum.nextElement _).expects().onCall(() => iterator.next().asInstanceOf[Object]).anyNumberOfTimes()
+        (memberOfAttr.getAll _).expects().returns(namingEnum)
+        (attrs.get _).expects("memberOf").returns(memberOfAttr)
+    }
+
+    extraFields.foreach { case (fieldName, _) =>
+      (attrs.get _).expects(fieldName).returns(null)
+    }
+
+    val searchResult = mock[SearchResult]
+    (searchResult.getAttributes _).expects().returns(attrs)
+    searchResult
+  }
+
+  "resultToUserEntry" should "parse groups correctly when memberOf is present" in {
+    val repo = new LdapUserRepository(ldapCfgNoRetries)
+    val memberOfDNs = Seq(
+      "CN=group1,OU=Groups,DC=domain,DC=com",
+      "CN=group2,OU=Groups,DC=domain,DC=com"
+    )
+    val result = mockSearchResult("testuser", Some(memberOfDNs))
+
+    val user = repo.resultToUserEntry(result)
+
+    user.name shouldBe "testuser"
+    user.groups shouldBe Seq("group1", "group2")
+    user.optionalAttributes shouldBe Map.empty
+  }
+
+  "resultToUserEntry" should "return empty groups when memberOf attribute is absent (service account)" in {
+    val repo = new LdapUserRepository(ldapCfgNoRetries)
+    val result = mockSearchResult("SVC-eventgate-e2e", None)
+
+    val user = repo.resultToUserEntry(result)
+
+    user.name shouldBe "SVC-eventgate-e2e"
+    user.groups shouldBe Seq.empty
+    user.optionalAttributes shouldBe Map.empty
+  }
+
+  "resultToUserEntry" should "return empty groups when memberOf is empty" in {
+    val repo = new LdapUserRepository(ldapCfgNoRetries)
+    val result = mockSearchResult("testuser", Some(Seq.empty))
+
+    val user = repo.resultToUserEntry(result)
+
+    user.name shouldBe "testuser"
+    user.groups shouldBe Seq.empty
+    user.optionalAttributes shouldBe Map.empty
+  }
+
+  "resultToUserEntry" should "populate optional attributes when config specifies them" in {
+    val ldapCfgWithAttrs = ldapCfgNoRetries.copy(attributes = Some(Map("mail" -> "email")))
+    val repo = new LdapUserRepository(ldapCfgWithAttrs)
+
+    val attrs = mock[Attributes]
+    val samAttr = mock[Attribute]
+    (samAttr.get _).expects().returns("testuser")
+    (attrs.get _).expects("sAMAccountName").returns(samAttr)
+    (attrs.get _).expects("memberOf").returns(null)
+
+    val mailAttr = mock[Attribute]
+    (mailAttr.get _).expects().returns("testuser@example.com")
+    (attrs.get _).expects("mail").returns(mailAttr)
+
+    val searchResult = mock[SearchResult]
+    (searchResult.getAttributes _).expects().returns(attrs)
+
+    val user = repo.resultToUserEntry(searchResult)
+
+    user.name shouldBe "testuser"
+    user.groups shouldBe Seq.empty
+    user.optionalAttributes shouldBe Map("email" -> Some("testuser@example.com"))
   }
 }
