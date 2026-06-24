@@ -97,14 +97,20 @@ class LdapUserRepository(activeDirectoryLDAPConfig: ActiveDirectoryLDAPConfig)
     } else true
   }
 
-  private def resultToUserEntry(result: SearchResult): User = {
+  private[search] def resultToUserEntry(result: SearchResult): User = {
     val attrs: Attributes = result.getAttributes
     val optionalAttr = activeDirectoryLDAPConfig.attributes.getOrElse(Map.empty)
 
     val username = attrs.get("sAMAccountName").get.toString
-    val groups = attrs.get("memberOf").getAll.asScala.map(group => {
-      group.toString.substring(3, group.toString.indexOf(","))
-    }).toSeq
+    val groups = Option(attrs.get("memberOf")) match {
+      case None =>
+        logger.warn(s"No memberOf attribute found for user: $username - defaulting to empty groups")
+        Seq.empty[String]
+      case Some(memberOfAttr) =>
+        memberOfAttr.getAll.asScala.map(group => {
+          group.toString.substring(3, group.toString.indexOf(","))
+        }).toSeq
+    }
     val extraAttributes = optionalAttr.map { case (fieldName, claimName) =>
       val value = Option(attrs.get(fieldName)).map(_.get())
       claimName -> value
