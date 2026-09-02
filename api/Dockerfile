@@ -53,7 +53,7 @@ COPY $LDAP_SSL_CERTS_PATH/*.pem /opt/certs/
 # Java 11+ paths used
 RUN for file in `ls /opt/certs/*.pem`; \
 do \
-    echo yes | keytool -import -file $file -alias ldaps$RANDOM -keystore $JAVA_HOME/lib/security/cacerts -storepass changeit; \
+    keytool -import -file $file -alias $file -cacerts -storepass changeit -noprompt; \
 done
 
 # uncomment and add packages you would need to install via yum if any
