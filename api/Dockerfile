@@ -50,11 +50,27 @@ RUN mkdir -p /opt/certs
 # just PEMs are supported
 COPY $LDAP_SSL_CERTS_PATH/*.pem /opt/certs/
 
-# Java 11+ paths used
-RUN for file in `ls /opt/certs/*.pem`; \
-do \
-    echo yes | keytool -import -file $file -alias ldaps$RANDOM -keystore $JAVA_HOME/lib/security/cacerts -storepass changeit; \
-done
+# Trust the LDAP CA certs at the OS level (this base image is Amazon Linux
+# based, hence "update-ca-trust" rather than Debian's
+# "update-ca-certificates"). This is cheap/native (no JVM involved) and, as
+# a side effect, also (re)generates a consolidated Java truststore
+# containing every trusted CA (the existing system CAs plus our LDAP CAs,
+# each with an alias derived deterministically from the certificate
+# subject) at /etc/pki/ca-trust/extracted/java/cacerts.
+RUN cp /opt/certs/*.pem /etc/pki/ca-trust/source/anchors/ \
+    && update-ca-trust extract
+
+# Import that consolidated truststore into the JDK's cacerts with a SINGLE
+# keytool (JVM) invocation, instead of looping and launching keytool once
+# per PEM file. Under QEMU emulation (e.g. building linux/amd64 on an
+# arm64 runner) every JVM launch is extremely expensive, so this turns ~1
+# slow emulated JVM launch per certificate into a single one for all
+# certs combined, while still ending up with every LDAP CA cert trusted
+# by the JDK at runtime, using aliases derived from the certs themselves
+# rather than $RANDOM.
+RUN keytool -importkeystore -noprompt \
+        -srckeystore /etc/pki/ca-trust/extracted/java/cacerts -srcstorepass changeit \
+        -destkeystore $JAVA_HOME/lib/security/cacerts -deststorepass changeit
 
 # uncomment and add packages you would need to install via yum if any
 #RUN yum -y update
