@@ -50,11 +50,15 @@ RUN mkdir -p /opt/certs
 # just PEMs are supported
 COPY $LDAP_SSL_CERTS_PATH/*.pem /opt/certs/
 
-# Java 11+ paths used
-RUN for file in `ls /opt/certs/*.pem`; \
-do \
-    echo yes | keytool -import -file $file -alias ldaps$RANDOM -keystore $JAVA_HOME/lib/security/cacerts -storepass changeit; \
-done
+# Trust the LDAP CA certs at the OS level + imports PEMs there.
+# Generates a consolidated truststore at /etc/pki/ca-trust/extracted/java/cacerts, which is then imported into the JDK's cacerts below.
+RUN cp /opt/certs/*.pem /etc/pki/ca-trust/source/anchors/ \
+    && update-ca-trust extract
+# Import that consolidated truststore into the JDK's cacerts with a SINGLE
+# keytool (JVM) invocation (important for performance - running QEMU emulation on arm64 for amd64)
+RUN keytool -importkeystore -noprompt \
+        -srckeystore /etc/pki/ca-trust/extracted/java/cacerts -srcstorepass changeit \
+        -destkeystore $JAVA_HOME/lib/security/cacerts -deststorepass changeit
 
 # uncomment and add packages you would need to install via yum if any
 #RUN yum -y update
