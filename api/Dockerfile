@@ -15,7 +15,7 @@
 
 # Conditional Docker image creation idea: https://stackoverflow.com/a/60820156/1773349
 # change to OFF to disable SSL
-ARG SSL=true
+ARG SSL=false
 # Tomcat OS base image, feel free to use another (e.g. your hardened one)
 ARG BASE_IMAGE=tomcat:9-jdk17-corretto
 
@@ -53,7 +53,7 @@ COPY $LDAP_SSL_CERTS_PATH/*.pem /opt/certs/
 # Java 11+ paths used
 RUN for file in `ls /opt/certs/*.pem`; \
 do \
-    echo yes | keytool -import -file $file -alias ldaps$RANDOM -keystore $JAVA_HOME/lib/security/cacerts -storepass changeit; \
+    keytool -import -file $file -alias $file -cacerts -storepass changeit -noprompt; \
 done
 
 # uncomment and add packages you would need to install via yum if any
