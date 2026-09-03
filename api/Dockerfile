@@ -15,7 +15,7 @@
 
 # Conditional Docker image creation idea: https://stackoverflow.com/a/60820156/1773349
 # change to OFF to disable SSL
-ARG SSL=true
+ARG SSL=false
 # Tomcat OS base image, feel free to use another (e.g. your hardened one)
 ARG BASE_IMAGE=tomcat:9-jdk17-corretto
 
