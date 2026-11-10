@@ -51,6 +51,8 @@ class MsEntraTokenValidator(
   private[entra] val graphClientOverride: Option[GraphUsernameResolver] = None
 ) {
 
+  import MsEntraTokenValidator.{PrincipalTypeAttribute, ServicePrincipalType}
+
   private val logger = LoggerFactory.getLogger(classOf[MsEntraTokenValidator])
 
   // Use the injected graph resolver (for tests) or create one from config if clientSecret is set
@@ -134,11 +136,23 @@ class MsEntraTokenValidator(
     }
   }
 
-  private def isAppOnlyToken(claims: JWTClaimsSet): Boolean = {
-    val hasUserClaims = Option(claims.getStringClaim("preferred_username")).orElse(Option(claims.getStringClaim("upn"))).isDefined
-    val oid = Option(claims.getStringClaim("oid"))
-    claims.getStringClaim("idtyp") == "app" || (!hasUserClaims && oid.isDefined && oid.contains(claims.getSubject))
-  }
+  private def isAppOnlyToken(claims: JWTClaimsSet): Boolean =
+    Option(claims.getStringClaim("idtyp")) match {
+      case Some(idtyp) => idtyp == "app"
+      case None => // v1 tokens carry no idtyp
+        val hasUserClaims = Option(claims.getStringClaim("preferred_username")).orElse(Option(claims.getStringClaim("upn"))).isDefined
+        val hasDelegatedScopes = Option(claims.getClaim("scp")).isDefined
+        val oid = Option(claims.getStringClaim("oid"))
+        !hasUserClaims && !hasDelegatedScopes && oid.contains(claims.getSubject)
+    }
+
+  private def mappedAttributes(claims: JWTClaimsSet): Map[String, Option[AnyRef]] =
+    config.attributes.getOrElse(Map.empty).flatMap {
+      case (claimName, lsClaimName) =>
+        Option(claims.getClaim(claimName)).map { value =>
+          lsClaimName -> Some(value.asInstanceOf[AnyRef])
+        }
+    }
 
   private def extractServicePrincipal(claims: JWTClaimsSet): User = {
     if (!config.allowServicePrincipals)
@@ -155,7 +169,7 @@ class MsEntraTokenValidator(
     }
 
     val roles = Option(claims.getStringListClaim("roles")).map(_.asScala.toSeq).getOrElse(Seq.empty)
-    User(s"sp-$clientId", roles, Map("principalType" -> Some("service")))
+    User(s"sp-$clientId", roles, mappedAttributes(claims) + (PrincipalTypeAttribute -> Some(ServicePrincipalType)))
   }
 
   private def extractUser(claims: JWTClaimsSet): User =
@@ -175,14 +189,8 @@ class MsEntraTokenValidator(
       .map(_.asScala.toSeq)
       .getOrElse(Seq.empty)
 
-    val optionalAttributes: Map[String, Option[AnyRef]] = config.attributes.getOrElse(Map.empty).flatMap {
-      case (claimName, lsClaimName) =>
-        Option(claims.getClaim(claimName)).map { value =>
-          lsClaimName -> Some(value.asInstanceOf[AnyRef])
-        }
-    }
-
-    User(username, groups, optionalAttributes)
+    // the marker must never be settable through claim mapping, as it bypasses LDAP checks
+    User(username, groups, mappedAttributes(claims) - PrincipalTypeAttribute)
   }
 
   private def resolveJwksUri(): String = {
@@ -199,5 +207,8 @@ class MsEntraTokenValidator(
 }
 
 object MsEntraTokenValidator {
+  val PrincipalTypeAttribute = "principalType"
+  val ServicePrincipalType = "service"
+
   def apply(config: MsEntraConfig): MsEntraTokenValidator = new MsEntraTokenValidator(config)
 }

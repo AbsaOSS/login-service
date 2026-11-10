@@ -28,6 +28,7 @@ import za.co.absa.loginsvc.rest.config.jwt.InMemoryKeyConfig
 import za.co.absa.loginsvc.rest.config.provider.JwtConfigProvider
 import za.co.absa.loginsvc.rest.model.{AccessToken, RefreshToken, Token}
 import za.co.absa.loginsvc.rest.provider.ad.ldap.LdapConnectionException
+import za.co.absa.loginsvc.rest.provider.entra.MsEntraTokenValidator
 import za.co.absa.loginsvc.rest.service.jwt.JWTService.{extractUserFrom, parseWithKeys}
 import za.co.absa.loginsvc.rest.service.search.UserSearchService
 import za.co.absa.loginsvc.utils.OptionUtils.ImplicitBuilderExt
@@ -76,7 +77,7 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider, authSearchSe
     lazy val userUpdatedFromLdapWithGroupsFiltering = loadUserDetailsFromLdap(inputUser.name)
       .applyIfDefined(optPrefixConfig){(user: User, prefixesConfig: PrefixesConfig) => user.filterGroupsByPrefixConfig(prefixesConfig)}
 
-    val isServicePrincipal = inputUser.optionalAttributes.get("principalType").flatten.exists(_.toString == "service")
+    val isServicePrincipal = inputUser.optionalAttributes.get(MsEntraTokenValidator.PrincipalTypeAttribute).flatten.exists(_.toString == MsEntraTokenValidator.ServicePrincipalType)
 
     val groupsClaim = {
       if (isServicePrincipal) {

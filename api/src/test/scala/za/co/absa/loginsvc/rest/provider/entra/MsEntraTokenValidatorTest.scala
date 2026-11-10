@@ -227,7 +227,8 @@ class MsEntraTokenValidatorTest extends AnyFlatSpec with Matchers {
     roles: Option[Seq[String]] = Some(Seq("Role.A", "Role.B")),
     appClaim: Option[(String, String)] = Some("azp" -> "client-guid"),
     oid: String = "sp-object-id",
-    idtyp: Option[String] = Some("app")
+    idtyp: Option[String] = Some("app"),
+    extraClaims: Map[String, String] = Map.empty
   ): String = {
     val builder = new JWTClaimsSet.Builder()
       .subject(oid)
@@ -237,6 +238,7 @@ class MsEntraTokenValidatorTest extends AnyFlatSpec with Matchers {
       .expirationTime(new Date(System.currentTimeMillis() + 3600 * 1000L))
       .claim("oid", oid)
     idtyp.foreach(builder.claim("idtyp", _))
+    extraClaims.foreach { case (name, value) => builder.claim(name, value) }
     appClaim.foreach { case (name, value) => builder.claim(name, value) }
     roles.foreach(r => builder.claim("roles", r.asJava))
     val jwt = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.RS256).keyID(rsaJwk.getKeyID).build(), builder.build())
@@ -335,5 +337,30 @@ class MsEntraTokenValidatorTest extends AnyFlatSpec with Matchers {
 
       discoveringValidator.validate(buildToken(issuerOverride = s"$baseUrl/$tenantId/v2.0")) shouldBe a[Failure[_]]
     }
+  }
+
+  it should "not treat a delegated user token with idtyp=user as a service principal" in {
+    val result = spValidator.validate(buildAppToken(idtyp = Some("user"), appClaim = Some("appid" -> "client-app")))
+    result.get.optionalAttributes.get("principalType") shouldBe None
+  }
+
+  it should "not treat a v1 token with delegated scopes and no username claims as a service principal" in {
+    val result = spValidator.validate(buildAppToken(idtyp = None, appClaim = Some("appid" -> "client-app"), extraClaims = Map("scp" -> "user_impersonation")))
+    result.get.optionalAttributes.get("principalType") shouldBe None
+  }
+
+  it should "apply configured claim mappings to app-only tokens" in {
+    val mapping = new MsEntraTokenValidator(spConfig.copy(attributes = Some(Map("oid" -> "objectId"))), Some(jwkSource))
+    mapping.validate(buildAppToken()).get.optionalAttributes.get("objectId") shouldBe Some(Some("sp-object-id"))
+  }
+
+  it should "keep principalType=service even when a claim mapping targets it" in {
+    val mapping = new MsEntraTokenValidator(spConfig.copy(attributes = Some(Map("oid" -> "principalType"))), Some(jwkSource))
+    mapping.validate(buildAppToken()).get.optionalAttributes.get("principalType") shouldBe Some(Some("service"))
+  }
+
+  it should "not let a user token set principalType through claim mapping" in {
+    val mapping = new MsEntraTokenValidator(config.copy(attributes = Some(Map("email" -> "principalType"))), Some(jwkSource))
+    mapping.validate(buildToken()).get.optionalAttributes.get("principalType") shouldBe None
   }
 }
