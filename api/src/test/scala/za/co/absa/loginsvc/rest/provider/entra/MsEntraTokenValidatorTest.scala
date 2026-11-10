@@ -28,6 +28,9 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import za.co.absa.loginsvc.rest.config.auth.MsEntraConfig
 
+import com.sun.net.httpserver.{HttpExchange, HttpServer}
+
+import java.net.InetSocketAddress
 import java.security.KeyPairGenerator
 import java.util.{Date, UUID}
 import scala.collection.JavaConverters._
@@ -222,8 +225,9 @@ class MsEntraTokenValidatorTest extends AnyFlatSpec with Matchers {
   private def buildAppToken(
     issuerOverride: String = issuer,
     roles: Option[Seq[String]] = Some(Seq("Role.A", "Role.B")),
-    appClaim: (String, String) = "azp" -> "client-guid",
-    oid: String = "sp-object-id"
+    appClaim: Option[(String, String)] = Some("azp" -> "client-guid"),
+    oid: String = "sp-object-id",
+    idtyp: Option[String] = Some("app")
   ): String = {
     val builder = new JWTClaimsSet.Builder()
       .subject(oid)
@@ -232,8 +236,8 @@ class MsEntraTokenValidatorTest extends AnyFlatSpec with Matchers {
       .issueTime(new Date())
       .expirationTime(new Date(System.currentTimeMillis() + 3600 * 1000L))
       .claim("oid", oid)
-      .claim("idtyp", "app")
-      .claim(appClaim._1, appClaim._2)
+    idtyp.foreach(builder.claim("idtyp", _))
+    appClaim.foreach { case (name, value) => builder.claim(name, value) }
     roles.foreach(r => builder.claim("roles", r.asJava))
     val jwt = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.RS256).keyID(rsaJwk.getKeyID).build(), builder.build())
     jwt.sign(new RSASSASigner(rsaJwk))
@@ -252,7 +256,7 @@ class MsEntraTokenValidatorTest extends AnyFlatSpec with Matchers {
   }
 
   it should "use appid claim for v1 app-only tokens issued by sts.windows.net" in {
-    val user = spValidator.validate(buildAppToken(issuerOverride = v1Issuer, appClaim = "appid" -> "v1-client")).get
+    val user = spValidator.validate(buildAppToken(issuerOverride = v1Issuer, appClaim = Some("appid" -> "v1-client"))).get
     user.name shouldBe "sp-v1-client"
   }
 
@@ -267,11 +271,69 @@ class MsEntraTokenValidatorTest extends AnyFlatSpec with Matchers {
   it should "accept only allow-listed service principals when an allow list is configured" in {
     val listed = new MsEntraTokenValidator(spConfig.copy(servicePrincipalAllowList = Some(List("client-guid"))), Some(jwkSource))
     listed.validate(buildAppToken()) shouldBe a[Success[_]]
-    listed.validate(buildAppToken(appClaim = "azp" -> "other")) shouldBe a[Failure[_]]
+    listed.validate(buildAppToken(appClaim = Some("azp" -> "other"))) shouldBe a[Failure[_]]
   }
 
   it should "reject a config enabling service principals without audiences" in {
     val invalid = config.copy(allowServicePrincipals = true, audiences = List.empty)
     an[Exception] should be thrownBy invalid.throwErrors()
+  }
+
+  it should "detect an app-only token without idtyp when it has no user claims and oid equals sub" in {
+    spValidator.validate(buildAppToken(idtyp = None)).get.name shouldBe "sp-client-guid"
+  }
+
+  it should "reject an app-only token without azp and appid claims" in {
+    spValidator.validate(buildAppToken(appClaim = None)) shouldBe a[Failure[_]]
+  }
+
+  it should "accept a service principal by oid when listed in the allow list" in {
+    val listed = new MsEntraTokenValidator(spConfig.copy(servicePrincipalAllowList = Some(List("sp-object-id"))), Some(jwkSource))
+    listed.validate(buildAppToken()) shouldBe a[Success[_]]
+  }
+
+  it should "treat a token with user claims and no idtyp as a user token even when oid equals sub" in {
+    val now = new Date()
+    val claims = new JWTClaimsSet.Builder()
+      .subject("same-id").issuer(issuer).audience(audience)
+      .issueTime(now).expirationTime(new Date(now.getTime + 3600 * 1000L))
+      .claim("oid", "same-id").claim("preferred_username", "person@example.com")
+      .build()
+    val jwt = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.RS256).keyID(rsaJwk.getKeyID).build(), claims)
+    jwt.sign(new RSASSASigner(rsaJwk))
+
+    spValidator.validate(jwt.serialize()).get.name shouldBe "person@example.com"
+  }
+
+  private def withDiscoveryServer(discoveryBody: String => String)(test: String => Unit): Unit = {
+    val server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0)
+    val baseUrl = s"http://127.0.0.1:${server.getAddress.getPort}"
+    def respond(exchange: HttpExchange, body: String): Unit = {
+      val bytes = body.getBytes("UTF-8")
+      exchange.sendResponseHeaders(200, bytes.length)
+      exchange.getResponseBody.write(bytes)
+      exchange.close()
+    }
+    server.createContext(s"/$tenantId/v2.0/.well-known/openid-configuration", (e: HttpExchange) => respond(e, discoveryBody(baseUrl)))
+    server.createContext("/keys", (e: HttpExchange) => respond(e, jwkSet.toString))
+    server.start()
+    try test(baseUrl) finally server.stop(0)
+  }
+
+  it should "resolve the JWKS from the OIDC discovery document when no JWK source is injected" in {
+    withDiscoveryServer(base => s"""{"jwks_uri": "$base/keys"}""") { baseUrl =>
+      val discoveringValidator = new MsEntraTokenValidator(config.copy(loginBaseUrl = baseUrl, allowServicePrincipals = true))
+      val token = buildAppToken(issuerOverride = s"$baseUrl/$tenantId/v2.0")
+
+      discoveringValidator.validate(token).get.name shouldBe "sp-client-guid"
+    }
+  }
+
+  it should "fail when the OIDC discovery document has no jwks_uri" in {
+    withDiscoveryServer(_ => "{}") { baseUrl =>
+      val discoveringValidator = new MsEntraTokenValidator(config.copy(loginBaseUrl = baseUrl))
+
+      discoveringValidator.validate(buildToken(issuerOverride = s"$baseUrl/$tenantId/v2.0")) shouldBe a[Failure[_]]
+    }
   }
 }
