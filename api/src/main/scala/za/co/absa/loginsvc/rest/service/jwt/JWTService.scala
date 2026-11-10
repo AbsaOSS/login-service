@@ -76,8 +76,12 @@ class JWTService @Autowired()(jwtConfigProvider: JwtConfigProvider, authSearchSe
     lazy val userUpdatedFromLdapWithGroupsFiltering = loadUserDetailsFromLdap(inputUser.name)
       .applyIfDefined(optPrefixConfig){(user: User, prefixesConfig: PrefixesConfig) => user.filterGroupsByPrefixConfig(prefixesConfig)}
 
+    val isServicePrincipal = inputUser.optionalAttributes.get("principalType").flatten.exists(_.toString == "service")
+
     val groupsClaim = {
-      if (isRefresh) {
+      if (isServicePrincipal) {
+        inputUserWithGroupsFiltering.groups // service principals do not exist in LDAP
+      } else if (isRefresh) {
         // refresh: intersecting existing groups with newly updated. New groups are never added, but removed if they are not in LDAP anymore.
         inputUserWithGroupsFiltering.groups.intersect(userUpdatedFromLdapWithGroupsFiltering.groups)
       } else if (inputUser.groups.isEmpty && jwtConfig.allowProvidersToRefreshGroupsOnGenerate) {

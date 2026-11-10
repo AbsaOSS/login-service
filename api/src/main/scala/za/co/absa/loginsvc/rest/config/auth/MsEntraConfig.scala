@@ -43,6 +43,10 @@ import za.co.absa.loginsvc.rest.config.validation.{ConfigValidatable, ConfigVali
  *                      Override for sovereign clouds (e.g. Azure Government).
  * @param jwksConnectTimeoutMs Connect timeout (in ms) for fetching the JWKS from Microsoft. Defaults to 10000.
  * @param jwksReadTimeoutMs    Read timeout (in ms) for fetching the JWKS from Microsoft. Defaults to 10000.
+ * @param allowServicePrincipals Accept Entra app-only (client-credentials) tokens from service principals. Defaults to false.
+ *                      Requires non-empty `audiences`. Such tokens never trigger Graph or LDAP lookups;
+ *                      the `roles` claim is mapped to groups.
+ * @param servicePrincipalAllowList Optional list of `azp`/`appid`/`oid` values; when set, only these service principals are accepted.
  */
 case class MsEntraConfig(
   tenantId: String,
@@ -55,7 +59,9 @@ case class MsEntraConfig(
   loginBaseUrl: String = "https://login.microsoftonline.com",
   graphBaseUrl: String = "https://graph.microsoft.com",
   jwksConnectTimeoutMs: Int = 10000,
-  jwksReadTimeoutMs: Int = 10000
+  jwksReadTimeoutMs: Int = 10000,
+  allowServicePrincipals: Boolean = false,
+  servicePrincipalAllowList: Option[List[String]] = None
 ) extends ConfigValidatable with ConfigOrdering {
 
   def throwErrors(): Unit =
@@ -70,7 +76,11 @@ case class MsEntraConfig(
 
         Option(clientId)
           .map(_ => ConfigValidationSuccess)
-          .getOrElse(ConfigValidationError(ConfigValidationException("clientId is empty")))
+          .getOrElse(ConfigValidationError(ConfigValidationException("clientId is empty"))),
+
+        if (allowServicePrincipals && audiences.isEmpty)
+          ConfigValidationError(ConfigValidationException("audiences must not be empty when allowServicePrincipals is enabled"))
+        else ConfigValidationSuccess
       )
 
       results.foldLeft[ConfigValidationResult](ConfigValidationSuccess)(ConfigValidationResult.merge)

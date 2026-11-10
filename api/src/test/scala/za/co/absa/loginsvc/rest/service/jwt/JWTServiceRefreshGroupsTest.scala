@@ -117,5 +117,22 @@ class JWTServiceRefreshGroupsTest extends AnyFlatSpec with BeforeAndAfterEach wi
 
     actualGroups shouldBe Seq("custom-group")
   }
-}
 
+  it should "NOT look up service principal in LDAP when generating a token with empty groups" in {
+    val servicePrincipal = User("sp-client-1", Seq.empty, Map("principalType" -> Some("service")))
+    val parsedJWT = parseJWT(jwtService.generateAccessToken(servicePrincipal, None))
+
+    parsedJWT.get.getBody.getSubject shouldBe "sp-client-1"
+    parsedJWT.get.getBody.get("groups", classOf[util.ArrayList[String]]).asScala shouldBe empty
+  }
+
+  it should "keep service principal groups and skip LDAP on refresh" in {
+    val servicePrincipal = User("sp-client-1", Seq("role-a"), Map("principalType" -> Some("service")))
+    val accessToken = jwtService.generateAccessToken(servicePrincipal, None)
+    val refreshToken = jwtService.generateRefreshToken(servicePrincipal)
+
+    val (newAccess, _) = jwtService.refreshTokens(accessToken, refreshToken)
+
+    parseJWT(newAccess).get.getBody.get("groups", classOf[util.ArrayList[String]]).asScala shouldBe Seq("role-a")
+  }
+}

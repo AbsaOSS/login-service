@@ -227,6 +227,9 @@ Example config:
             email: "email"
           jwks-connect-timeout-ms: 10000
           jwks-read-timeout-ms: 10000
+          allow-service-principals: false
+          service-principal-allow-list:
+            - "service-app-client-id"
 ```
 
 Available options:
@@ -241,6 +244,8 @@ Available options:
 - `attributes` — Map of Entra JWT claim names to LS JWT claim names.
 - `jwks-connect-timeout-ms` — TCP connect timeout (ms) when fetching Microsoft's JWKS. Optional, defaults to `10000`.
 - `jwks-read-timeout-ms` — Socket read timeout (ms) when downloading the JWKS payload. Optional, defaults to `10000`.
+- `allow-service-principals` — accept Entra app-only (client-credentials / M2M) tokens. Optional, defaults to `false`. Requires non-empty `audiences`. The token is mapped to user `sp-<azp|appid>`, its `roles` claim becomes groups, the token gets attribute `principalType=service`, and no Graph/LDAP lookup is done (also on `/token/refresh`, where the groups of the old token are kept). v1 tokens (issuer `https://sts.windows.net/{tenant}/`) are accepted too.
+- `service-principal-allow-list` — optional list of `azp`/`appid`/`oid` values; when set, only these service principals are accepted.
 
 ## Using MS Entra (Azure AD) Authentication with /token/refresh
 When combining the MS Entra (Azure AD) authentication provider with the `/token/refresh` endpoint,

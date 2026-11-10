@@ -31,7 +31,7 @@ import za.co.absa.loginsvc.rest.config.auth.MsEntraConfig
 import java.security.KeyPairGenerator
 import java.util.{Date, UUID}
 import scala.collection.JavaConverters._
-import scala.util.Success
+import scala.util.{Failure, Success}
 
 class MsEntraTokenValidatorTest extends AnyFlatSpec with Matchers {
 
@@ -213,5 +213,65 @@ class MsEntraTokenValidatorTest extends AnyFlatSpec with Matchers {
     val token = buildToken(preferredUsername = "fallback@example.com")
     val user = validatorWithGraph.validate(token).get
     user.name shouldBe "fallback@example.com"
+  }
+
+  private val v1Issuer = s"https://sts.windows.net/$tenantId/"
+  private val spConfig = config.copy(allowServicePrincipals = true)
+  private val spValidator = new MsEntraTokenValidator(spConfig, Some(jwkSource))
+
+  private def buildAppToken(
+    issuerOverride: String = issuer,
+    roles: Option[Seq[String]] = Some(Seq("Role.A", "Role.B")),
+    appClaim: (String, String) = "azp" -> "client-guid",
+    oid: String = "sp-object-id"
+  ): String = {
+    val builder = new JWTClaimsSet.Builder()
+      .subject(oid)
+      .issuer(issuerOverride)
+      .audience(audience)
+      .issueTime(new Date())
+      .expirationTime(new Date(System.currentTimeMillis() + 3600 * 1000L))
+      .claim("oid", oid)
+      .claim("idtyp", "app")
+      .claim(appClaim._1, appClaim._2)
+    roles.foreach(r => builder.claim("roles", r.asJava))
+    val jwt = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.RS256).keyID(rsaJwk.getKeyID).build(), builder.build())
+    jwt.sign(new RSASSASigner(rsaJwk))
+    jwt.serialize()
+  }
+
+  it should "map an app-only token to a service principal user with roles as groups" in {
+    val user = spValidator.validate(buildAppToken()).get
+    user.name shouldBe "sp-client-guid"
+    user.groups should contain theSameElementsAs Seq("Role.A", "Role.B")
+    user.optionalAttributes.get("principalType") shouldBe Some(Some("service"))
+  }
+
+  it should "map an app-only token without roles to empty groups" in {
+    spValidator.validate(buildAppToken(roles = None)).get.groups shouldBe empty
+  }
+
+  it should "use appid claim for v1 app-only tokens issued by sts.windows.net" in {
+    val user = spValidator.validate(buildAppToken(issuerOverride = v1Issuer, appClaim = "appid" -> "v1-client")).get
+    user.name shouldBe "sp-v1-client"
+  }
+
+  it should "reject v1 issuer when service principals are not allowed" in {
+    validator.validate(buildAppToken(issuerOverride = v1Issuer)) shouldBe a[Failure[_]]
+  }
+
+  it should "reject app-only tokens when service principals are not allowed" in {
+    validator.validate(buildAppToken()) shouldBe a[Failure[_]]
+  }
+
+  it should "accept only allow-listed service principals when an allow list is configured" in {
+    val listed = new MsEntraTokenValidator(spConfig.copy(servicePrincipalAllowList = Some(List("client-guid"))), Some(jwkSource))
+    listed.validate(buildAppToken()) shouldBe a[Success[_]]
+    listed.validate(buildAppToken(appClaim = "azp" -> "other")) shouldBe a[Failure[_]]
+  }
+
+  it should "reject a config enabling service principals without audiences" in {
+    val invalid = config.copy(allowServicePrincipals = true, audiences = List.empty)
+    an[Exception] should be thrownBy invalid.throwErrors()
   }
 }
