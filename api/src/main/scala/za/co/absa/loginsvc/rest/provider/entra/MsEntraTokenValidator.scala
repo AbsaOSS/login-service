@@ -62,12 +62,7 @@ class MsEntraTokenValidator(
   private val discoveryUrl =
     s"${config.loginBaseUrl}/${config.tenantId}/v2.0/.well-known/openid-configuration"
 
-  private val expectedIssuers: Set[String] = {
-    val v2Issuer = s"${config.loginBaseUrl}/${config.tenantId}/v2.0"
-    // v1 issuer is only relevant for app-only tokens of apps with accessTokenAcceptedVersion null/1
-    if (config.allowServicePrincipals) Set(v2Issuer, s"https://sts.windows.net/${config.tenantId}/")
-    else Set(v2Issuer)
-  }
+  private val expectedIssuer = s"${config.loginBaseUrl}/${config.tenantId}/v2.0"
 
   // Cache the JWKSource keyed by jwks_uri string; refreshes after 1 hour
   private val jwkSourceCache: LoadingCache[String, JWKSource[NimbusSecurityContext]] =
@@ -112,8 +107,8 @@ class MsEntraTokenValidator(
 
       val claims: JWTClaimsSet = jwtProcessor.process(rawToken, null)
 
-      if (!expectedIssuers.contains(claims.getIssuer))
-        throw new BadJWTException(s"JWT iss claim has value ${claims.getIssuer}, must be one of $expectedIssuers")
+      if (claims.getIssuer != expectedIssuer)
+        throw new BadJWTException(s"JWT iss claim has value ${claims.getIssuer}, must be $expectedIssuer")
 
       // Audience check: if audiences are configured, token must contain at least one
       if (config.audiences.nonEmpty) {
@@ -139,7 +134,7 @@ class MsEntraTokenValidator(
   private def isAppOnlyToken(claims: JWTClaimsSet): Boolean =
     Option(claims.getStringClaim("idtyp")) match {
       case Some(idtyp) => idtyp == "app"
-      case None => // v1 tokens carry no idtyp
+      case None => // idtyp is an optional claim; infer app-only from absent user claims
         val hasUserClaims = Option(claims.getStringClaim("preferred_username")).orElse(Option(claims.getStringClaim("upn"))).isDefined
         val hasDelegatedScopes = Option(claims.getClaim("scp")).isDefined
         val oid = Option(claims.getStringClaim("oid"))
@@ -159,8 +154,7 @@ class MsEntraTokenValidator(
       throw new BadJWTException("Entra app-only tokens are not accepted (allowServicePrincipals is disabled)")
 
     val clientId = Option(claims.getStringClaim("azp"))
-      .orElse(Option(claims.getStringClaim("appid")))
-      .getOrElse(throw new BadJWTException("Entra app-only token has no azp/appid claim"))
+      .getOrElse(throw new BadJWTException("Entra app-only token has no azp claim"))
 
     config.servicePrincipalAllowList.foreach { allowed =>
       val identities = Set(clientId) ++ Option(claims.getStringClaim("oid"))

@@ -175,6 +175,26 @@ class MsEntraTokenValidatorTest extends AnyFlatSpec with Matchers {
     result.isFailure shouldBe true
   }
 
+  it should "accept a token whose aud claim lists several audiences when one is configured" in {
+    val claims = new JWTClaimsSet.Builder()
+      .subject("user-oid-123")
+      .issuer(issuer)
+      .audience(List("api://unrelated", audience2).asJava)
+      .issueTime(new Date())
+      .expirationTime(new Date(System.currentTimeMillis() + 3600 * 1000L))
+      .claim("preferred_username", "user@example.com")
+      .build()
+    val jwt = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.RS256).keyID(rsaJwk.getKeyID).build(), claims)
+    jwt.sign(new RSASSASigner(rsaJwk))
+
+    validator.validate(jwt.serialize()) shouldBe a[Success[_]]
+  }
+
+  it should "accept any audience when no audiences are configured" in {
+    val unrestricted = new MsEntraTokenValidator(config.copy(audiences = List.empty), Some(jwkSource))
+    unrestricted.validate(buildToken(audienceOverride = "api://anything")) shouldBe a[Success[_]]
+  }
+
   it should "return a Failure for a malformed token string" in {
     val result = validator.validate("not.a.valid.jwt")
     result.isFailure shouldBe true
@@ -218,7 +238,6 @@ class MsEntraTokenValidatorTest extends AnyFlatSpec with Matchers {
     user.name shouldBe "fallback@example.com"
   }
 
-  private val v1Issuer = s"https://sts.windows.net/$tenantId/"
   private val spConfig = config.copy(allowServicePrincipals = true)
   private val spValidator = new MsEntraTokenValidator(spConfig, Some(jwkSource))
 
@@ -226,7 +245,7 @@ class MsEntraTokenValidatorTest extends AnyFlatSpec with Matchers {
     issuerOverride: String = issuer,
     roles: Option[Seq[String]] = Some(Seq("Role.A", "Role.B")),
     appClaim: Option[(String, String)] = Some("azp" -> "client-guid"),
-    oid: String = "sp-object-id",
+    oid: String = "sp-34ca0488-ec78-48e8-a86b-6a0c48bdf4ad",
     idtyp: Option[String] = Some("app"),
     extraClaims: Map[String, String] = Map.empty
   ): String = {
@@ -257,13 +276,8 @@ class MsEntraTokenValidatorTest extends AnyFlatSpec with Matchers {
     spValidator.validate(buildAppToken(roles = None)).get.groups shouldBe empty
   }
 
-  it should "use appid claim for v1 app-only tokens issued by sts.windows.net" in {
-    val user = spValidator.validate(buildAppToken(issuerOverride = v1Issuer, appClaim = Some("appid" -> "v1-client"))).get
-    user.name shouldBe "sp-v1-client"
-  }
-
-  it should "reject v1 issuer when service principals are not allowed" in {
-    validator.validate(buildAppToken(issuerOverride = v1Issuer)) shouldBe a[Failure[_]]
+  it should "reject a v1 issuer token" in {
+    spValidator.validate(buildAppToken(issuerOverride = s"https://sts.windows.net/$tenantId/")) shouldBe a[Failure[_]]
   }
 
   it should "reject app-only tokens when service principals are not allowed" in {
@@ -290,7 +304,7 @@ class MsEntraTokenValidatorTest extends AnyFlatSpec with Matchers {
   }
 
   it should "accept a service principal by oid when listed in the allow list" in {
-    val listed = new MsEntraTokenValidator(spConfig.copy(servicePrincipalAllowList = Some(List("sp-object-id"))), Some(jwkSource))
+    val listed = new MsEntraTokenValidator(spConfig.copy(servicePrincipalAllowList = Some(List("sp-34ca0488-ec78-48e8-a86b-6a0c48bdf4ad"))), Some(jwkSource))
     listed.validate(buildAppToken()) shouldBe a[Success[_]]
   }
 
@@ -344,14 +358,14 @@ class MsEntraTokenValidatorTest extends AnyFlatSpec with Matchers {
     result.get.optionalAttributes.get("principalType") shouldBe None
   }
 
-  it should "not treat a v1 token with delegated scopes and no username claims as a service principal" in {
+  it should "not treat a token without idtyp with delegated scopes and no username claims as a service principal" in {
     val result = spValidator.validate(buildAppToken(idtyp = None, appClaim = Some("appid" -> "client-app"), extraClaims = Map("scp" -> "user_impersonation")))
     result.get.optionalAttributes.get("principalType") shouldBe None
   }
 
   it should "apply configured claim mappings to app-only tokens" in {
     val mapping = new MsEntraTokenValidator(spConfig.copy(attributes = Some(Map("oid" -> "objectId"))), Some(jwkSource))
-    mapping.validate(buildAppToken()).get.optionalAttributes.get("objectId") shouldBe Some(Some("sp-object-id"))
+    mapping.validate(buildAppToken()).get.optionalAttributes.get("objectId") shouldBe Some(Some("sp-34ca0488-ec78-48e8-a86b-6a0c48bdf4ad"))
   }
 
   it should "keep principalType=service even when a claim mapping targets it" in {

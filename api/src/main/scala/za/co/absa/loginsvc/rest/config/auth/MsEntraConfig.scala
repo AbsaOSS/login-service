@@ -46,7 +46,7 @@ import za.co.absa.loginsvc.rest.config.validation.{ConfigValidatable, ConfigVali
  * @param allowServicePrincipals Accept Entra app-only (client-credentials) tokens from service principals. Defaults to false.
  *                      Requires non-empty `audiences`. Such tokens never trigger Graph or LDAP lookups;
  *                      the `roles` claim is mapped to groups.
- * @param servicePrincipalAllowList Optional list of `azp`/`appid`/`oid` values; when set, only these service principals are accepted.
+ * @param servicePrincipalAllowList Optional list of `azp`/`oid` values; when set, only these service principals are accepted.
  */
 case class MsEntraConfig(
   tenantId: String,
