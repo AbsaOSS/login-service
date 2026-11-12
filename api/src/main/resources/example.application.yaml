@@ -143,6 +143,10 @@ loginsvc:
           # endpoint is under load.
           #jwks-connect-timeout-ms: 10000
           #jwks-read-timeout-ms: 10000
+          # accept Entra app-only (M2M) tokens; requires non-empty audiences
+          #allow-service-principals: false
+          #service-principal-allow-list:
+          #  - "service-app-client-id"
 
     experimental:
       # ability to enable experimental endpoints (default=false)
