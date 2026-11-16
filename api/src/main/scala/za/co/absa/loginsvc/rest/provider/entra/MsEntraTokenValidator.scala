@@ -51,6 +51,8 @@ class MsEntraTokenValidator(
   private[entra] val graphClientOverride: Option[GraphUsernameResolver] = None
 ) {
 
+  import MsEntraTokenValidator.{PrincipalTypeAttribute, ServicePrincipalType}
+
   private val logger = LoggerFactory.getLogger(classOf[MsEntraTokenValidator])
 
   // Use the injected graph resolver (for tests) or create one from config if clientSecret is set
@@ -60,8 +62,7 @@ class MsEntraTokenValidator(
   private val discoveryUrl =
     s"${config.loginBaseUrl}/${config.tenantId}/v2.0/.well-known/openid-configuration"
 
-  private val expectedIssuer =
-    s"${config.loginBaseUrl}/${config.tenantId}/v2.0"
+  private val expectedIssuer = s"${config.loginBaseUrl}/${config.tenantId}/v2.0"
 
   // Cache the JWKSource keyed by jwks_uri string; refreshes after 1 hour
   private val jwkSourceCache: LoadingCache[String, JWKSource[NimbusSecurityContext]] =
@@ -99,12 +100,15 @@ class MsEntraTokenValidator(
 
       // Verify signature, issuer, expiry and required claims
       val requiredClaims = new DefaultJWTClaimsVerifier[NimbusSecurityContext](
-        new JWTClaimsSet.Builder().issuer(expectedIssuer).build(),
-        Set("sub", "iat", "exp").asJava
+        new JWTClaimsSet.Builder().build(),
+        Set("sub", "iat", "exp", "iss").asJava
       )
       jwtProcessor.setJWTClaimsSetVerifier(requiredClaims)
 
       val claims: JWTClaimsSet = jwtProcessor.process(rawToken, null)
+
+      if (claims.getIssuer != expectedIssuer)
+        throw new BadJWTException(s"JWT iss claim has value ${claims.getIssuer}, must be $expectedIssuer")
 
       // Audience check: if audiences are configured, token must contain at least one
       if (config.audiences.nonEmpty) {
@@ -127,7 +131,46 @@ class MsEntraTokenValidator(
     }
   }
 
-  private def extractUser(claims: JWTClaimsSet): User = {
+  private def isAppOnlyToken(claims: JWTClaimsSet): Boolean =
+    Option(claims.getStringClaim("idtyp")) match {
+      case Some(idtyp) => idtyp == "app"
+      case None => // idtyp is an optional claim; infer app-only from absent user claims
+        val hasUserClaims = Option(claims.getStringClaim("preferred_username")).orElse(Option(claims.getStringClaim("upn"))).isDefined
+        val hasDelegatedScopes = Option(claims.getClaim("scp")).isDefined
+        val oid = Option(claims.getStringClaim("oid"))
+        !hasUserClaims && !hasDelegatedScopes && oid.contains(claims.getSubject)
+    }
+
+  private def mappedAttributes(claims: JWTClaimsSet): Map[String, Option[AnyRef]] =
+    config.attributes.getOrElse(Map.empty).flatMap {
+      case (claimName, lsClaimName) =>
+        Option(claims.getClaim(claimName)).map { value =>
+          lsClaimName -> Some(value.asInstanceOf[AnyRef])
+        }
+    }
+
+  private def extractServicePrincipal(claims: JWTClaimsSet): User = {
+    if (!config.allowServicePrincipals)
+      throw new BadJWTException("Entra app-only tokens are not accepted (allowServicePrincipals is disabled)")
+
+    val clientId = Option(claims.getStringClaim("azp"))
+      .getOrElse(throw new BadJWTException("Entra app-only token has no azp claim"))
+
+    config.servicePrincipalAllowList.foreach { allowed =>
+      val identities = Set(clientId) ++ Option(claims.getStringClaim("oid"))
+      if (identities.intersect(allowed.toSet).isEmpty)
+        throw new BadJWTException(s"Service principal $clientId is not in the allow list")
+    }
+
+    val roles = Option(claims.getStringListClaim("roles")).map(_.asScala.toSeq).getOrElse(Seq.empty)
+    User(s"sp-$clientId", roles, mappedAttributes(claims) + (PrincipalTypeAttribute -> Some(ServicePrincipalType)))
+  }
+
+  private def extractUser(claims: JWTClaimsSet): User =
+    if (isAppOnlyToken(claims)) extractServicePrincipal(claims)
+    else extractUserFromUserToken(claims)
+
+  private def extractUserFromUserToken(claims: JWTClaimsSet): User = {
     val rawUsername = Option(claims.getStringClaim("preferred_username"))
       .orElse(Option(claims.getStringClaim("upn")))
       .orElse(Option(claims.getSubject))
@@ -140,14 +183,8 @@ class MsEntraTokenValidator(
       .map(_.asScala.toSeq)
       .getOrElse(Seq.empty)
 
-    val optionalAttributes: Map[String, Option[AnyRef]] = config.attributes.getOrElse(Map.empty).flatMap {
-      case (claimName, lsClaimName) =>
-        Option(claims.getClaim(claimName)).map { value =>
-          lsClaimName -> Some(value.asInstanceOf[AnyRef])
-        }
-    }
-
-    User(username, groups, optionalAttributes)
+    // the marker must never be settable through claim mapping, as it bypasses LDAP checks
+    User(username, groups, mappedAttributes(claims) - PrincipalTypeAttribute)
   }
 
   private def resolveJwksUri(): String = {
@@ -164,5 +201,8 @@ class MsEntraTokenValidator(
 }
 
 object MsEntraTokenValidator {
+  val PrincipalTypeAttribute = "principalType"
+  val ServicePrincipalType = "service"
+
   def apply(config: MsEntraConfig): MsEntraTokenValidator = new MsEntraTokenValidator(config)
 }
